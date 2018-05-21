@@ -9,25 +9,23 @@ $alpha = [a-zA-Z]  -- alphabetic characters
 
 tokens :-
 
-  $white+							;
-  "/*" .* "*/"						;
-  "//".* 							;
-  "(" 								{ \p s -> LPar p }
-  ")" 								{ \p s -> RPar p }
-  "[" 								{ \p s -> LSBra p }
-  "]" 								{ \p s -> RSBra p }
-  "{" 								{ \p s -> LCBra p }
-  "}" 								{ \p s -> RCBra p }
-  ";" 								{ \p s -> SemiColon p }
-  "=" 								{ \p s -> Assign p }
-  "," 								{ \p s -> Comma p }
-  continue 							{ \p s -> Continue p }
-  return 							{ \p s -> Return p }
-  break 							{ \p s -> Break p }
-  for 								{ \p s -> For p }
-  while 							{ \p s -> While p }
-  if 								{ \p s -> If p }
-  else 								{ \p s -> Else p }
+  $white+							          ;
+  "(" 								          { \p s -> LPar p }
+  ")" 								          { \p s -> RPar p }
+  "[" 								          { \p s -> LColch p }
+  "]" 								          { \p s -> RColch p }
+  "{" 								          { \p s -> LChave p }
+  "}" 								          { \p s -> RChave p }
+  ";" 								          { \p s -> PontVirg p }
+  ":=" 								          { \p s -> Recebe p }
+  "," 							       	    { \p s -> Virg p }
+  CONTINUE 							        { \p s -> Continue p }
+  RETORNE 							        { \p s -> Retorne p }
+  SAIA 							            { \p s -> Saia p }
+  ENQUANTO         							{ \p s -> Enquanto p }
+  SE 								            { \p s -> Se p }
+  ENTAO                         { \p s -> Entao p }
+  else 								          { \p s -> Else p }
   struct 							{ \p s -> Struct p }
   int 									{ \p s -> Int p }
   float 								{ \p s -> Float p }
@@ -47,10 +45,10 @@ tokens :-
 data Token =
   LPar AlexPosn |
   RPar AlexPosn |
-  LSBra AlexPosn |
-  RSBra AlexPosn |
-  LCBra AlexPosn |
-  RCBra AlexPosn 
+  LColch AlexPosn |
+  RColch AlexPosn |
+  LChave AlexPosn |
+  RChave AlexPosn 
   deriving (Eq,Show)
 
 token_posn (Let p) = p
