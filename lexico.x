@@ -1,5 +1,5 @@
 {
-  module Main (main, Token(..), AlexPosn(..), alexScanTokens, token_posn) where
+  module Lexico (main, Token(..), AlexPosn(..), alexScanTokens, token_posn) where
 }
 
 %wrapper "posn"
@@ -11,64 +11,65 @@ $upperalpha = [A-Z]  -- uppercase alphabetic characters
 
 
 tokens :-
-  $white+								;
-  "--".*.								;
-  ESTRUTURA								{ \p s -> ESTRUTURA p }
-  FIMESTRUTURA							{ \p s -> FIMESTRUTURA p }
-  FUNCAO								{ \p s -> FUNCAO p }
-  FIMFUNCAO								{ \p s -> FIMFUNCAO p }
-  PROCEDIMENTO							{ \p s -> PROCEDIMENTO p }
-  FIMPROCEDIMENTO						{ \p s -> FIMPROCEDIMENTO p }
-  OPERADOR								{ \p s -> OPERADOR p }
-  FIMOPERADOR							{ \p s -> FIMOPERADOR p }
-  RECEBE								{ \p s -> RECEBE p }
-  RETORNA								{ \p s -> RETORNA p }
-  RETORNE								{ \p s -> RETORNE p }
-  PRINCIPAL								{ \p s -> PRINCIPAL p }
-  FIMPRINCIPAL							{ \p s -> FIMPRINCIPAL p }
-  SAIA									{ \p s -> SAIA p }
-  CONTINUE								{ \p s -> CONTINUE p }
-  SE									{ \p s -> SE p }
-  ENTAO									{ \p s -> ENTAO p }
-  SENAO									{ \p s -> SENAO p }
-  FIMSE									{ \p s -> FIMSE p }
-  ENQUANTO								{ \p s -> ENQUANTO p }
-  EXECUTE								{ \p s -> EXECUTE p }
-  FIMENQUANTO							{ \p s -> FIMENQUANTO p }
-  DEFINA								{ \p s -> DEFINA p }
-  "~OU"									{ \p s -> SlowOU p }
-  "~E"									{ \p s -> SlowE p }
-  OU									{ \p s -> OU p }
-  E										{ \p s -> E p }
-  VERDADEIRO							{ \p s -> BoolValue p s }
-  FALSO									{ \p s -> BoolValue p s }
-  PONT									{ \p s -> PONT p }
-  NOVO									{ \p s -> NOVO p }
-  DELETE								{ \p s -> DELETE p }
-  CONST									{ \p s -> CONST p }
-  ":="									{ \p s -> Attrib p }
-  ">="									{ \p s -> Geq p }
-  "<="									{ \p s -> Leq p }
-  "/="									{ \p s -> Diff p }
-  "="									{ \p s -> Equal p }
-  ">"									{ \p s -> Great p }
-  "<"									{ \p s -> Less p }
-  "+"									{ \p s -> Add p }
-  "-"									{ \p s -> Sub p }
-  "*"									{ \p s -> Mult p }
-  "/"									{ \p s -> Div p }
-  "MOD"									{ \p s -> MOD p }
-  "!"									{ \p s -> NOT p }
-  "("									{ \p s -> OpenBrack p }
-  ")"									{ \p s -> CloseBrack p }
-  "["									{ \p s -> OpenSqBrack p }
-  "]"									{ \p s -> CloseSqBrack p }
-  ";"									{ \p s -> EndCommand p }
-  $digit+								{ \p s -> INTEIRO p (read s) }
-  \".*\"								{ \p s -> TEXTO p s }
-  $upperalpha [$upperalpha \_]*			{ \p s -> TIPO p s }
-  $loweralpha [$alpha \_]*				{ \p s -> ID p s }
-  .*									;
+
+  $white+                           ;
+  "--".*                            ;
+  ESTRUTURA                         { \p s -> ESTRUTURA p }
+  FIMESTRUTURA                      { \p s -> FIMESTRUTURA p }
+  FUNCAO                            { \p s -> FUNCAO p }
+  FIMFUNCAO                         { \p s -> FIMFUNCAO p }
+  PROCEDIMENTO                      { \p s -> PROCEDIMENTO p }
+  FIMPROCEDIMENTO                   { \p s -> FIMPROCEDIMENTO p }
+  OPERADOR                          { \p s -> OPERADOR p }
+  FIMOPERADOR                       { \p s -> FIMOPERADOR p }
+  RECEBE                            { \p s -> RECEBE p }
+  RETORNA                           { \p s -> RETORNA p }
+  RETORNE                           { \p s -> RETORNE p }
+  PRINCIPAL                         { \p s -> PRINCIPAL p }
+  FIMPRINCIPAL                      { \p s -> FIMPRINCIPAL p }
+  SAIA                              { \p s -> SAIA p }
+  CONTINUE                          { \p s -> CONTINUE p }
+  SE                                { \p s -> SE p }
+  ENTAO                             { \p s -> ENTAO p }
+  SENAO                             { \p s -> SENAO p }
+  FIMSE                             { \p s -> FIMSE p }
+  ENQUANTO                          { \p s -> ENQUANTO p }
+  EXECUTE                           { \p s -> EXECUTE p }
+  FIMENQUANTO                       { \p s -> FIMENQUANTO p }
+  DEFINA                            { \p s -> DEFINA p }
+  "~OU"                             { \p s -> SlowOU p }
+  "~E"                              { \p s -> SlowE p }
+  OU                                { \p s -> OU p }
+  E                                 { \p s -> E p }
+  VERDADEIRO                        { \p s -> BoolValue p s }
+  FALSO                             { \p s -> BoolValue p s }
+  PONT                              { \p s -> PONT p }
+  NOVO                              { \p s -> NOVO p }
+  DELETE                            { \p s -> DELETE p }
+  CONST                             { \p s -> CONST p }
+  ":="                              { \p s -> Attrib p }
+  ">="                              { \p s -> Geq p }
+  "<="                              { \p s -> Leq p }
+  "/="                              { \p s -> Diff p }
+  "="                               { \p s -> Equal p }
+  ">"                               { \p s -> Great p }
+  "<"                               { \p s -> Less p }
+  "+"                               { \p s -> Add p }
+  "-"                               { \p s -> Sub p }
+  "*"                               { \p s -> Mult p }
+  "/"                               { \p s -> Div p }
+  "MOD"                             { \p s -> MOD p }
+  "!"                               { \p s -> NOT p }
+  "("                               { \p s -> OpenBrack p }
+  ")"                               { \p s -> CloseBrack p }
+  "["                               { \p s -> OpenSqBrack p }
+  "]"                               { \p s -> CloseSqBrack p }
+  ","                               { \p s -> Comma p }
+  ";"                               { \p s -> EndCommand p }
+  $digit+                           { \p s -> INTEIRO p (read s) }
+  \".*\"                            { \p s -> TEXTO p s }
+  $upperalpha [$upperalpha \_]*     { \p s -> TIPO p s }
+  $loweralpha [$alpha \_]*          { \p s -> ID p s }
 
 {
 -- Each right-hand side has type :: AlexPosn -> String -> Token
@@ -98,6 +99,7 @@ data Token =
     ENQUANTO AlexPosn                   |
     EXECUTE AlexPosn                    |
     FIMENQUANTO AlexPosn                |
+    DEFINA AlexPosn                     |
     SlowOU AlexPosn                     |
     SlowE AlexPosn                      |
     OU AlexPosn                         |
@@ -105,30 +107,31 @@ data Token =
     BoolValue AlexPosn String           |
     PONT AlexPosn                       |
     NOVO AlexPosn                       |
-    DELETE AlexPosn						|
-    CONST AlexPosn                  	|
+    DELETE AlexPosn                     |
+    CONST AlexPosn                      |
     Attrib AlexPosn                     |
-    Geq AlexPosn						|
-    Leq AlexPosn						|
-    Diff AlexPosn						|
-    Equal AlexPosn						|
-    Great AlexPosn						|
-    Less AlexPosn						|
-    Add AlexPosn						|
-    Sub AlexPosn						|
-    Mult AlexPosn						|
-    Div AlexPosn						|
-    MOD AlexPosn						|
+    Geq AlexPosn                        |
+    Leq AlexPosn                        |
+    Diff AlexPosn                       |
+    Equal AlexPosn                      |
+    Great AlexPosn                      |
+    Less AlexPosn                       |
+    Add AlexPosn                        |
+    Sub AlexPosn                        |
+    Mult AlexPosn                       |
+    Div AlexPosn                        |
+    MOD AlexPosn                        |
     NOT AlexPosn                        |
     OpenBrack AlexPosn                  |
     CloseBrack AlexPosn                 |
     OpenSqBrack AlexPosn                |
     CloseSqBrack AlexPosn               |
+    Comma AlexPosn                      |
     EndCommand AlexPosn                 |
     INTEIRO AlexPosn Integer            |
     TEXTO AlexPosn String               |
     TIPO AlexPosn String                |
-    ID AlexPosn String                        
+    ID AlexPosn String
     deriving (Eq,Show)
 
 token_posn (ESTRUTURA p) = p
@@ -153,6 +156,7 @@ token_posn (FIMSE p) = p
 token_posn (ENQUANTO p) = p
 token_posn (EXECUTE p) = p
 token_posn (FIMENQUANTO p) = p
+token_posn (DEFINA p) = p
 token_posn (SlowOU p) = p
 token_posn (SlowE p) = p
 token_posn (OU p) = p
@@ -180,12 +184,15 @@ token_posn (CloseBrack p) = p
 token_posn (OpenSqBrack p) = p
 token_posn (CloseSqBrack p) = p
 token_posn (EndCommand p) = p
+token_posn (Comma p) = p
 token_posn (INTEIRO p _) = p
 token_posn (TEXTO p _) = p
 token_posn (TIPO p _) = p
 token_posn (ID p _) = p
 
-main = do
-  s <- getContents
-  print (alexScanTokens s)
+getTokens fn = unsafePerformIO (getTokensAux fn)
+
+getTokensAux fn = do {fh <- openFile fn ReadMode;
+                      s <- hGetContents fh;
+                      return (alexScanTokens s)}
 }
