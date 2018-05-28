@@ -11,7 +11,6 @@ $upperalpha = [A-Z]  -- uppercase alphabetic characters
 
 
 tokens :-
-
   $white+                           ;
   "--".*                            ;
   ESTRUTURA                         { \p s -> ESTRUTURA p }
@@ -41,8 +40,8 @@ tokens :-
   "~E"                              { \p s -> SlowE p }
   OU                                { \p s -> OU p }
   E                                 { \p s -> E p }
-  VERDADEIRO                        { \p s -> BoolValue p s }
-  FALSO                             { \p s -> BoolValue p s }
+  VERDADEIRO                        { \p s -> Bool p s }
+  FALSO                             { \p s -> Bool p s }
   PONT                              { \p s -> PONT p }
   NOVO                              { \p s -> NOVO p }
   DELETE                            { \p s -> DELETE p }
@@ -66,12 +65,16 @@ tokens :-
   "]"                               { \p s -> CloseSqBrack p }
   ","                               { \p s -> Comma p }
   ";"                               { \p s -> EndCommand p }
+  $digit+"."$digit+                 { \p s -> REAL p (read s) }
   $digit+                           { \p s -> INTEIRO p (read s) }
+  \'.\'                             { \p s -> CARACTERE p (read s) }
   \".*\"                            { \p s -> TEXTO p s }
   $upperalpha [$upperalpha \_]*     { \p s -> TIPO p s }
   $loweralpha [$alpha \_]*          { \p s -> ID p s }
 
 {
+
+
 -- Each right-hand side has type :: AlexPosn -> String -> Token
 -- Some action helpers:
 
