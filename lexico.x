@@ -1,200 +1,224 @@
 {
-  module Lexico (main, Token(..), AlexPosn(..), alexScanTokens, token_posn) where
+module Lexico (Token(..), alexScanTokens, token_pos, getTokens) where
+import System.IO.Unsafe
+import System.IO
 }
 
+-- Using the "posn" wrapper
 %wrapper "posn"
 
-$digit = 0-9       -- digits
-$alpha = [a-zA-Z]  -- alphabetic characters
+$digit = 0-9         -- digits
+$alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = [a-z]  -- lowercase alphabetic characters
 $upperalpha = [A-Z]  -- uppercase alphabetic characters
 
-
+-- Regular expressions that define the language tokens.
 tokens :-
   $white+                           ;
   "--".*                            ;
-  ESTRUTURA                         { \p s -> ESTRUTURA p }
-  FIMESTRUTURA                      { \p s -> FIMESTRUTURA p }
-  FUNCAO                            { \p s -> FUNCAO p }
-  FIMFUNCAO                         { \p s -> FIMFUNCAO p }
-  PROCEDIMENTO                      { \p s -> PROCEDIMENTO p }
-  FIMPROCEDIMENTO                   { \p s -> FIMPROCEDIMENTO p }
-  OPERADOR                          { \p s -> OPERADOR p }
-  FIMOPERADOR                       { \p s -> FIMOPERADOR p }
-  RECEBE                            { \p s -> RECEBE p }
-  RETORNA                           { \p s -> RETORNA p }
-  RETORNE                           { \p s -> RETORNE p }
-  PRINCIPAL                         { \p s -> PRINCIPAL p }
-  FIMPRINCIPAL                      { \p s -> FIMPRINCIPAL p }
-  SAIA                              { \p s -> SAIA p }
-  CONTINUE                          { \p s -> CONTINUE p }
-  SE                                { \p s -> SE p }
-  ENTAO                             { \p s -> ENTAO p }
-  SENAO                             { \p s -> SENAO p }
-  FIMSE                             { \p s -> FIMSE p }
-  ENQUANTO                          { \p s -> ENQUANTO p }
-  EXECUTE                           { \p s -> EXECUTE p }
-  FIMENQUANTO                       { \p s -> FIMENQUANTO p }
-  DEFINA                            { \p s -> DEFINA p }
-  "~OU"                             { \p s -> SlowOU p }
-  "~E"                              { \p s -> SlowE p }
-  OU                                { \p s -> OU p }
-  E                                 { \p s -> E p }
-  VERDADEIRO                        { \p s -> Bool p s }
-  FALSO                             { \p s -> Bool p s }
-  PONT                              { \p s -> PONT p }
-  NOVO                              { \p s -> NOVO p }
-  DELETE                            { \p s -> DELETE p }
-  CONST                             { \p s -> CONST p }
-  ":="                              { \p s -> Attrib p }
-  ">="                              { \p s -> Geq p }
-  "<="                              { \p s -> Leq p }
-  "/="                              { \p s -> Diff p }
-  "="                               { \p s -> Equal p }
-  ">"                               { \p s -> Great p }
-  "<"                               { \p s -> Less p }
-  "+"                               { \p s -> Add p }
-  "-"                               { \p s -> Sub p }
-  "*"                               { \p s -> Mult p }
-  "/"                               { \p s -> Div p }
-  "MOD"                             { \p s -> MOD p }
-  "!"                               { \p s -> NOT p }
-  "("                               { \p s -> OpenBrack p }
-  ")"                               { \p s -> CloseBrack p }
-  "["                               { \p s -> OpenSqBrack p }
-  "]"                               { \p s -> CloseSqBrack p }
-  ","                               { \p s -> Comma p }
-  ";"                               { \p s -> EndCommand p }
-  $digit+"."$digit+                 { \p s -> REAL p (read s) }
-  $digit+                           { \p s -> INTEIRO p (read s) }
-  \'.\'                             { \p s -> CARACTERE p (read s) }
-  \".*\"                            { \p s -> TEXTO p s }
-  $upperalpha [$upperalpha \_]*     { \p s -> TIPO p s }
-  $loweralpha [$alpha \_]*          { \p s -> ID p s }
+  ESTRUTURA                         { \p s -> ESTRUTURA (getPosition p) }
+  FIMESTRUTURA                      { \p s -> FIMESTRUTURA (getPosition p) }
+  FUNCAO                            { \p s -> FUNCAO (getPosition p) }
+  FIMFUNCAO                         { \p s -> FIMFUNCAO (getPosition p) }
+  PROCEDIMENTO                      { \p s -> PROCEDIMENTO (getPosition p) }
+  FIMPROCEDIMENTO                   { \p s -> FIMPROCEDIMENTO (getPosition p) }
+  OPERADOR                          { \p s -> OPERADOR (getPosition p) }
+  FIMOPERADOR                       { \p s -> FIMOPERADOR (getPosition p) }
+  RECEBE                            { \p s -> RECEBE (getPosition p) }
+  RETORNA                           { \p s -> RETORNA (getPosition p) }
+  RETORNE                           { \p s -> RETORNE (getPosition p) }
+  PRINCIPAL                         { \p s -> PRINCIPAL (getPosition p) }
+  FIMPRINCIPAL                      { \p s -> FIMPRINCIPAL (getPosition p) }
+  SAIA                              { \p s -> SAIA (getPosition p) }
+  CONTINUE                          { \p s -> CONTINUE (getPosition p) }
+  SE                                { \p s -> SE (getPosition p) }
+  ENTAO                             { \p s -> ENTAO (getPosition p) }
+  SENAO                             { \p s -> SENAO (getPosition p) }
+  FIMSE                             { \p s -> FIMSE (getPosition p) }
+  ENQUANTO                          { \p s -> ENQUANTO (getPosition p) }
+  EXECUTE                           { \p s -> EXECUTE (getPosition p) }
+  FIMENQUANTO                       { \p s -> FIMENQUANTO (getPosition p) }
+  DEFINA                            { \p s -> DEFINA (getPosition p) }
+  "~OU"                             { \p s -> SlowOU (getPosition p) }
+  "~E"                              { \p s -> SlowE (getPosition p) }
+  OU                                { \p s -> OU (getPosition p) }
+  E                                 { \p s -> E (getPosition p) }
+  VERDADEIRO                        { \p s -> LOGICO (getPosition p) (getBoolValue s) }
+  FALSO                             { \p s -> LOGICO (getPosition p) (getBoolValue s) }
+  PONT                              { \p s -> PONT (getPosition p) }
+  NOVO                              { \p s -> NOVO (getPosition p) }
+  DELETE                            { \p s -> DELETE (getPosition p) }
+  CONST                             { \p s -> CONST (getPosition p) }
+  ESCREVA                           { \p s -> ESCREVA (getPosition p) }
+  LEIA                              { \p s -> LEIA (getPosition p) }
+  ":="                              { \p s -> Attrib (getPosition p) }
+  ">="                              { \p s -> Geq (getPosition p) }
+  "<="                              { \p s -> Leq (getPosition p) }
+  "/="                              { \p s -> Diff (getPosition p) }
+  "="                               { \p s -> Equal (getPosition p) }
+  ">"                               { \p s -> Great (getPosition p) }
+  "<"                               { \p s -> Less (getPosition p) }
+  "+"                               { \p s -> Add (getPosition p) }
+  "-"                               { \p s -> Sub (getPosition p) }
+  "*"                               { \p s -> Mult (getPosition p) }
+  "/"                               { \p s -> Div (getPosition p) }
+  "MOD"                             { \p s -> MOD (getPosition p) }
+  "!"                               { \p s -> NOT (getPosition p) }
+  "("                               { \p s -> OpenBrack (getPosition p) }
+  ")"                               { \p s -> CloseBrack (getPosition p) }
+  "["                               { \p s -> OpenSqBrack (getPosition p) }
+  "]"                               { \p s -> CloseSqBrack (getPosition p) }
+  ","                               { \p s -> Comma (getPosition p) }
+  "."                               { \p s -> Dot (getPosition p) }
+  ";"                               { \p s -> EndCommand (getPosition p) }
+  $digit+"."$digit+                 { \p s -> REAL (getPosition p) (read s) }
+  $digit+                           { \p s -> INTEIRO (getPosition p) (read s) }
+  \'.\'                             { \p s -> CARACTERE (getPosition p) (read s) }
+  \".*\"                            { \p s -> TEXTO (getPosition p) (read s) }
+  $upperalpha [$upperalpha \_]*     { \p s -> TIPO (getPosition p) s }
+  $loweralpha [$alpha \_]*          { \p s -> ID (getPosition p) s }
 
 {
 
-
--- Each right-hand side has type :: AlexPosn -> String -> Token
--- Some action helpers:
-
--- The token type:
+-- The Token type:
 data Token =
-    ESTRUTURA AlexPosn                  |
-    FIMESTRUTURA AlexPosn               |
-    FUNCAO AlexPosn                     |
-    FIMFUNCAO AlexPosn                  |
-    PROCEDIMENTO AlexPosn               |
-    FIMPROCEDIMENTO AlexPosn            |
-    OPERADOR AlexPosn                   |
-    FIMOPERADOR AlexPosn                |
-    RECEBE AlexPosn                     |
-    RETORNA AlexPosn                    |
-    RETORNE AlexPosn                    |
-    PRINCIPAL AlexPosn                  |
-    FIMPRINCIPAL AlexPosn               |
-    SAIA AlexPosn                       |
-    CONTINUE AlexPosn                   |
-    SE AlexPosn                         |
-    ENTAO AlexPosn                      |
-    SENAO AlexPosn                      |
-    FIMSE AlexPosn                      |
-    ENQUANTO AlexPosn                   |
-    EXECUTE AlexPosn                    |
-    FIMENQUANTO AlexPosn                |
-    DEFINA AlexPosn                     |
-    SlowOU AlexPosn                     |
-    SlowE AlexPosn                      |
-    OU AlexPosn                         |
-    E AlexPosn                          |
-    BoolValue AlexPosn String           |
-    PONT AlexPosn                       |
-    NOVO AlexPosn                       |
-    DELETE AlexPosn                     |
-    CONST AlexPosn                      |
-    Attrib AlexPosn                     |
-    Geq AlexPosn                        |
-    Leq AlexPosn                        |
-    Diff AlexPosn                       |
-    Equal AlexPosn                      |
-    Great AlexPosn                      |
-    Less AlexPosn                       |
-    Add AlexPosn                        |
-    Sub AlexPosn                        |
-    Mult AlexPosn                       |
-    Div AlexPosn                        |
-    MOD AlexPosn                        |
-    NOT AlexPosn                        |
-    OpenBrack AlexPosn                  |
-    CloseBrack AlexPosn                 |
-    OpenSqBrack AlexPosn                |
-    CloseSqBrack AlexPosn               |
-    Comma AlexPosn                      |
-    EndCommand AlexPosn                 |
-    INTEIRO AlexPosn Integer            |
-    TEXTO AlexPosn String               |
-    TIPO AlexPosn String                |
-    ID AlexPosn String
+    ESTRUTURA (Int,Int)             |
+    FIMESTRUTURA (Int,Int)          |
+    FUNCAO (Int,Int)                |
+    FIMFUNCAO (Int,Int)             |
+    PROCEDIMENTO (Int,Int)          |
+    FIMPROCEDIMENTO (Int,Int)       |
+    OPERADOR (Int,Int)              |
+    FIMOPERADOR (Int,Int)           |
+    RECEBE (Int,Int)                |
+    RETORNA (Int,Int)               |
+    RETORNE (Int,Int)               |
+    PRINCIPAL (Int,Int)             |
+    FIMPRINCIPAL (Int,Int)          |
+    SAIA (Int,Int)                  |
+    CONTINUE (Int,Int)              |
+    SE (Int,Int)                    |
+    ENTAO (Int,Int)                 |
+    SENAO (Int,Int)                 |
+    FIMSE (Int,Int)                 |
+    ENQUANTO (Int,Int)              |
+    EXECUTE (Int,Int)               |
+    FIMENQUANTO (Int,Int)           |
+    DEFINA (Int,Int)                |
+    SlowOU (Int,Int)                |
+    SlowE (Int,Int)                 |
+    OU (Int,Int)                    |
+    E (Int,Int)                     |
+    LOGICO (Int,Int) Bool           |
+    PONT (Int,Int)                  |
+    NOVO (Int,Int)                  |
+    DELETE (Int,Int)                |
+    CONST (Int,Int)                 |
+    Attrib (Int,Int)                |
+    Geq (Int,Int)                   |
+    Leq (Int,Int)                   |
+    Diff (Int,Int)                  |
+    Equal (Int,Int)                 |
+    Great (Int,Int)                 |
+    Less (Int,Int)                  |
+    Add (Int,Int)                   |
+    Sub (Int,Int)                   |
+    Mult (Int,Int)                  |
+    Div (Int,Int)                   |
+    MOD (Int,Int)                   |
+    NOT (Int,Int)                   |
+    OpenBrack (Int,Int)             |
+    CloseBrack (Int,Int)            |
+    OpenSqBrack (Int,Int)           |
+    CloseSqBrack (Int,Int)          |
+    Comma (Int,Int)                 |
+    Dot (Int,Int)                   |
+    EndCommand (Int,Int)            |
+    REAL (Int,Int) Float            |
+    INTEIRO (Int,Int) Integer       |
+    CARACTERE (Int,Int) Char        |
+    TEXTO (Int,Int) String          |
+    TIPO (Int,Int) String           |
+    ID (Int,Int) String
     deriving (Eq,Show)
 
-token_posn (ESTRUTURA p) = p
-token_posn (FIMESTRUTURA p) = p
-token_posn (FUNCAO p) = p
-token_posn (FIMFUNCAO p) = p
-token_posn (PROCEDIMENTO p) = p
-token_posn (FIMPROCEDIMENTO p) = p
-token_posn (OPERADOR p) = p
-token_posn (FIMOPERADOR p) = p
-token_posn (RECEBE p) = p
-token_posn (RETORNA p) = p
-token_posn (RETORNE p) = p
-token_posn (PRINCIPAL p) = p
-token_posn (FIMPRINCIPAL p) = p
-token_posn (SAIA p) = p
-token_posn (CONTINUE p) = p
-token_posn (SE p) = p
-token_posn (ENTAO p) = p
-token_posn (SENAO p) = p
-token_posn (FIMSE p) = p
-token_posn (ENQUANTO p) = p
-token_posn (EXECUTE p) = p
-token_posn (FIMENQUANTO p) = p
-token_posn (DEFINA p) = p
-token_posn (SlowOU p) = p
-token_posn (SlowE p) = p
-token_posn (OU p) = p
-token_posn (E p) = p
-token_posn (BoolValue p _) = p
-token_posn (PONT p) = p
-token_posn (NOVO p) = p
-token_posn (DELETE p) = p
-token_posn (CONST p) = p
-token_posn (Attrib p) = p
-token_posn (Geq p) = p
-token_posn (Leq p) = p
-token_posn (Diff p) = p
-token_posn (Equal p) = p
-token_posn (Great p) = p
-token_posn (Less p) = p
-token_posn (Add p) = p
-token_posn (Sub p) = p
-token_posn (Mult p) = p
-token_posn (Div p) = p
-token_posn (MOD p) = p
-token_posn (NOT p) = p
-token_posn (OpenBrack p) = p
-token_posn (CloseBrack p) = p
-token_posn (OpenSqBrack p) = p
-token_posn (CloseSqBrack p) = p
-token_posn (EndCommand p) = p
-token_posn (Comma p) = p
-token_posn (INTEIRO p _) = p
-token_posn (TEXTO p _) = p
-token_posn (TIPO p _) = p
-token_posn (ID p _) = p
+-- Receives a AlexPosn and returns a pair (Int,Int) with (row,column) positions.
+getPosition :: AlexPosn -> (Int,Int)
+getPosition (AlexPn _ a b) = (a,b)
 
+-- It's only called when Alex is getting the LOGICO tokens.
+getBoolValue :: String -> Bool
+getBoolValue str
+    | str == "VERDADEIRO" = True
+    | otherwise = False
+
+-- Receives a Token and returns its position.
+token_pos :: Token -> (Int,Int)
+token_pos (ESTRUTURA p) = p
+token_pos (FIMESTRUTURA p) = p
+token_pos (FUNCAO p) = p
+token_pos (FIMFUNCAO p) = p
+token_pos (PROCEDIMENTO p) = p
+token_pos (FIMPROCEDIMENTO p) = p
+token_pos (OPERADOR p) = p
+token_pos (FIMOPERADOR p) = p
+token_pos (RECEBE p) = p
+token_pos (RETORNA p) = p
+token_pos (RETORNE p) = p
+token_pos (PRINCIPAL p) = p
+token_pos (FIMPRINCIPAL p) = p
+token_pos (SAIA p) = p
+token_pos (CONTINUE p) = p
+token_pos (SE p) = p
+token_pos (ENTAO p) = p
+token_pos (SENAO p) = p
+token_pos (FIMSE p) = p
+token_pos (ENQUANTO p) = p
+token_pos (EXECUTE p) = p
+token_pos (FIMENQUANTO p) = p
+token_pos (DEFINA p) = p
+token_pos (SlowOU p) = p
+token_pos (SlowE p) = p
+token_pos (OU p) = p
+token_pos (E p) = p
+token_pos (LOGICO p _) = p
+token_pos (PONT p) = p
+token_pos (NOVO p) = p
+token_pos (DELETE p) = p
+token_pos (CONST p) = p
+token_pos (Attrib p) = p
+token_pos (Geq p) = p
+token_pos (Leq p) = p
+token_pos (Diff p) = p
+token_pos (Equal p) = p
+token_pos (Great p) = p
+token_pos (Less p) = p
+token_pos (Add p) = p
+token_pos (Sub p) = p
+token_pos (Mult p) = p
+token_pos (Div p) = p
+token_pos (MOD p) = p
+token_pos (NOT p) = p
+token_pos (OpenBrack p) = p
+token_pos (CloseBrack p) = p
+token_pos (OpenSqBrack p) = p
+token_pos (CloseSqBrack p) = p
+token_pos (Comma p) = p
+token_pos (Dot p) = p
+token_pos (EndCommand p) = p
+token_pos (REAL p _) = p
+token_pos (INTEIRO p _) = p
+token_pos (CARACTERE p _) = p
+token_pos (TEXTO p _) = p
+token_pos (TIPO p _) = p
+token_pos (ID p _) = p
+
+-- Receives a file name and returns all Tokens present in this file
+getTokens :: String -> [Token]
 getTokens fn = unsafePerformIO (getTokensAux fn)
 
+-- Assists getTokens to compute Tokens from the file.
+getTokensAux :: String -> IO [Token]
 getTokensAux fn = do {fh <- openFile fn ReadMode;
                       s <- hGetContents fh;
                       return (alexScanTokens s)}
