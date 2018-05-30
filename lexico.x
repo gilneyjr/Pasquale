@@ -1,4 +1,5 @@
 {
+-- module Main (main, Token(..), alexScanTokens, getTokens) where
 module Lexico (Token(..), alexScanTokens, getTokens) where
 import System.IO.Unsafe
 import System.IO
@@ -9,8 +10,8 @@ import System.IO
 
 $digit = 0-9         -- digits
 $alpha = [a-zA-Z]    -- alphabetic characters
-$loweralpha = [a-z]  -- lowercase alphabetic characters
-$upperalpha = [A-Z]  -- uppercase alphabetic characters
+$loweralpha = a-z  -- lowercase alphabetic characters
+$upperalpha = A-Z  -- uppercase alphabetic characters
 
 -- Regular expressions that define the language tokens.
 tokens :-
@@ -51,6 +52,7 @@ tokens :-
   CONST                             { \p s -> CONST (getPosition p) }
   ESCREVA                           { \p s -> ESCREVA (getPosition p) }
   LEIA                              { \p s -> LEIA (getPosition p) }
+  REFERENCIA                        { \p s -> REFERENCIA (getPosition p) }
   ":="                              { \p s -> Attrib (getPosition p) }
   ">="                              { \p s -> Geq (getPosition p) }
   "<="                              { \p s -> Leq (getPosition p) }
@@ -77,9 +79,7 @@ tokens :-
   \".*\"                            { \p s -> TEXTO (getPosition p) (read s) }
   $upperalpha [$upperalpha \_]*     { \p s -> TIPO (getPosition p) s }
   $loweralpha [$alpha \_]*          { \p s -> ID (getPosition p) s }
-
 {
-
 -- The Token type:
 data Token =
     ESTRUTURA (Int,Int)             |
@@ -116,6 +116,7 @@ data Token =
     CONST (Int,Int)                 |
     LEIA (Int,Int)                  |
     ESCREVA (Int,Int)               |
+    REFERENCIA (Int, Int)           |
     Attrib (Int,Int)                |
     Geq (Int,Int)                   |
     Leq (Int,Int)                   |
@@ -143,11 +144,9 @@ data Token =
     TIPO (Int,Int) String           |
     ID (Int,Int) String
     deriving (Eq,Show)
-
 -- Receives a AlexPosn and returns a pair (Int,Int) with (row,column) positions.
 getPosition :: AlexPosn -> (Int,Int)
 getPosition (AlexPn _ a b) = (a,b)
-
 -- It's only called when Alex is getting the LOGICO tokens.
 getBoolValue :: String -> Bool
 getBoolValue str
@@ -163,4 +162,7 @@ getTokensAux :: String -> IO [Token]
 getTokensAux fn = do {fh <- openFile fn ReadMode;
                       s <- hGetContents fh;
                       return (alexScanTokens s)}
+--main = do
+--  s <- getContents
+--  print (alexScanTokens s)
 }
