@@ -1,5 +1,5 @@
 {
-module Lexico (Token(..), alexScanTokens, token_pos, getTokens) where
+module Lexico (Token(..), alexScanTokens, getTokens) where
 import System.IO.Unsafe
 import System.IO
 }
@@ -114,6 +114,8 @@ data Token =
     NOVO (Int,Int)                  |
     DELETE (Int,Int)                |
     CONST (Int,Int)                 |
+    LEIA (Int,Int)                  |
+    ESCREVA (Int,Int)               |
     Attrib (Int,Int)                |
     Geq (Int,Int)                   |
     Leq (Int,Int)                   |
@@ -151,67 +153,6 @@ getBoolValue :: String -> Bool
 getBoolValue str
     | str == "VERDADEIRO" = True
     | otherwise = False
-
--- Receives a Token and returns its position.
-token_pos :: Token -> (Int,Int)
-token_pos (ESTRUTURA p) = p
-token_pos (FIMESTRUTURA p) = p
-token_pos (FUNCAO p) = p
-token_pos (FIMFUNCAO p) = p
-token_pos (PROCEDIMENTO p) = p
-token_pos (FIMPROCEDIMENTO p) = p
-token_pos (OPERADOR p) = p
-token_pos (FIMOPERADOR p) = p
-token_pos (RECEBE p) = p
-token_pos (RETORNA p) = p
-token_pos (RETORNE p) = p
-token_pos (PRINCIPAL p) = p
-token_pos (FIMPRINCIPAL p) = p
-token_pos (SAIA p) = p
-token_pos (CONTINUE p) = p
-token_pos (SE p) = p
-token_pos (ENTAO p) = p
-token_pos (SENAO p) = p
-token_pos (FIMSE p) = p
-token_pos (ENQUANTO p) = p
-token_pos (EXECUTE p) = p
-token_pos (FIMENQUANTO p) = p
-token_pos (DEFINA p) = p
-token_pos (SlowOU p) = p
-token_pos (SlowE p) = p
-token_pos (OU p) = p
-token_pos (E p) = p
-token_pos (LOGICO p _) = p
-token_pos (PONT p) = p
-token_pos (NOVO p) = p
-token_pos (DELETE p) = p
-token_pos (CONST p) = p
-token_pos (Attrib p) = p
-token_pos (Geq p) = p
-token_pos (Leq p) = p
-token_pos (Diff p) = p
-token_pos (Equal p) = p
-token_pos (Great p) = p
-token_pos (Less p) = p
-token_pos (Add p) = p
-token_pos (Sub p) = p
-token_pos (Mult p) = p
-token_pos (Div p) = p
-token_pos (MOD p) = p
-token_pos (NOT p) = p
-token_pos (OpenBrack p) = p
-token_pos (CloseBrack p) = p
-token_pos (OpenSqBrack p) = p
-token_pos (CloseSqBrack p) = p
-token_pos (Comma p) = p
-token_pos (Dot p) = p
-token_pos (EndCommand p) = p
-token_pos (REAL p _) = p
-token_pos (INTEIRO p _) = p
-token_pos (CARACTERE p _) = p
-token_pos (TEXTO p _) = p
-token_pos (TIPO p _) = p
-token_pos (ID p _) = p
 
 -- Receives a file name and returns all Tokens present in this file
 getTokens :: String -> [Token]
