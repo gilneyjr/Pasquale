@@ -25,10 +25,38 @@ FUNCAO racional_negacao RECEBE (RATIONAL_T a) RETORNA RATIONAL_T
 	RETORNO a;
 FIMFUNCAO
 
-FUNCAO racional_igual RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+FUNCAO racional_soma RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
 	RATIONAL_T res;
-	res.denominador = a.denominador * b.denominador;
-	res.numerador = a.numerador*b.denominador + 
+	res.denominador := a.denominador * b.denominador;
+	res.numerador := a.numerador*b.denominador + b.numerador*a.denominador;
+	RETURN res;
+FIMFUNCAO
+
+FUNCAO racional_subtracao RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+	RATIONAL_T res;
+	res.denominador := a.denominador * b.denominador;
+	res.numerador := a.numerador*b.denominador - b.numerador*a.denominador;
+	RETURN res;
+FIMFUNCAO
+
+FUNCAO racional_multiplicacao RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+	RATIONAL_T res;
+	res.denominador := a.denominador * b.denominador;
+	res.numerador := b.denominador * a.denominador;
+	RETURN res;
+FIMFUNCAO
+
+FUNCAO racional_inverso RECEBE (RATIONAL_T a) RETORNA RATIONAL_T
+	RATIONAL_T res;
+	res.denominador := a.numerador;
+	res.numerador :=  a.denominador;
+	RETURN res;
+FIMFUNCAO
+
+FUNCAO racional_divisao RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+	RATIONAL_T res;
+	b := racional_inverso(b);
+	res := racional_multiplicacao(a, b);
 	RETURN res;
 FIMFUNCAO
 
@@ -38,12 +66,12 @@ PRINCIPAL
 	LEIA(a);
 	LEIA(b);
 	SE(b /= 0) ENTAO
-		r1 = racional(a, b);	
+		r1 := racional(a, b);	
 	FIMSE
 
 	LEIA(a);
 	LEIA(b);
 	SE(b /= 0) ENTAO
-		r2 = racional(a, b);	
+		r2 := racional(a, b);	
 	FIMSE
 FIMPRINCIPAL
