@@ -19,6 +19,6 @@ PRINCIPAL
 				FIMSE
 			FIMSE
 		FIMSE
-		ESCREVA (a, b, c, d);
+		ESCREVA ((TEXTO) a + " " + (TEXTO) b + " " + (TEXTO) c + " " + (TEXTO) d);
 	FIMENQUANTO
 FIMPRINCIPAL

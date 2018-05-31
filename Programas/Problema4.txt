@@ -1,0 +1,49 @@
+//problema 4.a
+
+ESTRUTURA RATIONAL_T
+	INTEIRO numerador;
+	INTEIRO denominador;
+FIMESTRUTURA
+
+FUNCAO racional RECEBE (INTEIRO a, INTEIRO b) RETORNA RATIONAL_T
+	RATIONAL_T r;
+	r.numerador := a;
+	r.denominador := b;
+	RETORNO r;
+FIMFUNCAO
+
+FUNCAO racional_igual RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA LOGICO
+	SE(a.numerador * b.denominador  =  b.numerador * a.denominador)ENTAO
+		RETORNE VERDADEIRO;
+	SENAO
+		RETORNE FALSO;
+	FIMSE
+FIMFUNCAO
+
+FUNCAO racional_negacao RECEBE (RATIONAL_T a) RETORNA RATIONAL_T
+	a.numerador := -1 * a.numerador;
+	RETORNO a;
+FIMFUNCAO
+
+FUNCAO racional_igual RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+	RATIONAL_T res;
+	res.denominador = a.denominador * b.denominador;
+	res.numerador = a.numerador*b.denominador + 
+	RETURN res;
+FIMFUNCAO
+
+PRINCIPAL
+	INTEIRO a, b;
+	RATIONAL_T r1, r2;
+	LEIA(a);
+	LEIA(b);
+	SE(b /= 0) ENTAO
+		r1 = racional(a, b);	
+	FIMSE
+
+	LEIA(a);
+	LEIA(b);
+	SE(b /= 0) ENTAO
+		r2 = racional(a, b);	
+	FIMSE
+FIMPRINCIPAL
