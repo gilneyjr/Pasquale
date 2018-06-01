@@ -1,0 +1,22 @@
+PROCEDIMENTO mdc RECEBE (INTEIRO n, INTEIRO m, PONTEIRO INTEIRO r)
+    SE (m >= n) ENTAO
+        SE ((m MOD n) = 0) ENTAO
+            VALOR(r) := n;
+        SENAO
+            VALOR(r) := mdc(n, (m MOD n), r);
+        FIMSE
+    SENAO
+        SE ((n MOD m) = 0) ENTAO
+            VALOR(r) := m;
+        SENAO
+            VALOR(r) := mdc(m, (n MOD m), r);
+        FIMSE
+    FIMSE    
+FIMFUNCAO
+
+PRINCIPAL
+    INTEIRO n := 17, m := 23;
+    PONTEIRO INTEIRO r;
+    mdc(n,m,r);
+    ESCREVA(VALOR(r));
+FIMPRINCIPAL
