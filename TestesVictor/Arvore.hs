@@ -9,47 +9,59 @@ import Lexico
 
 type ParseArgs = ParsecT [Token] () Identity
 
-data PROGRAMA = CRIAPROG ESTRS
+data PROGRAMA = CRIAPROG ESTRS deriving (Eq,Show)
 
 data ESTRS = 
     INICIOESTRS [ESTR] DECS
+    deriving (Eq,Show)
 
 data DECS = 
     INICIODECS [DEC] FUNCS
+    deriving (Eq,Show)
 
 data FUNCS = 
     INICIOFUNCS [SUBPROG] MAIN
+    deriving (Eq,Show)
 
 data SUBPROG = 
     CRIAFUNC FUNC |
     CRIAOPER OPER |
     CRIAPROC PROC
+    deriving (Eq,Show)
 
 data DEC =
     NOVADEC [MODF] {-TIPO-}Token DEC_IDS
+    deriving (Eq,Show)
 
 data MODF = 
     NOVOPONT {-PONT-}Token |
     NOVOCONST {-CONST-}Token
+    deriving (Eq,Show)
     
 data DEC_IDS =
     CRIAIDS [VAR_]
+    deriving (Eq,Show)
     
 data VAR_ =
     VAR_SEM VAR |
     VAR_COM ATRIB
+    deriving (Eq,Show)
 
 data ESTR = 
     NOVOESTR {-TIPO-}Token [DEC]
+    deriving (Eq,Show)
 
 data FUNC =
     NOVOFUNC {-ID-}Token [PARAM] {-TIPO-}Token [STMT]
+    deriving (Eq,Show)
 
 data PROC =
     NOVOPROC {-ID-}Token [PARAM] [STMT]
+    deriving (Eq,Show)
 
 data OPER =
     NOVOOPER OP [PARAM] {-TIPO-}Token [STMT]
+    deriving (Eq,Show)
 
 data OP = 
     NOVOAdd {-Add-}Token |
@@ -62,12 +74,15 @@ data OP =
     NOVOEqual {-Equal-}Token |
     NOVOGreat {-Great-}Token |
     NOVOLess {-Less-}Token 
+    deriving (Eq,Show)
         
 data PARAM = 
     NOVOPARAM {-TIPO-}Token VAR
+    deriving (Eq,Show)
 
 data MAIN = 
     Main [STMT]
+    deriving (Eq,Show)
 
 data STMT = 
     NOVODEC DEC |
@@ -85,39 +100,49 @@ data STMT =
     NOVOESCREVA NodeESCREVA |
     NOVOLEIA NodeLEIA |
     NOVOBLOCO NodeBLOCO
+    deriving (Eq,Show)
 
 data RETORNEFUNC =
     CRIARETORNEF EXPR
+    deriving (Eq,Show)
 
 data RETORNEPROC =
     CRIARETORNEP
+    deriving (Eq,Show)
 
 data ATRIB =
     CRIAATRIB VAR EXPR
+    deriving (Eq,Show)
     
 data INC =
     CRIAINC VAR
+    deriving (Eq,Show)
 
 data DECR = 
     CRIADECR VAR
+    deriving (Eq,Show)
 
 data CHAMADA =
     CRIACHAMADA {-ID-}Token [EXPR]
+    deriving (Eq,Show)
 
 data NodeLEIA = 
     CRIALEIA [VAR]
+    deriving (Eq,Show)
     
 data NodeESCREVA = 
     CRIAESCREVA EXPR
+    deriving (Eq,Show)
 
 data NodeBLOCO =
     CRIABLOCO [STMT]
+    deriving (Eq,Show)
 
 data EXPR = 
     CRIAOU EXPR EXPR |
-    CRIAOU_ EXPR EXPR |
+    CRIASLOWOU EXPR EXPR |
     CRIAE EXPR EXPR |
-    CRIAE_ EXPR EXPR |
+    CRIASLOWE EXPR EXPR |
     CRIALESS EXPR EXPR |
     CRIALEQ EXPR EXPR |
     CRIAEQUAL EXPR EXPR |
@@ -139,34 +164,45 @@ data EXPR =
     CRIAVAR VAR |
     CRIACHAMADAFUNC CHAMADA |
     CRIANOVO {-TIPO-}Token OptionalSQBRACK |
-    CRIAVALOR {-VALOR-}Token OptionalSQBRACK |
-    CRIAREFERENCIA {-REFERENCIA-}Token OptionalSQBRACK |
+    CRIAVALOR VAR |
+    CRIAREFERENCIA VAR |
+    CRIAPARENTESES EXPR |
     CRIACONVERSAO {-TIPO-}Token EXPR
+    deriving (Eq,Show)
 
 data VAR =
     Var [SingleVAR]
+    deriving (Eq,Show)
     
 data SingleVAR =
      SingleVar {-ID-}Token OptionalSQBRACK
+     deriving (Eq,Show)
 
 data OptionalSQBRACK =
     OptionalSQBrack [EXPR]
+    deriving (Eq,Show)
 
 data NodeSE =
     CRIASE EXPR [STMT] OptionalSENAO
+    deriving (Eq,Show)
 
 data OptionalSENAO =
     OptionalSenao [STMT]
+    deriving (Eq,Show)
 
 data NodeENQUANTO =
     CRIAENQUANTO EXPR [STMT]
+    deriving (Eq,Show)
 
 data NodeCONTINUE = 
     CRIACONTINUE {-CONTINUE-}Token
+    deriving (Eq,Show)
 
 data NodeSAIA = 
     CRIASAIA {-SAIA-}Token
+    deriving (Eq,Show)
 
 data NodeDELETE =
     CRIADELETE VAR
+    deriving (Eq,Show)
 

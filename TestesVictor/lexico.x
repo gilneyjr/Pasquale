@@ -1,5 +1,4 @@
 {
--- module Main (main, Token(..), alexScanTokens, getTokens) where
 module Lexico where
 import System.IO.Unsafe
 import System.IO
@@ -16,7 +15,7 @@ $upperalpha = A-Z  -- uppercase alphabetic characters
 -- Regular expressions that define the language tokens.
 tokens :-
   $white+                           ;
-  "--".*                            ;
+  "//".*                            ;
   ESTRUTURA                         { \p s -> ESTRUTURA (getPosition p) }
   FIMESTRUTURA                      { \p s -> FIMESTRUTURA (getPosition p) }
   FUNCAO                            { \p s -> FUNCAO (getPosition p) }
@@ -83,6 +82,7 @@ tokens :-
   $upperalpha [$upperalpha \_]*     { \p s -> TIPO (getPosition p) s }
   $loweralpha [$alpha \_]*          { \p s -> ID (getPosition p) s }
 {
+
 -- The Token type:
 data Token =
     ESTRUTURA (Int,Int)             |
@@ -159,16 +159,11 @@ getBoolValue str
     | str == "VERDADEIRO" = True
     | otherwise = False
 
--- Receives a file name and returns all Tokens present in this file
 getTokens :: String -> [Token]
 getTokens fn = unsafePerformIO (getTokensAux fn)
 
--- Assists getTokens to compute Tokens from the file.
+-- Assists getTokens to compute Tokens from the String.
 getTokensAux :: String -> IO [Token]
-getTokensAux fn = do {fh <- openFile fn ReadMode;
-                      s <- hGetContents fh;
-                      return (alexScanTokens s)}
---main = do
---  s <- getContents
---  print (alexScanTokens s)
+getTokensAux fn = return $ alexScanTokens fn
+
 }
