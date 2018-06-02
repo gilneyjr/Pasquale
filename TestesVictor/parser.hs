@@ -102,6 +102,7 @@ parseEstr = do
     parseEstrutura
     a <- parseTipo
     b <- many parseDec
+    parseFimestrutura
     return $ NOVOESTR a b 
 
 parseFunc :: ParseArgs FUNC
