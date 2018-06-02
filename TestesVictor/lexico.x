@@ -1,6 +1,6 @@
 {
 -- module Main (main, Token(..), alexScanTokens, getTokens) where
-module Lexico (Token(..), alexScanTokens, getTokens) where
+module Lexico where
 import System.IO.Unsafe
 import System.IO
 }
@@ -30,6 +30,8 @@ tokens :-
   RETORNE                           { \p s -> RETORNE (getPosition p) }
   PRINCIPAL                         { \p s -> PRINCIPAL (getPosition p) }
   FIMPRINCIPAL                      { \p s -> FIMPRINCIPAL (getPosition p) }
+  BLOCO                             { \p s -> BLOCO (getPosition p) }
+  FIMBLOCO                          { \p s -> FIMBLOCO (getPosition p) }
   SAIA                              { \p s -> SAIA (getPosition p) }
   CONTINUE                          { \p s -> CONTINUE (getPosition p) }
   SE                                { \p s -> SE (getPosition p) }
@@ -96,6 +98,8 @@ data Token =
     RETORNE (Int,Int)               |
     PRINCIPAL (Int,Int)             |
     FIMPRINCIPAL (Int,Int)          |
+    BLOCO (Int,Int)                 |
+    FIMBLOCO (Int,Int)              |
     SAIA (Int,Int)                  |
     CONTINUE (Int,Int)              |
     SE (Int,Int)                    |

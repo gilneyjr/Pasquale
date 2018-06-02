@@ -3,15 +3,16 @@ module Arvore where
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Prim
 import Text.Parsec.Combinator
+import Data.Functor.Identity
 import Text.Show.Functions
 import Lexico
 
+type ParseArgs = ParsecT [Token] () Identity
 
 data PROGRAMA = CRIAPROG ESTRS
 
 data ESTRS = 
     INICIOESTRS [ESTR] DECS
-    | AA Token Token --So pra testar
 
 data DECS = 
     INICIODECS [DEC] FUNCS
@@ -28,7 +29,7 @@ data DEC =
     NOVADEC [MODF] {-TIPO-}Token DEC_IDS
 
 data MODF = 
-    NOVOPONT {-PONTEIRO-}Token |
+    NOVOPONT {-PONT-}Token |
     NOVOCONST {-CONST-}Token
     
 data DEC_IDS =
@@ -36,7 +37,7 @@ data DEC_IDS =
     
 data VAR_ =
     VAR_SEM VAR |
-    VAR_COM ATTRIB
+    VAR_COM ATRIB
 
 data ESTR = 
     NOVOESTR {-TIPO-}Token [DEC]
@@ -70,7 +71,7 @@ data MAIN =
 
 data STMT = 
     NOVODEC DEC |
-    NOVOATTRIB ATTRIB |
+    NOVOATRIB ATRIB |
     NOVOINC INC |
     NOVODECR DECR |
     NOVOCHAMADA CHAMADA |
@@ -81,7 +82,8 @@ data STMT =
     NOVOSAIA NodeSAIA |
     NOVOCONTINUE NodeCONTINUE |
     NOVODELETE NodeDELETE |
-    NOVOES ES |
+    NOVOESCREVA NodeESCREVA |
+    NOVOLEIA NodeLEIA |
     NOVOBLOCO NodeBLOCO
 
 data RETORNEFUNC =
@@ -90,8 +92,8 @@ data RETORNEFUNC =
 data RETORNEPROC =
     CRIARETORNEP
 
-data ATTRIB =
-    CRIAATTRIB VAR EXPR
+data ATRIB =
+    CRIAATRIB VAR EXPR
     
 data INC =
     CRIAINC VAR
@@ -101,10 +103,6 @@ data DECR =
 
 data CHAMADA =
     CRIACHAMADA {-ID-}Token [EXPR]
-
-data ES = 
-    NOVOLEIA NodeLEIA |
-    NOVOESCREVA NodeESCREVA
 
 data NodeLEIA = 
     CRIALEIA [VAR]
@@ -135,19 +133,30 @@ data EXPR =
     CRIANOT EXPR |
     CRIATEXTO {-TEXTO-}Token |
     CRIAINT {-INTEIRO-}Token |
-    CRIACARACTERE {-CARACETERE-}Token |
+    CRIACARACTERE {-CARACTERE-}Token |
     CRIALOGICO {-LOGICO-}Token |
     CRIAREAL {-REAL-}Token |
     CRIAVAR VAR |
     CRIACHAMADAFUNC CHAMADA |
-    CRIANOVO {-TIPO-}Token [EXPR] |
+    CRIANOVO {-TIPO-}Token OptionalSQBRACK |
+    CRIAVALOR {-VALOR-}Token OptionalSQBRACK |
+    CRIAREFERENCIA {-REFERENCIA-}Token OptionalSQBRACK |
     CRIACONVERSAO {-TIPO-}Token EXPR
 
 data VAR =
-    Var {-ID-}Token [EXPR]
+    Var [SingleVAR]
     
+data SingleVAR =
+     SingleVar {-ID-}Token OptionalSQBRACK
+
+data OptionalSQBRACK =
+    OptionalSQBrack [EXPR]
+
 data NodeSE =
-    CRIASE EXPR [STMT] [STMT]
+    CRIASE EXPR [STMT] OptionalSENAO
+
+data OptionalSENAO =
+    OptionalSenao [STMT]
 
 data NodeENQUANTO =
     CRIAENQUANTO EXPR [STMT]
@@ -159,5 +168,5 @@ data NodeSAIA =
     CRIASAIA {-SAIA-}Token
 
 data NodeDELETE =
-    CRIADELETE {-DELETE-}Token VAR
+    CRIADELETE VAR
 

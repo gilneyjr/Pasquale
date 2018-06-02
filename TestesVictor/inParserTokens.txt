@@ -1,0 +1,64 @@
+    ESTRUTURA (Int,Int)             |
+    FIMESTRUTURA (Int,Int)          |
+    FUNCAO (Int,Int)                |
+    FIMFUNCAO (Int,Int)             |
+    PROCEDIMENTO (Int,Int)          |
+    FIMPROCEDIMENTO (Int,Int)       |
+    OPERADOR (Int,Int)              |
+    FIMOPERADOR (Int,Int)           |
+    RECEBE (Int,Int)                |
+    RETORNA (Int,Int)               |
+    RETORNE (Int,Int)               |
+    PRINCIPAL (Int,Int)             |
+    FIMPRINCIPAL (Int,Int)          |
+    BLOCO (Int,Int)                 |
+    FIMBLOCO (Int,Int)              |
+    SAIA (Int,Int)                  |
+    CONTINUE (Int,Int)              |
+    SE (Int,Int)                    |
+    ENTAO (Int,Int)                 |
+    SENAO (Int,Int)                 |
+    FIMSE (Int,Int)                 |
+    ENQUANTO (Int,Int)              |
+    EXECUTE (Int,Int)               |
+    FIMENQUANTO (Int,Int)           |
+    DEFINA (Int,Int)                |
+    SlowOU (Int,Int)                |
+    SlowE (Int,Int)                 |
+    OU (Int,Int)                    |
+    E (Int,Int)                     |
+    LOGICO (Int,Int) Bool           |
+    PONT (Int,Int)                  |
+    NOVO (Int,Int)                  |
+    DELETE (Int,Int)                |
+    CONST (Int,Int)                 |
+    LEIA (Int,Int)                  |
+    ESCREVA (Int,Int)               |
+    REFERENCIA (Int,Int)            |
+    VALOR (Int,Int)                 |
+    Attrib (Int,Int)                |
+    Geq (Int,Int)                   |
+    Leq (Int,Int)                   |
+    Diff (Int,Int)                  |
+    Equal (Int,Int)                 |
+    Great (Int,Int)                 |
+    Less (Int,Int)                  |
+    Add (Int,Int)                   |
+    Sub (Int,Int)                   |
+    Mult (Int,Int)                  |
+    Div (Int,Int)                   |
+    MOD (Int,Int)                   |
+    NOT (Int,Int)                   |
+    OpenBrack (Int,Int)             |
+    CloseBrack (Int,Int)            |
+    OpenSqBrack (Int,Int)           |
+    CloseSqBrack (Int,Int)          |
+    Comma (Int,Int)                 |
+    Dot (Int,Int)                   |
+    EndCommand (Int,Int)            |
+    REAL (Int,Int) Float            |
+    INTEIRO (Int,Int) Integer       |
+    CARACTERE (Int,Int) Char        |
+    TEXTO (Int,Int) String          |
+    TIPO (Int,Int) String           |
+    ID (Int,Int) String             |
