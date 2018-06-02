@@ -37,8 +37,8 @@ parseFuncs = do
 
 parseSubprog :: ParseArgs SUBPROG
 parseSubprog = 
-    (try parseCriafunc) <|>
-    (try parseCriaoper) <|>
+    parseCriafunc <|>
+    parseCriaoper <|>
     parseCriaproc
 
 parseCriafunc :: ParseArgs SUBPROG
@@ -65,7 +65,7 @@ parseDec = do
 
 parseModf :: ParseArgs MODF
 parseModf = 
-    (try parseNovopont) <|>
+    parseNovopont <|>
     parseNovoconst
 
 parseNovopont :: ParseArgs MODF
@@ -148,15 +148,15 @@ parseOper = do
 
 parseOp :: ParseArgs OP
 parseOp = 
-    (try parseNovoadd) <|>
-    (try parseNovosub) <|>
-    (try parseNovomult) <|>
-    (try parseNovodiv) <|>
-    (try parseNovogeq) <|>
-    (try parseNovoleq) <|>
-    (try parseNovodiff) <|>
-    (try parseNovoequal) <|>
-    (try parseNovogreat) <|>
+    parseNovoadd <|>
+    parseNovosub <|>
+    parseNovomult <|>
+    parseNovodiv <|>
+    parseNovogeq <|>
+    parseNovoleq <|>
+    parseNovodiff <|>
+    parseNovoequal <|>
+    parseNovogreat <|>
     parseNovoless
 
 parseNovoadd :: ParseArgs OP
@@ -224,21 +224,21 @@ parseMain = do
 
 parseStmt :: ParseArgs STMT
 parseStmt = 
+    parseNovobloco <|>
+    parseNovose <|>
+    parseNovoenquanto <|>
+    parseNovosaia <|>
+    parseNovocontinue <|>
+    parseNovodelete <|>
+    parseNovoescreva <|>
+    parseNovoleia <|>
+    (try parseNovoretorneproc) <|>
+    parseNovoretornefunc <|>
     (try parseNovodec) <|>
-    (try parseNovoatrib) <|>
     (try parseNovoinc) <|>
     (try parseNovodecr) <|>
-    (try parseNovochamada) <|>
-    (try parseNovose) <|>
-    (try parseNovoenquanto) <|>
-    (try parseNovoretornefunc) <|>
-    (try parseNovoretorneproc) <|>
-    (try parseNovosaia) <|>
-    (try parseNovocontinue) <|>
-    (try parseNovodelete) <|>
-    (try parseNovoescreva) <|>
-    (try parseNovoleia) <|>
-    parseNovobloco
+    (try parseNovoatrib) <|>
+    parseNovochamada
 
 parseNovodec :: ParseArgs STMT
 parseNovodec = do
@@ -403,7 +403,7 @@ parseSinglevar = do
 
 parseOptionalsqbrack :: ParseArgs OptionalSQBRACK
 parseOptionalsqbrack =
-    (try parseUsesqbrack) <|>
+    parseUsesqbrack <|>
     parseEmptysqbrack
 
 parseUsesqbrack :: ParseArgs OptionalSQBRACK
@@ -429,7 +429,7 @@ parseNodese = do
 
 parseOptionalsenao :: ParseArgs OptionalSENAO
 parseOptionalsenao =
-    (try parseUsesenao) <|>
+    parseUsesenao <|>
     parseEmptysenao
 
 parseUsesenao :: ParseArgs OptionalSENAO
@@ -599,20 +599,20 @@ parseCriamod = do
 
 parseUnary :: ParseArgs EXPR
 parseUnary = 
-    (try parseCrianeg) <|> 
-    (try parseCrianot) <|> 
-    (try parseCriatexto) <|> 
-    (try parseCriacaractere) <|>
-    (try parseCriaint) <|> 
-    (try parseCrialogico) <|> 
-    (try parseCriareal) <|> 
+    parseCrianeg <|> 
+    parseCrianot <|> 
+    parseCriatexto <|> 
+    parseCriacaractere <|>
+    parseCriaint <|> 
+    parseCrialogico <|> 
+    parseCriareal <|> 
+    parseCrianovo <|> 
+    parseCriaval <|> 
+    parseCriaref <|>
     (try parseCriachamadafunc) <|> 
-    (try parseCriavar) <|> 
-    (try parseCrianovo) <|> 
-    (try parseCriaval) <|> 
-    (try parseCriaref) <|>
-    (try parseCriaparenteses) <|>
-    parseCriaconversao
+    parseCriavar <|> 
+    (try parseCriaconversao) <|>
+    parseCriaparenteses
 
 parseCrianeg :: ParseArgs EXPR
 parseCrianeg = do
@@ -686,9 +686,10 @@ parseCriaref = do
 
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
-    parseOpenbrack
-    a <- parseExpr
-    parseClosebrack
+    c <- parseOpenbrack
+    a <- {-trace (show c)-} parseExpr
+    b <- parseClosebrack
+    --trace (show c ++ show a ++ show b) parseNothing
     return $ CRIAPARENTESES a
 
 parseCriaconversao :: ParseArgs EXPR

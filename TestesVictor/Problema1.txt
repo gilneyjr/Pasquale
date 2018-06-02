@@ -1,8 +1,4 @@
 //problema 1
 PRINCIPAL
-    INTEIRO c := 3;
-    REAL x := 1.0;
-    REAL y := 42.5;
-    REAL resposta := x*x - y + (REAL) c;
-    ESCREVA (resposta);
+    INTEIRO a := ((1));
 FIMPRINCIPAL

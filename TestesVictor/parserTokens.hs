@@ -324,6 +324,14 @@ parseId = tokenPrim show update_pos get_token where
     get_token ( ID x y ) = Just ( ID x y )
     get_token _ = Nothing
 
+parseAny :: ParsecT [Token] u Identity Token
+parseAny = tokenPrim show update_pos get_token where
+    get_token = Just
+
+parseNothing :: ParsecT [Token] u Identity Token
+parseNothing = tokenPrim show update_pos get_token where
+    get_token _ = Nothing
+
 update_pos :: SourcePos -> Token -> [Token] -> SourcePos
 update_pos pos _ (tok:_) = pos
 update_pos pos _ []      = pos
