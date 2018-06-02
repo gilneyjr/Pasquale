@@ -7,6 +7,7 @@ import Control.Monad
 import Arvore
 import ParserTokens
 import Lexico
+import Debug.Trace(trace)
 
 parsePasquale :: String -> Either ParseError PROGRAMA
 parsePasquale input = runParser parsePrograma () "" (getTokens input)
@@ -84,8 +85,8 @@ parseDec_ids = do
 
 parseVar_ :: ParseArgs VAR_
 parseVar_ = 
-    (try parseVar_sem) <|>
-    parseVar_com
+    (try parseVar_com) <|>
+    parseVar_sem
 
 parseVar_sem :: ParseArgs VAR_
 parseVar_sem = do
@@ -101,7 +102,7 @@ parseEstr :: ParseArgs ESTR
 parseEstr = do
     parseEstrutura
     a <- parseTipo
-    b <- many parseDec
+    b <- endBy parseDec parseEndcommand
     parseFimestrutura
     return $ NOVOESTR a b 
 
@@ -443,8 +444,11 @@ parseEmptysenao = do
 
 parseNodeenquanto :: ParseArgs NodeENQUANTO
 parseNodeenquanto = do
+    parseEnquanto
     a <- parseExpr
+    parseExecute
     b <- many parseStmt
+    parseFimenquanto
     return $ CRIAENQUANTO a b 
 
 parseNodecontinue :: ParseArgs NodeCONTINUE
@@ -471,16 +475,16 @@ parseOuseq = (try parseCriaou) <|> (try parseCriaslowou) <|> parseEseq
 
 parseCriaou :: ParseArgs EXPR
 parseCriaou = do
-    a <- parseOuseq
+    a <- parseEseq
     parseOu
-    b <- parseEseq
+    b <- parseOuseq
     return $ CRIAOU a b 
 
 parseCriaslowou :: ParseArgs EXPR
 parseCriaslowou = do
-    a <- parseOuseq
+    a <- parseEseq
     parseSlowou
-    b <- parseEseq
+    b <- parseOuseq
     return $ CRIASLOWOU a b 
 
 parseEseq :: ParseArgs EXPR
@@ -488,16 +492,16 @@ parseEseq = (try parseCriae) <|> (try parseCriae_) <|> parseCompseq
 
 parseCriae :: ParseArgs EXPR
 parseCriae = do
-    a <- parseEseq
+    a <- parseCompseq
     parseE
-    b <- parseCompseq
+    b <- parseEseq
     return $ CRIAE a b 
 
 parseCriae_ :: ParseArgs EXPR
 parseCriae_ = do
-    a <- parseEseq
+    a <- parseCompseq
     parseSlowe
-    b <- parseCompseq
+    b <- parseEseq
     return $ CRIASLOWE a b 
 
 parseCompseq :: ParseArgs EXPR
@@ -557,16 +561,16 @@ parseAddseq = (try parseCriaadd) <|> (try parseCriasub) <|> parseMultseq
 
 parseCriaadd :: ParseArgs EXPR
 parseCriaadd = do
-    a <- parseAddseq
+    a <- parseMultseq
     parseAdd
-    b <- parseMultseq
+    b <- parseAddseq
     return $ CRIAADD a b 
 
 parseCriasub :: ParseArgs EXPR
 parseCriasub = do
-    a <- parseAddseq
+    a <- parseMultseq
     parseSub
-    b <- parseMultseq
+    b <- parseAddseq
     return $ CRIASUB a b
 
 parseMultseq :: ParseArgs EXPR
@@ -574,23 +578,23 @@ parseMultseq = (try parseCriamult) <|> (try parseCriadiv) <|> (try parseCriamod)
 
 parseCriamult :: ParseArgs EXPR
 parseCriamult = do
-    a <- parseMultseq
+    a <- parseUnary
     parseMult
-    b <- parseUnary
+    b <- parseMultseq
     return $ CRIAMULT a b 
 
 parseCriadiv :: ParseArgs EXPR
 parseCriadiv = do
-    a <- parseMultseq
+    a <- parseUnary
     parseDiv
-    b <- parseUnary
+    b <- parseMultseq
     return $ CRIADIV a b
 
 parseCriamod :: ParseArgs EXPR
 parseCriamod = do
-    a <- parseMultseq
+    a <- parseUnary
     parseMod
-    b <- parseUnary
+    b <- parseMultseq
     return $ CRIAMOD a b
 
 parseUnary :: ParseArgs EXPR
@@ -598,11 +602,12 @@ parseUnary =
     (try parseCrianeg) <|> 
     (try parseCrianot) <|> 
     (try parseCriatexto) <|> 
-    (try parseCriacaractere) <|> 
+    (try parseCriacaractere) <|>
+    (try parseCriaint) <|> 
     (try parseCrialogico) <|> 
     (try parseCriareal) <|> 
-    (try parseCriavar) <|> 
     (try parseCriachamadafunc) <|> 
+    (try parseCriavar) <|> 
     (try parseCrianovo) <|> 
     (try parseCriaval) <|> 
     (try parseCriaref) <|>
@@ -688,6 +693,8 @@ parseCriaparenteses = do
 
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do
+    parseOpenbrack
     a <- parseTipo
+    parseClosebrack
     b <- parseExpr
     return $ CRIACONVERSAO a b
