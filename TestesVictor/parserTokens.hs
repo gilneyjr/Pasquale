@@ -154,9 +154,9 @@ parseLogico = tokenPrim show update_pos get_token where
     get_token ( LOGICO x y ) = Just ( LOGICO x y )
     get_token _ = Nothing
 
-parsePont :: ParsecT [Token] u Identity Token
-parsePont = tokenPrim show update_pos get_token where
-    get_token ( PONT x ) = Just ( PONT x )
+parsePonteiro :: ParsecT [Token] u Identity Token
+parsePonteiro = tokenPrim show update_pos get_token where
+    get_token ( PONTEIRO x ) = Just ( PONTEIRO x )
     get_token _ = Nothing
 
 parseNovo :: ParsecT [Token] u Identity Token

@@ -34,7 +34,7 @@ data DEC =
     deriving (Eq,Show)
 
 data MODF = 
-    NOVOPONT {-PONT-}Token |
+    NOVOPONT {-PONTEIRO-}Token |
     NOVOCONST {-CONST-}Token
     deriving (Eq,Show)
     
@@ -52,7 +52,7 @@ data ESTR =
     deriving (Eq,Show)
 
 data FUNC =
-    NOVOFUNC {-ID-}Token [PARAM] {-TIPO-}Token [STMT]
+    NOVOFUNC {-ID-}Token [PARAM] [MODF] {-TIPO-}Token [STMT]
     deriving (Eq,Show)
 
 data PROC =
@@ -60,7 +60,7 @@ data PROC =
     deriving (Eq,Show)
 
 data OPER =
-    NOVOOPER OP [PARAM] {-TIPO-}Token [STMT]
+    NOVOOPER OP [PARAM] [MODF] {-TIPO-}Token [STMT]
     deriving (Eq,Show)
 
 data OP = 
@@ -77,7 +77,7 @@ data OP =
     deriving (Eq,Show)
         
 data PARAM = 
-    NOVOPARAM {-TIPO-}Token VAR
+    NOVOPARAM [MODF] {-TIPO-}Token VAR
     deriving (Eq,Show)
 
 data MAIN = 
@@ -86,7 +86,7 @@ data MAIN =
 
 data STMT = 
     NOVODEC DEC |
-    NOVOATRIB ATRIB |
+    NOVOATRIBSTMT EXPR EXPR |
     NOVOINC INC |
     NOVODECR DECR |
     NOVOCHAMADA CHAMADA |
@@ -163,17 +163,22 @@ data EXPR =
     CRIAREAL {-REAL-}Token |
     CRIAVAR VAR |
     CRIACHAMADAFUNC CHAMADA |
-    CRIANOVO {-TIPO-}Token OptionalSQBRACK |
-    CRIAVALOR VAR |
+    CRIANOVO [MODF] {-TIPO-}Token OptionalSQBRACK |
+    CRIAVALOREXPR VAL |
     CRIAREFERENCIA VAR |
     CRIAPARENTESES EXPR |
-    CRIACONVERSAO {-TIPO-}Token EXPR
+    CRIACONVERSAO [MODF] {-TIPO-}Token EXPR
     deriving (Eq,Show)
 
 data VAR =
     Var [SingleVAR]
     deriving (Eq,Show)
-    
+
+data VAL =
+    CRIAULTVAL VAR |
+    CRIASEQVAL VAL
+    deriving (Eq,Show)
+
 data SingleVAR =
      SingleVar {-ID-}Token OptionalSQBRACK
      deriving (Eq,Show)

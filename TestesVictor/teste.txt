@@ -1,0 +1,62 @@
+ESTRUTURA T
+INTEIRO t := 1, y;
+X t, y, z := 2;
+FIMESTRUTURA
+
+ESTRUTURA K
+INTEIRO t, y := 2;
+X t, y, z := 2;
+FIMESTRUTURA
+
+INTEIRO a, b := 1, v[200];
+
+FUNCAO x RECEBE (CONST PONTEIRO REAL a[10], PONTEIRO CONST TEXTO b) RETORNA T
+    LEIA(a);
+    RETORNE x;
+FIMFUNCAO
+
+PROCEDIMENTO x RECEBE (A a, B b)
+    LEIA(a);
+    RETORNE;
+FIMPROCEDIMENTO
+
+OPERADOR * RECEBE (A a, B b) RETORNA PONTEIRO INTEIRO
+    LEIA(a);
+    RETORNE;
+FIMOPERADOR
+
+FUNCAO aaa RECEBE (INTEIRO a, T b) RETORNA T
+    LEIA(a);
+    RETORNE b;
+FIMFUNCAO
+
+PRINCIPAL
+    INTEIRO x := 1+vet[100];
+    INTEIRO y := (INTEIRO) 1.2;
+    PONTEIRO INTEIRO z := NOVO INTEIRO[100,20,10+10];
+    ENQUANTO 1+2+3+4 /= z EXECUTE
+        SE x < y ENTAO
+            ESCREVA(y);
+        SENAO
+            LEIA(x);
+        FIMSE
+        SE x <= y ENTAO
+            ESCREVA(y);
+        FIMSE
+    FIMENQUANTO
+    BLOCO
+        BLOCO
+            T z;
+            z.y := 10;
+            T j := z;
+        FIMBLOCO
+        x := 10;
+    FIMBLOCO
+    x := VALOR(z[10]);
+    z[10] := REFERENCIA(x);
+    VALOR(x) := 10;
+    PONTEIRO PONTEIRO INTEIRO q := NOVO PONTEIRO PONTEIRO INTEIRO;
+    VALOR(z[2]) := VALOR(VALOR(q));
+    REAL f := -x + 1*9 + 1.2*10 - 2;
+FIMPRINCIPAL
+

@@ -25,7 +25,7 @@ parseEstrs = do
 
 parseDecs :: ParseArgs DECS
 parseDecs = do
-    a <- sepBy parseDec parseEndcommand
+    a <- endBy parseDec parseEndcommand
     b <- parseFuncs
     return $ INICIODECS a b 
 
@@ -70,7 +70,7 @@ parseModf =
 
 parseNovopont :: ParseArgs MODF
 parseNovopont = do
-    a <- parsePont
+    a <- parsePonteiro
     return $ NOVOPONT a 
 
 parseNovoconst :: ParseArgs MODF
@@ -104,7 +104,7 @@ parseEstr = do
     a <- parseTipo
     b <- endBy parseDec parseEndcommand
     parseFimestrutura
-    return $ NOVOESTR a b 
+    return $ NOVOESTR a b
 
 parseFunc :: ParseArgs FUNC
 parseFunc = do
@@ -115,10 +115,11 @@ parseFunc = do
     b <- sepBy parseParam parseComma
     parseClosebrack
     parseRetorna
-    c <- parseTipo
-    d <- many parseStmt
+    c <- many parseModf
+    d <- parseTipo
+    e <- many parseStmt
     parseFimfuncao
-    return $ NOVOFUNC a b c d 
+    return $ NOVOFUNC a b c d e
 
 parseProc :: ParseArgs PROC
 parseProc = do
@@ -141,10 +142,11 @@ parseOper = do
     b <- sepBy parseParam parseComma
     parseClosebrack
     parseRetorna
-    c <- parseTipo
-    d <- many parseStmt
+    c <- many parseModf
+    d <- parseTipo
+    e <- many parseStmt
     parseFimoperador
-    return $ NOVOOPER a b c d 
+    return $ NOVOOPER a b c d e
 
 parseOp :: ParseArgs OP
 parseOp = 
@@ -211,9 +213,10 @@ parseNovoless = do
 
 parseParam :: ParseArgs PARAM
 parseParam = do
-    a <- parseTipo
-    b <- parseVar
-    return $ NOVOPARAM a b 
+    a <- many parseModf
+    b <- parseTipo
+    c <- parseVar
+    return $ NOVOPARAM a b c
 
 parseMain :: ParseArgs MAIN
 parseMain = do
@@ -248,9 +251,11 @@ parseNovodec = do
 
 parseNovoatrib :: ParseArgs STMT
 parseNovoatrib = do
-    a <- parseAtrib
+    a <- parseCriavalorexpr <|> parseCriavar
+    parseAttrib
+    b <- parseExpr
     parseEndcommand
-    return $ NOVOATRIB a 
+    return $ NOVOATRIBSTMT a b
 
 parseNovoinc :: ParseArgs STMT
 parseNovoinc = do
@@ -574,31 +579,31 @@ parseCriasub = do
     return $ CRIASUB a b
 
 parseMultseq :: ParseArgs EXPR
-parseMultseq = (try parseCriamult) <|> (try parseCriadiv) <|> (try parseCriamod) <|> parseUnary
+parseMultseq = (try parseCriamult) <|> (try parseCriadiv) <|> (try parseCriamod) <|> parseAtomico
 
 parseCriamult :: ParseArgs EXPR
 parseCriamult = do
-    a <- parseUnary
+    a <- parseAtomico
     parseMult
     b <- parseMultseq
     return $ CRIAMULT a b 
 
 parseCriadiv :: ParseArgs EXPR
 parseCriadiv = do
-    a <- parseUnary
+    a <- parseAtomico
     parseDiv
     b <- parseMultseq
     return $ CRIADIV a b
 
 parseCriamod :: ParseArgs EXPR
 parseCriamod = do
-    a <- parseUnary
+    a <- parseAtomico
     parseMod
     b <- parseMultseq
     return $ CRIAMOD a b
 
-parseUnary :: ParseArgs EXPR
-parseUnary = 
+parseAtomico :: ParseArgs EXPR
+parseAtomico = 
     parseCrianeg <|> 
     parseCrianot <|> 
     parseCriatexto <|> 
@@ -607,7 +612,7 @@ parseUnary =
     parseCrialogico <|> 
     parseCriareal <|> 
     parseCrianovo <|> 
-    parseCriaval <|> 
+    parseCriavalorexpr <|> 
     parseCriaref <|>
     (try parseCriachamadafunc) <|> 
     parseCriavar <|> 
@@ -664,17 +669,34 @@ parseCriachamadafunc = do
 parseCrianovo :: ParseArgs EXPR
 parseCrianovo = do
     parseNovo
-    a <- parseTipo
-    b <- parseOptionalsqbrack
-    return $ CRIANOVO a b
+    a <- many parseModf
+    b <- parseTipo
+    c <- parseOptionalsqbrack
+    return $ CRIANOVO a b c
+
+parseCriavalorexpr :: ParseArgs EXPR
+parseCriavalorexpr = do
+    a <- parseCriavalor
+    return $ CRIAVALOREXPR a
+
+parseCriavalor :: ParseArgs VAL
+parseCriavalor = (try parseCriaultval) <|> parseCriaseqval
     
-parseCriaval :: ParseArgs EXPR
-parseCriaval = do
+parseCriaultval :: ParseArgs VAL
+parseCriaultval = do
     parseValor
     parseOpenbrack
     a <- parseVar
     parseClosebrack
-    return $ CRIAVALOR a
+    return $ CRIAULTVAL a
+
+parseCriaseqval :: ParseArgs VAL
+parseCriaseqval = do
+    parseValor
+    parseOpenbrack
+    a <- parseCriavalor
+    parseClosebrack
+    return $ CRIASEQVAL a
 
 parseCriaref :: ParseArgs EXPR
 parseCriaref = do
@@ -687,15 +709,15 @@ parseCriaref = do
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
     c <- parseOpenbrack
-    a <- {-trace (show c)-} parseExpr
+    a <- parseExpr
     b <- parseClosebrack
-    --trace (show c ++ show a ++ show b) parseNothing
     return $ CRIAPARENTESES a
 
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do
     parseOpenbrack
-    a <- parseTipo
+    a <- many parseModf
+    b <- parseTipo
     parseClosebrack
-    b <- parseExpr
-    return $ CRIACONVERSAO a b
+    c <- parseExpr
+    return $ CRIACONVERSAO a b c

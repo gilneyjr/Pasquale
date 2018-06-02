@@ -47,7 +47,7 @@ tokens :-
   E                                 { \p s -> E (getPosition p) }
   VERDADEIRO                        { \p s -> LOGICO (getPosition p) (getBoolValue s) }
   FALSO                             { \p s -> LOGICO (getPosition p) (getBoolValue s) }
-  PONT                              { \p s -> PONT (getPosition p) }
+  PONTEIRO                          { \p s -> PONTEIRO (getPosition p) }
   NOVO                              { \p s -> NOVO (getPosition p) }
   DELETE                            { \p s -> DELETE (getPosition p) }
   CONST                             { \p s -> CONST (getPosition p) }
@@ -115,7 +115,7 @@ data Token =
     OU (Int,Int)                    |
     E (Int,Int)                     |
     LOGICO (Int,Int) Bool           |
-    PONT (Int,Int)                  |
+    PONTEIRO (Int,Int)              |
     NOVO (Int,Int)                  |
     DELETE (Int,Int)                |
     CONST (Int,Int)                 |
