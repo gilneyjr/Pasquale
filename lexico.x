@@ -1,6 +1,5 @@
 {
--- module Main (main, Token(..), alexScanTokens, getTokens) where
-module Lexico (Token(..), alexScanTokens, getTokens) where
+module Lexico where
 import System.IO.Unsafe
 import System.IO
 }
@@ -12,11 +11,12 @@ $digit = 0-9         -- digits
 $alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
+@string = \" [^\"]* \"
 
 -- Regular expressions that define the language tokens.
 tokens :-
   $white+                           ;
-  "--".*                            ;
+  "//".*                            ;
   ESTRUTURA                         { \p s -> ESTRUTURA (getPosition p) }
   FIMESTRUTURA                      { \p s -> FIMESTRUTURA (getPosition p) }
   FUNCAO                            { \p s -> FUNCAO (getPosition p) }
@@ -30,6 +30,8 @@ tokens :-
   RETORNE                           { \p s -> RETORNE (getPosition p) }
   PRINCIPAL                         { \p s -> PRINCIPAL (getPosition p) }
   FIMPRINCIPAL                      { \p s -> FIMPRINCIPAL (getPosition p) }
+  BLOCO                             { \p s -> BLOCO (getPosition p) }
+  FIMBLOCO                          { \p s -> FIMBLOCO (getPosition p) }
   SAIA                              { \p s -> SAIA (getPosition p) }
   CONTINUE                          { \p s -> CONTINUE (getPosition p) }
   SE                                { \p s -> SE (getPosition p) }
@@ -46,13 +48,14 @@ tokens :-
   E                                 { \p s -> E (getPosition p) }
   VERDADEIRO                        { \p s -> LOGICO (getPosition p) (getBoolValue s) }
   FALSO                             { \p s -> LOGICO (getPosition p) (getBoolValue s) }
-  PONT                              { \p s -> PONT (getPosition p) }
+  PONTEIRO                          { \p s -> PONTEIRO (getPosition p) }
   NOVO                              { \p s -> NOVO (getPosition p) }
   DELETE                            { \p s -> DELETE (getPosition p) }
   CONST                             { \p s -> CONST (getPosition p) }
   ESCREVA                           { \p s -> ESCREVA (getPosition p) }
   LEIA                              { \p s -> LEIA (getPosition p) }
   REFERENCIA                        { \p s -> REFERENCIA (getPosition p) }
+  VALOR                             { \p s -> VALOR (getPosition p) }
   ":="                              { \p s -> Attrib (getPosition p) }
   ">="                              { \p s -> Geq (getPosition p) }
   "<="                              { \p s -> Leq (getPosition p) }
@@ -76,10 +79,11 @@ tokens :-
   $digit+"."$digit+                 { \p s -> REAL (getPosition p) (read s) }
   $digit+                           { \p s -> INTEIRO (getPosition p) (read s) }
   \'.\'                             { \p s -> CARACTERE (getPosition p) (read s) }
-  \".*\"                            { \p s -> TEXTO (getPosition p) (read s) }
-  $upperalpha [$upperalpha \_]*     { \p s -> TIPO (getPosition p) s }
-  $loweralpha [$alpha \_]*          { \p s -> ID (getPosition p) s }
+  @string                           { \p s -> TEXTO (getPosition p) (read s) }
+  $upperalpha [$alpha \_ $digit]*   { \p s -> TIPO (getPosition p) s }
+  $loweralpha [$alpha \_ $digit]*   { \p s -> ID (getPosition p) s }
 {
+
 -- The Token type:
 data Token =
     ESTRUTURA (Int,Int)             |
@@ -95,6 +99,8 @@ data Token =
     RETORNE (Int,Int)               |
     PRINCIPAL (Int,Int)             |
     FIMPRINCIPAL (Int,Int)          |
+    BLOCO (Int,Int)                 |
+    FIMBLOCO (Int,Int)              |
     SAIA (Int,Int)                  |
     CONTINUE (Int,Int)              |
     SE (Int,Int)                    |
@@ -110,13 +116,14 @@ data Token =
     OU (Int,Int)                    |
     E (Int,Int)                     |
     LOGICO (Int,Int) Bool           |
-    PONT (Int,Int)                  |
+    PONTEIRO (Int,Int)              |
     NOVO (Int,Int)                  |
     DELETE (Int,Int)                |
     CONST (Int,Int)                 |
     LEIA (Int,Int)                  |
     ESCREVA (Int,Int)               |
-    REFERENCIA (Int, Int)           |
+    REFERENCIA (Int,Int)            |
+    VALOR (Int,Int)                 |
     Attrib (Int,Int)                |
     Geq (Int,Int)                   |
     Leq (Int,Int)                   |
@@ -153,16 +160,11 @@ getBoolValue str
     | str == "VERDADEIRO" = True
     | otherwise = False
 
--- Receives a file name and returns all Tokens present in this file
 getTokens :: String -> [Token]
 getTokens fn = unsafePerformIO (getTokensAux fn)
 
--- Assists getTokens to compute Tokens from the file.
+-- Assists getTokens to compute Tokens from the String.
 getTokensAux :: String -> IO [Token]
-getTokensAux fn = do {fh <- openFile fn ReadMode;
-                      s <- hGetContents fh;
-                      return (alexScanTokens s)}
---main = do
---  s <- getContents
---  print (alexScanTokens s)
+getTokensAux fn = return $ alexScanTokens fn
+
 }

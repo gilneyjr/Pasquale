@@ -1,0 +1,24 @@
+//problema 2
+
+PRINCIPAL
+    INTEIRO x, a, b, c, d;
+    ENQUANTO (x >= 0) EXECUTE
+        LEIA(x);
+        SE (x >= 0 E x <= 25) ENTAO
+            a++;
+        SENAO
+            SE (x > 25 E x <= 50) ENTAO
+                b++;
+            SENAO
+                SE (x > 50 E x <= 75) ENTAO
+                    c++;
+                SENAO
+                    SE (x > 75 E x <= 100)ENTAO
+                        d++;
+                    FIMSE
+                FIMSE
+            FIMSE
+        FIMSE
+        ESCREVA ((TEXTO) a + " " + (TEXTO) b + " " + (TEXTO) c + " " + (TEXTO) d);
+    FIMENQUANTO
+FIMPRINCIPAL
