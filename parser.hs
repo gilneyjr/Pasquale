@@ -490,11 +490,13 @@ parseTentaou a = (parseContinuaou a) <|> (parseFim a)
 parseContinuaou :: EXPR -> ParseArgs EXPR
 parseContinuaou a = do
     op <- parseOu <|> parseSlowou
-    b <- parseCriaou
-    if isOu op then
-        return $ CRIAOU a b 
-    else
-        return $ CRIASLOWOU a b
+    b <- parseCriae
+    if isOu op then do
+        c <- parseTentaou $ CRIAOU a b 
+        return c
+    else do
+        c <- parseTentaou $ CRIASLOWOU a b
+        return c
     where
         isOu (OU _) = True
         isOu _ = False
@@ -511,11 +513,13 @@ parseTentae a = (parseContinuae a) <|> (parseFim a)
 parseContinuae :: EXPR -> ParseArgs EXPR
 parseContinuae a = do
     op <- parseE <|> parseSlowe
-    b <- parseCriae
-    if isE op then
-        return $ CRIAE a b 
-    else
-        return $ CRIASLOWE a b
+    b <- parseComp
+    if isE op then do
+        c <- parseTentae $ CRIAE a b
+        return c 
+    else do
+        c <- parseTentae $ CRIASLOWE a b
+        return c
     where
         isE (E _) = True
         isE _ = False
@@ -576,11 +580,13 @@ parseTentaadd a = (parseContinuaadd a) <|> (parseFim a)
 parseContinuaadd :: EXPR -> ParseArgs EXPR
 parseContinuaadd a = do
     op <- parseAdd <|> parseSub
-    b <- parseCriaadd
-    if isAdd op then
-        return $ CRIAADD a b 
-    else
-        return $ CRIASUB a b
+    b <- parseCriamult
+    if isAdd op then do
+        c <- parseTentaadd $ CRIAADD a b
+        return c
+    else do
+        c <- parseTentaadd $ CRIASUB a b
+        return c
     where
         isAdd (Add _) = True
         isAdd _ = False
@@ -597,13 +603,16 @@ parseTentamult a = (parseContinuamult a) <|> (parseFim a)
 parseContinuamult :: EXPR -> ParseArgs EXPR
 parseContinuamult a = do
     op <- parseMult <|> parseDiv <|> parseMod
-    b <- parseCriamult
-    if isMult op then
-        return $ CRIAMULT a b 
-    else if isDiv op then
-        return $ CRIADIV a b
-    else
-        return $ CRIAMOD a b
+    b <- parseAtomico
+    if isMult op then do
+        c <- parseTentamult $ CRIAMULT a b 
+        return c
+    else if isDiv op then do
+        c <- parseTentamult $ CRIADIV a b
+        return c
+    else do
+        c <- parseTentamult $ CRIAMOD a b
+        return c
     where
         isMult (Mult _) = True
         isMult _ = False
