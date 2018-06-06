@@ -39,7 +39,7 @@ criarEscopo idEscopoAtual (pilhaEscopo, tipos) =
 	Estado  -> Estado atual do programa
 -}
 getEscopoById :: Integer -> Estado -> Escopo
-getEscopoById idEscopoAtual (pilhaEscopo, _) = getEscopo' idEscopoAtual pilhaEscopo
+getEscopoById idEscopoAtual estado = getEscopo' idEscopoAtual (fst estado)
 
 -- Função auxiliar para getEscopoById
 getEscopo' :: Integer -> [Escopo] -> Escopo
@@ -52,7 +52,7 @@ getEscopo' idEscopoAtual (escopo@(idEscopo, _, _):pilhaEscopo) =
 
 -- Retorna o escopo atual a partir do estado
 getEscopoAtual :: Estado -> Escopo
-getEscopoAtual ((escopoAtual:_), _) = escopoAtual
+getEscopoAtual = head . fst
 
 -- Retorna o Id do escopo atual
 getIdEscopoAtual :: Estado -> Integer
@@ -62,4 +62,27 @@ getIdEscopoAtual estado = idEscopoAtual where (idEscopoAtual, _, _) = getEscopoA
 removerEscopo :: Estado -> Estado
 removerEscopo ((escopo:pilhaEscopo), tipos) = (pilhaEscopo, tipos)
 
+-- Adicionar símbolo ao estado
+addSimbolo :: Simbolo -> Estado -> Estado
+addSimbolo simbolo estado@(escopos, tipos) = ((addSimboloEscopo simbolo (getEscopoAtual estado)):tail escopos, tipos)
 
+-- Adicionar símbolo ao escopo atual
+addSimboloEscopo :: Simbolo -> Escopo -> Escopo
+addSimboloEscopo simbolo escopo@(idEscopo, idEscopoAnterior, tabela) = (idEscopo, idEscopoAnterior, addSimboloTabela simbolo tabela)
+
+-- Adicionar simbolo à tabela de símbolos
+addSimboloTabela :: Simbolo -> [Simbolo] -> [Simbolo] 
+addSimboloTabela simbolo@(nome, _, _) tabela =
+        if getSimbolo nome tabela == Nothing then
+                simbolo:tabela
+        else
+                error "Símbolo já existente com esse nome"
+
+-- Busca por um símbolo na tabela de símbolos pelo nome
+getSimbolo :: String -> [Simbolo] -> Maybe Simbolo
+getSimbolo _    [] = Nothing
+getSimbolo nomeNovo (simbolo@(nome, _, _):tabela) =
+        if nomeNovo == nome then
+                Just simbolo
+        else
+                getSimbolo nomeNovo tabela
