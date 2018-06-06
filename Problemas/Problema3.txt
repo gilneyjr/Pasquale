@@ -1,4 +1,4 @@
-//Problema 3: Crie um programa que leia duas matrizes numéricas e, quando possível, imprima a soma e o produto dessas matrizes. Caso uma operação não possa ser realizada para as matrizes lidas, imprima uma mensagem informando da impossibilidade.
+//Problema 3
 
 PRINCIPAL
     INTEIRO lA, cA, lB,cB;
@@ -10,8 +10,8 @@ PRINCIPAL
     INTEIRO b[lB,cB];
     INTEIRO i := 1;
     INTEIRO j := 1;
-    ENQUANTO  (i <= lA) EXECUTE
-        ENQUANTO (j <= cA) EXECUTE
+    ENQUANTO  i <= lA EXECUTE
+        ENQUANTO j <= cA EXECUTE
             LEIA(a[i,j]);
             j++;
         FIMENQUANTO
@@ -20,18 +20,18 @@ PRINCIPAL
 
     i := 1;
     j := 1;
-    ENQUANTO  (i <= lB) EXECUTE
-        ENQUANTO (j <= cB) EXECUTE
+    ENQUANTO i <= lB EXECUTE
+        ENQUANTO j <= cB EXECUTE
             LEIA(b[i,j]);
             j++;
         FIMENQUANTO
         i++;
     FIMENQUANTO
 
-    SE (lA = lB E cA = cB) ENTAO
+    SE lA = lB E cA = cB ENTAO
         i:= 1; j := i;
-        ENQUANTO (i <= lA) EXECUTE
-            ENQUANTO (j <= cA) EXECUTE
+        ENQUANTO i <= lA EXECUTE
+            ENQUANTO j <= cA EXECUTE
                 ESCREVA ((TEXTO) (a[i,j] + b[i,j])  + " ");
                 j++;
             FIMENQUANTO
@@ -42,13 +42,13 @@ PRINCIPAL
         ESCREVA("Não é possível somar essas matrizes.\n");
     FIMSE
 
-    SE (lA = cB ) ENTAO
+    SE cA = lB ENTAO
         i:= 1; j := i;
         INTEIRO k := 1;
         INTEIRO resposta[lA, cB];
-        ENQUANTO (i <= lA) EXECUTE
-            ENQUANTO (j <= cB) EXECUTE
-                ENQUANTO (k <= lA) EXECUTE
+        ENQUANTO i <= lA EXECUTE
+            ENQUANTO j <= cB EXECUTE
+                ENQUANTO k <= cA EXECUTE
                     resposta[i,j] := resposta[i,j] + a[i,k] * b[k,j];
                     k++;
                 FIMENQUANTO
@@ -62,3 +62,4 @@ PRINCIPAL
         ESCREVA("Não é possível multiplicar essas matrizes.\n");
     FIMSE
 FIMPRINCIPAL
+

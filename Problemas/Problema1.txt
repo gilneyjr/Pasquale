@@ -1,4 +1,5 @@
-//problema 1
+//Problema 1
+
 PRINCIPAL
 	INTEIRO c := 3;
 	REAL x := 1.0;
@@ -6,3 +7,4 @@ PRINCIPAL
 	REAL resposta := x*x - y + (REAL) c;
 	ESCREVA (resposta);
 FIMPRINCIPAL
+

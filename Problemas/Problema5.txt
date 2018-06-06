@@ -1,12 +1,14 @@
+//Problema 5
+
 PROCEDIMENTO mdc RECEBE (INTEIRO n, INTEIRO m, PONTEIRO INTEIRO r)
-    SE (m >= n) ENTAO
-        SE ((m MOD n) = 0) ENTAO
+    SE m >= n ENTAO
+        SE m MOD n = 0 ENTAO
             VALOR(r) := n;
         SENAO
             VALOR(r) := mdc(n, (m MOD n), r);
         FIMSE
     SENAO
-        SE ((n MOD m) = 0) ENTAO
+        SE n MOD m = 0 ENTAO
             VALOR(r) := m;
         SENAO
             VALOR(r) := mdc(m, (n MOD m), r);
@@ -15,8 +17,15 @@ PROCEDIMENTO mdc RECEBE (INTEIRO n, INTEIRO m, PONTEIRO INTEIRO r)
 FIMPROCEDIMENTO
 
 PRINCIPAL
-    INTEIRO n := 17, m := 23;
-    PONTEIRO INTEIRO r;
-    mdc(n,m,r);
-    ESCREVA(VALOR(r));
+    INTEIRO n, m;
+    LEIA(n, m);
+    SE n <= 0 OU m <= 0 ENTAO
+        ESCREVA("Por favor forneça valores estritamente positivos.\n");
+    SENAO
+        PONTEIRO INTEIRO r;
+        r := NOVO PONTEIRO INTEIRO;
+        mdc(n,m,r);
+        ESCREVA(VALOR(r));
+    FIMSE
 FIMPRINCIPAL
+
