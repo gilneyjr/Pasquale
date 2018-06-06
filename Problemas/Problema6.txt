@@ -6,8 +6,6 @@ ESTRUTURA NODE
     LOGICO alocou_esq, alocou_dir;
 FIMESTRUTURA
 
-PONTEIRO NODE raiz;
-
 PROCEDIMENTO insere RECEBE (PONTEIRO NODE ptr, INTEIRO val, INTEIRO nivel)
     nivel++;
     NODE node := VALOR(ptr);
@@ -56,11 +54,13 @@ PROCEDIMENTO get_max RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
 FIMPROCEDIMENTO
 
 PRINCIPAL
+    PONTEIRO NODE raiz;
     ESCREVA("Digite a quantidade de elementos");
     INTEIRO n;
     LEIA(n);
     SE n > 0 ENTAO
         INTEIRO i := 0;
+        
         ENQUANTO i < n EXECUTE
             INTEIRO v;
             LEIA(v);
@@ -75,15 +75,20 @@ PRINCIPAL
             FIMSE
             i++;
         FIMENQUANTO
+        
         ESCREVA("Mínimo: ");
         get_min(raiz, 1);
+        
         ESCREVA("Máximo: ");
         get_max(raiz, 1);
+        
         NODE fila[n];
         INTEIRO j := 1, ult_nvl := 0;
+        
         i := 1;
         fila[j] := VALOR(raiz);
         j++;
+        
         ENQUANTO i <= n EXECUTE
             NODE cur := fila[i];
             i++;
@@ -105,8 +110,9 @@ PRINCIPAL
                 j++;
             FIMSE
         FIMENQUANTO
+        
         ESCREVA("\n");
     FIMSE
-    ESCREVA("Fim");
+    ESCREVA("Fim\n");
 FIMPRINCIPAL
 

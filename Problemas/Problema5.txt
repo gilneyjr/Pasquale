@@ -26,6 +26,7 @@ PRINCIPAL
         r := NOVO PONTEIRO INTEIRO;
         mdc(n,m,r);
         ESCREVA(VALOR(r));
+        ESCREVA("\n");
     FIMSE
 FIMPRINCIPAL
 

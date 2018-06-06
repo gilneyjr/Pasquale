@@ -21,6 +21,6 @@ PRINCIPAL
         FIMSE
         LEIA(x);
     FIMENQUANTO
-    ESCREVA( (TEXTO) a + " " + (TEXTO) b + " " + (TEXTO) c + " " + (TEXTO) d );
+    ESCREVA( (TEXTO) a + " " + (TEXTO) b + " " + (TEXTO) c + " " + (TEXTO) d  + "\n" );
 FIMPRINCIPAL
 

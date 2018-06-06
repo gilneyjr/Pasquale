@@ -32,10 +32,10 @@ PRINCIPAL
         i:= 1; j := i;
         ENQUANTO i <= lA EXECUTE
             ENQUANTO j <= cA EXECUTE
-                ESCREVA ((TEXTO) (a[i,j] + b[i,j])  + " ");
+                ESCREVA((TEXTO) (a[i,j] + b[i,j])  + " ");
                 j++;
             FIMENQUANTO
-            ESCREVA ("\n");
+            ESCREVA("\n");
             i++;
         FIMENQUANTO
     SENAO
@@ -52,10 +52,10 @@ PRINCIPAL
                     resposta[i,j] := resposta[i,j] + a[i,k] * b[k,j];
                     k++;
                 FIMENQUANTO
-                ESCREVA ((TEXTO) resposta[i,j]  + " ");
+                ESCREVA((TEXTO) resposta[i,j]  + " ");
                 j++;
             FIMENQUANTO
-            ESCREVA ("\n");
+            ESCREVA("\n");
             i++;
         FIMENQUANTO
     SENAO
