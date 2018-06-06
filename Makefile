@@ -4,4 +4,4 @@ lexico:
 	alex lexico.x
 	
 main:
-	ghc Main.hs parser.hs parserTokens.hs lexico.hs Arvore.hs -o Pasquale && rm *.hi *.o
+	ghc Main.hs Parser.hs ParserTokens.hs Lexico.hs Arvore.hs -o Pasquale && rm *.hi *.o
