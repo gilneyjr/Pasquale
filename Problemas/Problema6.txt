@@ -40,7 +40,7 @@ FIMPROCEDIMENTO
 PROCEDIMENTO get_min RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
     NODE cur := VALOR(ptr);
     SE cur.alocou_esq ENTAO
-        get_min(cur.esq, nivel+1);
+        get_min(cur.esq, nivel + 1);
     SENAO
         ESCREVA((TEXTO)cur.valor + " (nivel: " + (TEXTO)cur.nivel + ")\n");
     FIMSE
@@ -49,7 +49,7 @@ FIMPROCEDIMENTO
 PROCEDIMENTO get_max RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
     NODE cur := VALOR(ptr);
     SE cur.alocou_dir ENTAO
-        get_min(cur.dir, nivel+1);
+        get_min(cur.dir, nivel + 1);
     SENAO
         ESCREVA((TEXTO)cur.valor + " (nivel: " + (TEXTO)cur.nivel + ")\n");
     FIMSE
