@@ -2,50 +2,68 @@
 
 PRINCIPAL
     INTEIRO lA, cA, lB,cB;
+
+    ESCREVA("Digite a quantidade de linhas da primeira matriz: \n");
     LEIA(lA);
+    ESCREVA("Digite a quantidade de colunas da primeira matriz: \n");
     LEIA(cA);
+    ESCREVA("Digite a quantidade de linhas da segunda matriz: \n");
     LEIA(lB);
+    ESCREVA("Digite a quantidade de colunas da segunda matriz: \n");
     LEIA(cB);
+
     INTEIRO a[lA,cA];
     INTEIRO b[lB,cB];
+
+    //leitura da primeira matriz
     INTEIRO i := 1;
     INTEIRO j := 1;
+    ESCREVA("Digite os elementos da primeira matriz:\n");
     ENQUANTO  i <= lA EXECUTE
         ENQUANTO j <= cA EXECUTE
             LEIA(a[i,j]);
             j++;
         FIMENQUANTO
+        j := 1;
         i++;
     FIMENQUANTO
 
+    //leitura da segunda matriz
     i := 1;
     j := 1;
+    ESCREVA("Digite os elementos da segunda matriz:\n");
     ENQUANTO i <= lB EXECUTE
         ENQUANTO j <= cB EXECUTE
             LEIA(b[i,j]);
             j++;
         FIMENQUANTO
+        j := 1;
         i++;
     FIMENQUANTO
 
+    //Soma das matrizes
     SE lA = lB E cA = cB ENTAO
         i:= 1; j := i;
+        ESCREVA("Resultado da soma das matrizes: \n");
         ENQUANTO i <= lA EXECUTE
             ENQUANTO j <= cA EXECUTE
                 ESCREVA((TEXTO) (a[i,j] + b[i,j])  + " ");
                 j++;
             FIMENQUANTO
             ESCREVA("\n");
+            j := 1;
             i++;
         FIMENQUANTO
     SENAO
         ESCREVA("Não é possível somar essas matrizes.\n");
     FIMSE
 
+    //Multiplicação das matrizes
     SE cA = lB ENTAO
         i:= 1; j := i;
         INTEIRO k := 1;
         INTEIRO resposta[lA, cB];
+        ESCREVA("Resultado da multiplicação das matrizes: \n");
         ENQUANTO i <= lA EXECUTE
             ENQUANTO j <= cB EXECUTE
                 ENQUANTO k <= cA EXECUTE
@@ -56,6 +74,7 @@ PRINCIPAL
                 j++;
             FIMENQUANTO
             ESCREVA("\n");
+            j := 1;
             i++;
         FIMENQUANTO
     SENAO

@@ -63,6 +63,7 @@ PRINCIPAL
         
         ENQUANTO i < n EXECUTE
             INTEIRO v;
+            ESCREVA("Digite um número:\n");
             LEIA(v);
             SE i = 0 ENTAO
                 raiz := NOVO NODE;

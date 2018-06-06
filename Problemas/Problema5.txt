@@ -18,6 +18,7 @@ FIMPROCEDIMENTO
 
 PRINCIPAL
     INTEIRO n, m;
+    ESCREVA("Digite dois números positivos:\n")
     LEIA(n, m);
     SE n <= 0 OU m <= 0 ENTAO
         ESCREVA("Por favor forneça valores estritamente positivos.\n");
@@ -29,4 +30,3 @@ PRINCIPAL
         ESCREVA("\n");
     FIMSE
 FIMPRINCIPAL
-

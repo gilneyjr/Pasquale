@@ -13,11 +13,7 @@ FUNCAO racional RECEBE (INTEIRO a, INTEIRO b) RETORNA RATIONAL_T
 FIMFUNCAO
 
 FUNCAO racional_igual RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA LOGICO
-    SE a.numerador * b.denominador  =  b.numerador * a.denominador ENTAO
-        RETORNE VERDADEIRO;
-    SENAO
-        RETORNE FALSO;
-    FIMSE
+    RETORNE (a.numerador * b.denominador  =  b.numerador * a.denominador);
 FIMFUNCAO
 
 FUNCAO racional_negacao RECEBE (RATIONAL_T a) RETORNA RATIONAL_T
@@ -42,7 +38,7 @@ FIMFUNCAO
 FUNCAO racional_multiplicacao RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
     RATIONAL_T res;
     res.denominador := a.denominador * b.denominador;
-    res.numerador := b.denominador * a.denominador;
+    res.numerador := a.numerador * b.numerador;
     RETORNE res;
 FIMFUNCAO
 
@@ -63,21 +59,29 @@ FIMFUNCAO
 PRINCIPAL
     INTEIRO a, b;
     RATIONAL_T r1, r2, r3;
+
+    ESCREVA("Digite o numerador da primeira fração:\n");
     LEIA(a);
+    ESCREVA("Digite o denominador da primeira fração:\n");
     LEIA(b);
+
     SE b /= 0 ENTAO
         r1 := racional(a, b);    
         ESCREVA("Primeira fração: " + (TEXTO)r1.numerador + "/" + (TEXTO)r1.denominador + "\n");
+
+        ESCREVA("Digite o numerador da segunda fração:\n");
         LEIA(a);
+        ESCREVA("Digite o denominador da segunda fração:\n");
         LEIA(b);
+
         SE b /= 0 ENTAO
             r2 := racional(a, b);
             ESCREVA("Segunda fração: " + (TEXTO)r2.numerador + "/" + (TEXTO)r2.denominador + "\n");
             
             SE racional_igual(r1, r2) ENTAO
-                ESCREVA("IGUAIS\n");
+                ESCREVA("As frações são iguais\n");
             SENAO
-                ESCREVA("DIFERENTES\n");
+                ESCREVA("As frações são diferentes\n");
             FIMSE
             
             r3 := racional_soma(r1, r2);
@@ -103,7 +107,7 @@ PRINCIPAL
             FIMSE
             
             SE r2.numerador /= 0 ENTAO
-                r3 := racional_inverso(r1);
+                r3 := racional_inverso(r2);
                 ESCREVA("Inverso da segunda: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
             SENAO
                 ESCREVA("Operação inválida: inverso de 0\n");
