@@ -89,18 +89,18 @@ removerEscopo ((escopo:pilhaEscopo), tipos) = (pilhaEscopo, tipos)
 addSimbolo :: Simbolo -> Estado -> Either ErroEstado Estado
 addSimbolo simbolo estado@(escopos, tipos) = 
         if isRight escopoAtualizado then
-                Right ((fromRight escopoNulo escopoAtualizado):tail escopos, tipos)
+                Right ((head $ rights $ [escopoAtualizado]):tail escopos, tipos)
         else
-                Left $ fromLeft escopoAtualizado
+                Left $ head $ lefts [escopoAtualizado]
         where escopoAtualizado = addSimboloEscopo simbolo (getEscopoAtual estado)
 
 -- Adicionar símbolo ao escopo atual
 addSimboloEscopo :: Simbolo -> Escopo -> Either ErroEstado Escopo
 addSimboloEscopo simbolo escopo@(idEscopo, idEscopoAnterior, tabela) = 
         if isRight tabelaAtualizada then
-                Right (idEscopo, idEscopoAnterior, fromRight [] tabelaAtualizada)
+                Right (idEscopo, idEscopoAnterior, head $ rights $ [tabelaAtualizada])
         else
-                Left $ fromLeft tabelaAtualizada
+                Left $ head $ lefts [tabelaAtualizada]
         where tabelaAtualizada = addSimboloTabela simbolo tabela
 
 -- Adicionar simbolo à tabela de símbolos
