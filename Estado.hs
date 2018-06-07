@@ -1,22 +1,21 @@
 module Estado (
     Estado,
     Escopo,
-    Declaracao,
     Funcao,
-    Tipo (..),
-    Valor (..),
     ErroEstado (..),
     criarEscopo,
     getEscopoById,
     getEscopoAtual,
     getIdEscopoAtual,
     removerEscopo,
-    addDeclaracao,
-    getDeclaracao,
-    atualizarDeclaracao
+    addVariavel,
+    getVariavel,
+    atualizarVariavel,
+    addTipo,
+    addFuncao
 ) where
 
-import Arvore
+import Tipos
 import Data.Maybe
 import Data.Either
 import Data.List
@@ -25,31 +24,16 @@ import Data.List
 type Estado = ([Escopo], [Tipo], [Funcao])
 
 -- Número do Escopo, Número do escopo anterior, Tabela de declaracoes
-type Escopo = (Integer, Integer, [Declaracao])
-
--- Nome, Tipo, Valor
-type Declaracao = (String, Tipo, Valor)
+type Escopo = (Integer, Integer, [Variavel])
 
 -- Nome, Parametros, Tipo retorno
 type Funcao = (String, [Declaracao], Tipo)
 
-data Tipo = TipoAtomico String
-          | TipoVetor Tipo
-          | TipoPonteiro Tipo
-          | TipoEstrutura String [Tipo]
-          deriving (Show, Eq)
-
-data Valor = ValorInteiro Integer
-           | ValorLogico Bool
-           | ValorTexto String
-           | ValorCaractere Char
-           | ValorReal Double
-           | ValorVetor [Valor]
-           | ValorEstrutura [Valor]
-           deriving (Show, Eq)
-
 data ErroEstado = ErroNomeDuplicado String
-                | ErroBuscaDeclaracao String
+                | ErroTipoDuplicado String
+                | ErroFuncaoDuplicada String
+                | ErroBuscaVariavel String
+                | ErroFuncaoNaoEncontrada String
                 deriving (Show)
 
 {- Parâmetros:
@@ -58,7 +42,7 @@ data ErroEstado = ErroNomeDuplicado String
 -}
 criarEscopo :: Integer -> Estado -> Estado
 criarEscopo idEscopoAtual (pilhaEscopo, tipos, funcoes) =
-            (((genericLength pilhaEscopo) + 1, idEscopoAtual, []):pilhaEscopo, tipos, funcoes)
+        (((genericLength pilhaEscopo) + 1, idEscopoAtual, []):pilhaEscopo, tipos, funcoes)
 
 {- Parâmetros:
 	Integer -> Id do Escopo a ser procurado
@@ -74,7 +58,7 @@ getEscopoByIdFromPilha idEscopo pilha = Just $ genericIndex pilha idEscopo
 
 -- Retorna o escopo atual a partir do estado
 getEscopoAtual :: Estado -> Escopo
-getEscopoAtual (pilhaEscopo, _, _)= head pilhaEscopo
+getEscopoAtual (pilhaEscopo, _, _) = head pilhaEscopo
 
 -- Retorna o Id do escopo atual
 getIdEscopoAtual :: Estado -> Integer
@@ -83,94 +67,139 @@ getIdEscopoAtual estado = idEscopoAtual where (idEscopoAtual, _, _) = getEscopoA
 -- Remove o escopo do topo da pilha
 removerEscopo :: Estado -> Estado
 removerEscopo ((escopo:pilhaEscopo), tipos, funcoes) = (pilhaEscopo, tipos, funcoes)
-
+    
 -- Adicionar símbolo ao estado
-addDeclaracao :: Declaracao -> Estado -> Either ErroEstado Estado
-addDeclaracao simbolo estado@(escopos, tipos, funcoes) = 
-        case escopo of
-                Right escopoAtualizado -> Right $ (escopoAtualizado: tail escopos, tipos, funcoes)
-                Left erro -> Left erro
-        where escopo = addDeclaracaoEscopo simbolo (getEscopoAtual estado)
+addVariavel :: Variavel -> Estado -> Either ErroEstado Estado
+addVariavel simbolo estado@(escopos, tipos, funcoes) = 
+    case escopo of
+        Right escopoAtualizado -> Right $ (escopoAtualizado: tail escopos, tipos, funcoes)
+        Left erro -> Left erro
+    where escopo = addVariavelEscopo simbolo (getEscopoAtual estado)
 
 -- Adicionar símbolo ao escopo atual
-addDeclaracaoEscopo :: Declaracao -> Escopo -> Either ErroEstado Escopo
-addDeclaracaoEscopo simbolo (idEscopo, idEscopoAnterior, tabelaAtual) = 
-        case tabela of 
-                Right tabelaAtualizada -> Right (idEscopo, idEscopoAnterior, tabelaAtualizada)
-                Left erro -> Left erro
-        where tabela = addDeclaracaoTabela simbolo tabelaAtual
+addVariavelEscopo :: Variavel -> Escopo -> Either ErroEstado Escopo
+addVariavelEscopo simbolo (idEscopo, idEscopoAnterior, tabelaAtual) = 
+    case tabela of 
+        Right tabelaAtualizada -> Right (idEscopo, idEscopoAnterior, tabelaAtualizada)
+        Left erro -> Left erro
+    where tabela = addVariavelTabela simbolo tabelaAtual
 
 -- Adicionar simbolo à tabela de símbolos
-addDeclaracaoTabela :: Declaracao -> [Declaracao] -> Either ErroEstado [Declaracao] 
-addDeclaracaoTabela (nome, _, _) tabela =
-        case getDeclaracaoTabela nome tabela of
-                Just simbolo -> Right $ simbolo:tabela
-                Nothing -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome:" ++ nome)
+addVariavelTabela :: Variavel -> [Variavel] -> Either ErroEstado [Variavel] 
+addVariavelTabela (nome, _, _) tabela =
+    case getVariavelTabela nome tabela of
+        Just simbolo -> Right $ simbolo:tabela
+        Nothing -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome:" ++ nome)
 
 -- Busca por um símbolo na tabela de símbolos pelo nome
-getDeclaracaoTabela :: String -> [Declaracao] -> Maybe Declaracao
-getDeclaracaoTabela _    [] = Nothing
-getDeclaracaoTabela nomeNovo (simbolo@(nome, _, _):tabela) =
-        if nomeNovo == nome then
-                Just simbolo
-        else
-                getDeclaracaoTabela nomeNovo tabela
+getVariavelTabela :: String -> [Variavel] -> Maybe Variavel
+getVariavelTabela _    [] = Nothing
+getVariavelTabela nomeNovo (simbolo@(nome, _, _):tabela) =
+    if nomeNovo == nome then
+        Just simbolo
+    else
+        getVariavelTabela nomeNovo tabela
 
 -- Busca por um símbolo no estado pelo nome
-getDeclaracao :: String -> Estado -> Either ErroEstado Declaracao
-getDeclaracao nome (pilhaEscopo, _, _) = getDeclaracaoPilha nome pilhaEscopo
+getVariavel :: String -> Estado -> Either ErroEstado Variavel
+getVariavel nome (pilhaEscopo, _, _) = getVariavelPilha nome pilhaEscopo
 
 -- Busca por um síbolo na pilha de escopos pelo nome
-getDeclaracaoPilha :: String -> [Escopo] -> Either ErroEstado Declaracao
-getDeclaracaoPilha nome pilha =
-        case simbolo of
-                Just simbolo' -> Right simbolo'
-                Nothing -> Left $ ErroBuscaDeclaracao $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
-        where simbolo = getDeclaracaoPilha' nome (Just (head pilha)) pilha
+getVariavelPilha :: String -> [Escopo] -> Either ErroEstado Variavel
+getVariavelPilha nome pilha =
+    case simbolo of
+        Just simbolo' -> Right simbolo'
+        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+    where simbolo = getVariavelPilha' nome (Just (head pilha)) pilha
 
 -- Auxiliar para a busca por um símbolo na pilha
-getDeclaracaoPilha' :: String -> Maybe Escopo -> [Escopo] -> Maybe Declaracao
-getDeclaracaoPilha' _ Nothing _ = Nothing
-getDeclaracaoPilha' nome (Just (_, idEscopoAnterior, tabelaDeclaracaos)) pilha =
-        case simbolo of
-                Just simbolo' -> Just simbolo'
-                Nothing -> getDeclaracaoPilha' nome (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
-        where simbolo = getDeclaracaoTabela nome tabelaDeclaracaos
+getVariavelPilha' :: String -> Maybe Escopo -> [Escopo] -> Maybe Variavel
+getVariavelPilha' _ Nothing _ = Nothing
+getVariavelPilha' nome (Just (_, idEscopoAnterior, tabelaVariavels)) pilha =
+    case simbolo of
+        Just simbolo' -> Just simbolo'
+        Nothing -> getVariavelPilha' nome (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
+    where simbolo = getVariavelTabela nome tabelaVariavels
 
 -- Atualiza um símbolo no estado passado
-atualizarDeclaracao :: Declaracao -> Estado -> Either ErroEstado Estado
-atualizarDeclaracao simbolo (pilhaAtual, tipos, funcoes) =
-        case pilhaAtualizada of
-                Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes)
-                Left error -> Left error
-        where pilhaAtualizada = atualizarDeclaracaoPilha simbolo pilhaAtual
+atualizarVariavel :: Variavel -> Estado -> Either ErroEstado Estado
+atualizarVariavel simbolo (pilhaAtual, tipos, funcoes) =
+    case pilhaAtualizada of
+        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes)
+        Left error -> Left error
+    where pilhaAtualizada = atualizarVariavelPilha simbolo pilhaAtual
 
 -- Atualiza um símbolo no pilha de escopos passada
-atualizarDeclaracaoPilha :: Declaracao -> [Escopo] -> Either ErroEstado [Escopo]
-atualizarDeclaracaoPilha simbolo@(nome, _, _) pilhaAtual = 
-        case pilha of
-                Just pilhaAtualizada -> Right pilhaAtualizada
-                Nothing -> Left $ ErroBuscaDeclaracao $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
-        where pilha = atualizarDeclaracaoPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
+atualizarVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
+atualizarVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
+    case pilha of
+        Just pilhaAtualizada -> Right pilhaAtualizada
+        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+    where pilha = atualizarVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
 
 -- Auxiliar para a atualização do símbolo na pilha
-atualizarDeclaracaoPilha' :: Declaracao -> Maybe Escopo -> [Escopo] -> Maybe [Escopo]
-atualizarDeclaracaoPilha' _ Nothing _ = Nothing
-atualizarDeclaracaoPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnterior, tabelaAtual)) pilha =
-        case tabela of
-                Just tabelaAtualizada -> Just $ inicio ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ tail fim
-                Nothing -> atualizarDeclaracaoPilha' simbolo (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
-        where tabela = atualizarDeclaracaoTabela simbolo tabelaAtual
-              (inicio, fim) = genericSplitAt idEscopoAtual pilha
+atualizarVariavelPilha' :: Variavel -> Maybe Escopo -> [Escopo] -> Maybe [Escopo]
+atualizarVariavelPilha' _ Nothing _ = Nothing
+atualizarVariavelPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnterior, tabelaAtual)) pilha =
+    case tabela of
+        Just tabelaAtualizada -> Just $ inicio ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ tail fim
+        Nothing -> atualizarVariavelPilha' simbolo (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
+    where tabela = atualizarVariavelTabela simbolo tabelaAtual
+          (inicio, fim) = genericSplitAt idEscopoAtual pilha
 
 -- Atualiza um símbolo na tabela de símbolos
-atualizarDeclaracaoTabela :: Declaracao -> [Declaracao] -> Maybe [Declaracao]
-atualizarDeclaracaoTabela _ [] = Nothing
-atualizarDeclaracaoTabela simbolo@(nome, _, _) (simboloAtual@(nome', _, _):tabelaAtual) =
-        if nome == nome' then
-                Just $ simbolo:tabelaAtual
-        else
-                case tabela of
-                        Just tabelaAtualizada -> Just $ simboloAtual:tabelaAtualizada
-                        Nothing -> Nothing
-                where tabela = atualizarDeclaracaoTabela simbolo tabelaAtual
+atualizarVariavelTabela :: Variavel -> [Variavel] -> Maybe [Variavel]
+atualizarVariavelTabela _ [] = Nothing
+atualizarVariavelTabela simbolo@(nome, _, _) (simboloAtual@(nome', _, _):tabelaAtual) =
+    if nome == nome' then
+        Just $ simbolo:tabelaAtual
+    else
+        case tabela of
+            Just tabelaAtualizada -> Just $ simboloAtual:tabelaAtualizada
+            Nothing -> Nothing
+        where tabela = atualizarVariavelTabela simbolo tabelaAtual
+
+addTipo :: Tipo -> Estado -> Either ErroEstado Estado
+addTipo tipo (pilha, tiposAtuais, funcoes) =
+    case tipos of
+        Right tiposAtualizados -> Right $ (pilha, tiposAtualizados, funcoes)
+        Left error -> Left error
+    where tipos = addTipoLista tipo tiposAtuais
+
+addTipoLista :: Tipo -> [Tipo] -> Either ErroEstado [Tipo]
+addTipoLista tipo tipos =
+    if notElem tipo tipos then
+        Right $ tipo:tipos
+    else
+        Left $ ErroTipoDuplicado $ "Tipo '" ++ show tipo ++ "' já foi declarado anteriormente"
+
+addFuncao :: Funcao -> Estado -> Either ErroEstado Estado
+addFuncao funcao (pilha, tipos, funcoesAtuais) =
+    case funcoes of
+        Right funcoesAtualizadas -> Right (pilha, tipos, funcoesAtualizadas)
+        Left error -> Left error
+    where funcoes = addFuncaoLista funcao funcoesAtuais
+
+addFuncaoLista :: Funcao -> [Funcao] -> Either ErroEstado [Funcao]
+addFuncaoLista funcao [] = Right [funcao]
+addFuncaoLista funcao@(nome, parametros, tipoRetorno) (funcao'@(nome', parametros', tipoRetorno'):funcoesAtuais) =
+    if nome == nome' && tiposParametros == tiposParametros' then
+        Left $ ErroFuncaoDuplicada $ "Função '" ++ nome ++ "' já foi criada do jeito informado"
+    else
+        let funcoes = addFuncaoLista funcao funcoesAtuais in
+        case funcoes of
+            Right funcoesAtualizadas -> Right $ funcao':funcoesAtualizadas
+            Left erro -> Left erro
+    where tiposParametros  = snd $ unzip parametros
+          tiposParametros' = snd $ unzip parametros'
+
+getFuncao :: String -> Estado -> Either ErroEstado Funcao
+getFuncao nomeFuncao (_, _, funcoes) = getFuncaoLista nomeFuncao funcoes
+
+getFuncaoLista :: String -> [Funcao] -> Either ErroEstado Funcao
+getFuncaoLista nome [] = Left $ ErroFuncaoNaoEncontrada $ "Função '" ++ nome ++ "' não encontrada"
+getFuncaoLista nome (funcao@(nome', _, _):funcoes) =
+    if nome == nome' then
+        Right funcao
+    else
+        getFuncaoLista nome funcoes
