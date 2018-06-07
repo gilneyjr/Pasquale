@@ -51,10 +51,8 @@ tokens :-
   PONTEIRO                          { \p s -> PONTEIRO (getPosition p) }
   NOVO                              { \p s -> NOVO (getPosition p) }
   DELETE                            { \p s -> DELETE (getPosition p) }
-  CONST                             { \p s -> CONST (getPosition p) }
   ESCREVA                           { \p s -> ESCREVA (getPosition p) }
   LEIA                              { \p s -> LEIA (getPosition p) }
-  REFERENCIA                        { \p s -> REFERENCIA (getPosition p) }
   VALOR                             { \p s -> VALOR (getPosition p) }
   ":="                              { \p s -> Attrib (getPosition p) }
   ">="                              { \p s -> Geq (getPosition p) }
@@ -119,10 +117,8 @@ data Token =
     PONTEIRO (Int,Int)              |
     NOVO (Int,Int)                  |
     DELETE (Int,Int)                |
-    CONST (Int,Int)                 |
     LEIA (Int,Int)                  |
     ESCREVA (Int,Int)               |
-    REFERENCIA (Int,Int)            |
     VALOR (Int,Int)                 |
     Attrib (Int,Int)                |
     Geq (Int,Int)                   |

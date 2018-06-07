@@ -57,25 +57,15 @@ parseCriaproc = do
 
 parseDec :: ParseArgs DEC
 parseDec = do
-    a <- many parseModf
+    a <- many parsePont
     b <- parseTipo
     c <- parseDec_ids
     return $ NOVADEC a b c 
 
-parseModf :: ParseArgs MODF
-parseModf = 
-    parseNovopont <|>
-    parseNovoconst
-
-parseNovopont :: ParseArgs MODF
-parseNovopont = do
+parsePont :: ParseArgs PONT
+parsePont = do
     a <- parsePonteiro
     return $ NOVOPONT a 
-
-parseNovoconst :: ParseArgs MODF
-parseNovoconst = do
-    a <- parseConst
-    return $ NOVOCONST a 
 
 parseDec_ids :: ParseArgs DEC_IDS
 parseDec_ids = do
@@ -114,7 +104,7 @@ parseFunc = do
     b <- sepBy parseParam parseComma
     parseClosebrack
     parseRetorna
-    c <- many parseModf
+    c <- many parsePont
     d <- parseTipo
     e <- many parseStmt
     parseFimfuncao
@@ -141,7 +131,7 @@ parseOper = do
     b <- sepBy parseParam parseComma
     parseClosebrack
     parseRetorna
-    c <- many parseModf
+    c <- many parsePont
     d <- parseTipo
     e <- many parseStmt
     parseFimoperador
@@ -212,7 +202,7 @@ parseNovoless = do
 
 parseParam :: ParseArgs PARAM
 parseParam = do
-    a <- many parseModf
+    a <- many parsePont
     b <- parseTipo
     c <- parseVar
     return $ NOVOPARAM a b c
@@ -414,7 +404,7 @@ parseOptionalsqbrack =
 parseUsesqbrack :: ParseArgs OptionalSQBRACK
 parseUsesqbrack = do
     parseOpensqbrack
-    a <- sepBy parseExpr parseComma
+    a <- sepBy1 parseExpr parseComma
     parseClosesqbrack
     return $ OptionalSQBrack a
 
@@ -630,7 +620,6 @@ parseAtomico =
     parseCriareal <|> 
     parseCrianovo <|> 
     parseCriavalorexpr <|> 
-    parseCriaref <|>
     (try parseCriachamadafunc) <|> 
     parseCriavar <|> 
     (try parseCriaconversao) <|>
@@ -686,7 +675,7 @@ parseCriachamadafunc = do
 parseCrianovo :: ParseArgs EXPR
 parseCrianovo = do
     parseNovo
-    a <- many parseModf
+    a <- many parsePont
     b <- parseTipo
     c <- parseOptionalsqbrack
     return $ CRIANOVO a b c
@@ -715,14 +704,6 @@ parseCriaseqval = do
     parseClosebrack
     return $ CRIASEQVAL a
 
-parseCriaref :: ParseArgs EXPR
-parseCriaref = do
-    parseReferencia
-    parseOpenbrack
-    a <- parseVar
-    parseClosebrack
-    return $ CRIAREFERENCIA a
-
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
     parseOpenbrack
@@ -733,7 +714,7 @@ parseCriaparenteses = do
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do
     parseOpenbrack
-    a <- many parseModf
+    a <- many parsePont
     b <- parseTipo
     parseClosebrack
     c <- parseExpr

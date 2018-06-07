@@ -169,11 +169,6 @@ parseDelete = tokenPrim show update_pos get_token where
     get_token ( DELETE x ) = Just ( DELETE x )
     get_token _ = Nothing
 
-parseConst :: ParsecT [Token] u Identity Token
-parseConst = tokenPrim show update_pos get_token where
-    get_token ( CONST x ) = Just ( CONST x )
-    get_token _ = Nothing
-
 parseLeia :: ParsecT [Token] u Identity Token
 parseLeia = tokenPrim show update_pos get_token where
     get_token ( LEIA x ) = Just ( LEIA x )
@@ -182,11 +177,6 @@ parseLeia = tokenPrim show update_pos get_token where
 parseEscreva :: ParsecT [Token] u Identity Token
 parseEscreva = tokenPrim show update_pos get_token where
     get_token ( ESCREVA x ) = Just ( ESCREVA x )
-    get_token _ = Nothing
-
-parseReferencia :: ParsecT [Token] u Identity Token
-parseReferencia = tokenPrim show update_pos get_token where
-    get_token ( REFERENCIA x ) = Just ( REFERENCIA x )
     get_token _ = Nothing
 
 parseValor :: ParsecT [Token] u Identity Token
@@ -322,14 +312,6 @@ parseTipo = tokenPrim show update_pos get_token where
 parseId :: ParsecT [Token] u Identity Token
 parseId = tokenPrim show update_pos get_token where
     get_token ( ID x y ) = Just ( ID x y )
-    get_token _ = Nothing
-
-parseAny :: ParsecT [Token] u Identity Token
-parseAny = tokenPrim show update_pos get_token where
-    get_token = Just
-
-parseNothing :: ParsecT [Token] u Identity Token
-parseNothing = tokenPrim show update_pos get_token where
     get_token _ = Nothing
 
 update_pos :: SourcePos -> Token -> [Token] -> SourcePos
