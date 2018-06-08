@@ -310,7 +310,7 @@ data Token =
     Comma (Int,Int)                 |
     Dot (Int,Int)                   |
     EndCommand (Int,Int)            |
-    REAL (Int,Int) Float            |
+    REAL (Int,Int) Double           |
     INTEIRO (Int,Int) Integer       |
     CARACTERE (Int,Int) Char        |
     TEXTO (Int,Int) String          |

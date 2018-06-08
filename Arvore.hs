@@ -42,12 +42,16 @@ data DEC_IDS =
     deriving (Eq,Show)
     
 data VAR_ =
-    VAR_SEM VAR |
+    VAR_SEM SingleVAR |
     VAR_COM ATRIB
     deriving (Eq,Show)
 
 data ESTR = 
-    NOVOESTR {-TIPO-}Token [DEC]
+    NOVOESTR {-TIPO-}Token [DEC_ESTR]
+    deriving (Eq,Show)
+
+data DEC_ESTR =
+    NOVADEC_ESTR [PONT] {-TIPO-}Token [VAR_]
     deriving (Eq,Show)
 
 data FUNC =
@@ -110,7 +114,7 @@ data RETORNEPROC =
     deriving (Eq,Show)
 
 data ATRIB =
-    CRIAATRIB VAR EXPR
+    CRIAATRIB SingleVAR EXPR
     deriving (Eq,Show)
     
 data INC =

@@ -69,7 +69,7 @@ parsePont = do
 
 parseDec_ids :: ParseArgs DEC_IDS
 parseDec_ids = do
-    a <- sepBy parseVar_ parseComma
+    a <- sepBy1 parseVar_ parseComma
     return $ CRIAIDS a 
 
 parseVar_ :: ParseArgs VAR_
@@ -79,7 +79,7 @@ parseVar_ =
 
 parseVar_sem :: ParseArgs VAR_
 parseVar_sem = do
-    a <- parseVar
+    a <- parseSinglevar
     return $ VAR_SEM a 
 
 parseVar_com :: ParseArgs VAR_
@@ -91,9 +91,16 @@ parseEstr :: ParseArgs ESTR
 parseEstr = do
     parseEstrutura
     a <- parseTipo
-    b <- endBy parseDec parseEndcommand
+    b <- endBy parseDecestr parseEndcommand
     parseFimestrutura
     return $ NOVOESTR a b
+
+parseDecestr :: ParseArgs DEC_ESTR
+parseDecestr = do
+    a <- many parsePont
+    b <- parseTipo
+    c <- sepBy1 parseVar_sem parseComma
+    return $ NOVADEC_ESTR a b (c) 
 
 parseFunc :: ParseArgs FUNC
 parseFunc = do
@@ -323,7 +330,7 @@ parseRetorneproc = do
 
 parseAtrib :: ParseArgs ATRIB
 parseAtrib = do
-    a <- parseVar
+    a <- parseSinglevar
     parseAttrib
     b <- parseExpr
     return $ CRIAATRIB a b 

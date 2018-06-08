@@ -3,10 +3,13 @@ module Tipos(
     Valor (..),
     Declaracao,
     Variavel,
-    getValorInicial
+    getValorInicial,
+    getTipoFromToken,
+    getValorFromToken
 ) where
 
 import Arvore
+import Lexico
 import Data.List
 
 data Tipo = TipoAtomico String
@@ -64,4 +67,25 @@ getValorInicial (TipoEstrutura _ ((nome, tipo):decs))=
     else
         ValorEstrutura $ (nome, tipo, getValorInicial tipo):valores
     where 
-    	(ValorEstrutura valores) = (getValorInicial (TipoEstrutura "" decs))
+        (ValorEstrutura valores) = (getValorInicial (TipoEstrutura "" decs))
+
+getTipoFromToken :: Token -> Tipo
+getTipoFromToken (INTEIRO _ _)    = TipoAtomico "INTEIRO"
+getTipoFromToken (REAL _ _)       = TipoAtomico "REAL"
+getTipoFromToken (CARACTERE _ _)  = TipoAtomico "CARACTERE"
+getTipoFromToken (TEXTO _ _)      = TipoAtomico "TEXTO"
+getTipoFromToken (LOGICO _ _)     = TipoAtomico "LOGICO"
+
+getTipoFromToken (TIPO _ "INTEIRO")      = TipoAtomico "INTEIRO"
+getTipoFromToken (TIPO _ "REAL")         = TipoAtomico "REAL"
+getTipoFromToken (TIPO _ "CARACTERE")    = TipoAtomico "CARACTERE"
+getTipoFromToken (TIPO _ "TEXTO")        = TipoAtomico "TEXTO"
+getTipoFromToken (TIPO _ "LOGICO")       = TipoAtomico "LOGICO"
+
+getValorFromToken (INTEIRO _ x)    = ValorInteiro x
+getValorFromToken (REAL _ x)       = ValorReal x
+getValorFromToken (TEXTO _ x)      = ValorTexto x
+getValorFromToken (CARACTERE _ x)  = ValorCaractere x
+getValorFromToken (LOGICO _ x)     = ValorLogico x
+
+

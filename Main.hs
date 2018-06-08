@@ -1,6 +1,7 @@
 import Text.ParserCombinators.Parsec
 import qualified Parser
 import qualified Lexico
+import qualified Interpretador
 
 import System.Environment
 import System.IO
