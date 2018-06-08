@@ -62,6 +62,6 @@ getValorInicial (TipoEstrutura _ ((nome, tipo):decs))=
     if null decs then
         ValorEstrutura $ [(nome, tipo, getValorInicial tipo)]
     else
-        ValorEstrutura $ (nome, tipo, getValorInicial tipo):(f (getValorInicial (TipoEstrutura "" decs)) )
+        ValorEstrutura $ (nome, tipo, getValorInicial tipo):valores
     where 
-    	f (ValorEstrutura x) = x
+    	(ValorEstrutura valores) = (getValorInicial (TipoEstrutura "" decs))

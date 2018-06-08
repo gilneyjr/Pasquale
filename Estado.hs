@@ -1,7 +1,10 @@
 module Estado (
     Estado,
     Escopo,
+    Subprograma,
     Funcao,
+    Procedimento,
+    Assinatura,
     ErroEstado (..),
     criarEscopo,
     getEscopoById,
@@ -12,7 +15,8 @@ module Estado (
     getVariavel,
     atualizarVariavel,
     addTipo,
-    addFuncao
+    addSubprograma,
+    getSubprograma
 ) where
 
 import Tipos
@@ -21,19 +25,24 @@ import Data.Either
 import Data.List
 
 -- pilha de escopos, lista de tipos
-type Estado = ([Escopo], [Tipo], [Funcao])
+type Estado = ([Escopo], [Tipo], [Subprograma])
 
 -- Número do Escopo, Número do escopo anterior, Tabela de declaracoes
 type Escopo = (Integer, Integer, [Variavel])
 
--- Nome, Parametros, Tipo retorno
+type Subprograma = Either Procedimento Funcao
+
 type Funcao = (String, [Declaracao], Tipo)
+
+type Procedimento = (String, [Declaracao])
+
+type Assinatura = (String, [Declaracao])
 
 data ErroEstado = ErroNomeDuplicado String
                 | ErroTipoDuplicado String
-                | ErroFuncaoDuplicada String
+                | ErroSubprogramaDuplicada String
                 | ErroBuscaVariavel String
-                | ErroFuncaoNaoEncontrada String
+                | ErroSubprogramaNaoEncontrado String
                 deriving (Show)
 
 {- Parâmetros:
@@ -93,12 +102,7 @@ addVariavelTabela (nome, _, _) tabela =
 
 -- Busca por um símbolo na tabela de símbolos pelo nome
 getVariavelTabela :: String -> [Variavel] -> Maybe Variavel
-getVariavelTabela _    [] = Nothing
-getVariavelTabela nomeNovo (simbolo@(nome, _, _):tabela) =
-    if nomeNovo == nome then
-        Just simbolo
-    else
-        getVariavelTabela nomeNovo tabela
+getVariavelTabela nome tabela = find (\(nome', _, _) -> nome == nome') tabela
 
 -- Busca por um símbolo no estado pelo nome
 getVariavel :: String -> Estado -> Either ErroEstado Variavel
@@ -149,16 +153,16 @@ atualizarVariavelPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnteri
 
 -- Atualiza um símbolo na tabela de símbolos
 atualizarVariavelTabela :: Variavel -> [Variavel] -> Maybe [Variavel]
-atualizarVariavelTabela _ [] = Nothing
-atualizarVariavelTabela simbolo@(nome, _, _) (simboloAtual@(nome', _, _):tabelaAtual) =
-    if nome == nome' then
-        Just $ simbolo:tabelaAtual
-    else
-        case tabela of
-            Just tabelaAtualizada -> Just $ simboloAtual:tabelaAtualizada
-            Nothing -> Nothing
-        where tabela = atualizarVariavelTabela simbolo tabelaAtual
+atualizarVariavelTabela simbolo@(nome, _, _) tabela =
+    case index of
+        Just index' -> 
+            let (inicio, fim) = genericSplitAt index' tabela in
+            Just $ inicio ++ [simbolo] ++ (tail fim)
+        Nothing -> Nothing
+    where index = findIndex (\(nome', _, _) -> nome == nome') tabela
+          
 
+-- Adiciona um tipo no estado
 addTipo :: Tipo -> Estado -> Either ErroEstado Estado
 addTipo tipo (pilha, tiposAtuais, funcoes) =
     case tipos of
@@ -166,6 +170,7 @@ addTipo tipo (pilha, tiposAtuais, funcoes) =
         Left error -> Left error
     where tipos = addTipoLista tipo tiposAtuais
 
+-- Adiciona um tipo na lista de tipos
 addTipoLista :: Tipo -> [Tipo] -> Either ErroEstado [Tipo]
 addTipoLista tipo tipos =
     if notElem tipo tipos then
@@ -173,33 +178,34 @@ addTipoLista tipo tipos =
     else
         Left $ ErroTipoDuplicado $ "Tipo '" ++ show tipo ++ "' já foi declarado anteriormente"
 
-addFuncao :: Funcao -> Estado -> Either ErroEstado Estado
-addFuncao funcao (pilha, tipos, funcoesAtuais) =
-    case funcoes of
-        Right funcoesAtualizadas -> Right (pilha, tipos, funcoesAtualizadas)
+-- Adiciona um subprograma no estado
+addSubprograma :: Subprograma -> Estado -> Either ErroEstado Estado
+addSubprograma subprograma (pilha, tipos, subprogramasAtuais) =
+    case subprogramas of
+        Right subprogramasAtualizadas -> Right (pilha, tipos, subprogramasAtualizadas)
         Left error -> Left error
-    where funcoes = addFuncaoLista funcao funcoesAtuais
+    where subprogramas = addSubprogramaLista subprograma subprogramasAtuais
 
-addFuncaoLista :: Funcao -> [Funcao] -> Either ErroEstado [Funcao]
-addFuncaoLista funcao [] = Right [funcao]
-addFuncaoLista funcao@(nome, parametros, tipoRetorno) (funcao'@(nome', parametros', tipoRetorno'):funcoesAtuais) =
-    if nome == nome' && tiposParametros == tiposParametros' then
-        Left $ ErroFuncaoDuplicada $ "Função '" ++ nome ++ "' já foi criada do jeito informado"
-    else
-        let funcoes = addFuncaoLista funcao funcoesAtuais in
-        case funcoes of
-            Right funcoesAtualizadas -> Right $ funcao':funcoesAtualizadas
-            Left erro -> Left erro
-    where tiposParametros  = snd $ unzip parametros
-          tiposParametros' = snd $ unzip parametros'
+-- Adiciona um subprograma na lista de subprogramas
+addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
+addSubprogramaLista subprograma subprogramas = 
+    case getSubprogramaLista assinatura subprogramas of
+        Just _ -> Left $ ErroSubprogramaDuplicada $ "Função '" ++ nome ++ "' já foi criada do jeito informado"
+        Nothing -> Right $ subprograma:subprogramas
+    where assinatura@(nome, _) = getAssinaturaSubprograma subprograma
 
-getFuncao :: String -> Estado -> Either ErroEstado Funcao
-getFuncao nomeFuncao (_, _, funcoes) = getFuncaoLista nomeFuncao funcoes
+-- Retorna a assinatura de um subprograma
+getAssinaturaSubprograma :: Subprograma -> Assinatura
+getAssinaturaSubprograma (Left procedimento) = procedimento
+getAssinaturaSubprograma (Right (nome, parametros, _)) = (nome, parametros)
 
-getFuncaoLista :: String -> [Funcao] -> Either ErroEstado Funcao
-getFuncaoLista nome [] = Left $ ErroFuncaoNaoEncontrada $ "Função '" ++ nome ++ "' não encontrada"
-getFuncaoLista nome (funcao@(nome', _, _):funcoes) =
-    if nome == nome' then
-        Right funcao
-    else
-        getFuncaoLista nome funcoes
+-- Busca por um subprograma no estado atraves de sua assinatura
+getSubprograma :: Assinatura -> Estado -> Either ErroEstado Subprograma
+getSubprograma assinatura@(nome, _) (_, _, funcoes) = 
+    case getSubprogramaLista assinatura funcoes of
+        Just subprograma -> Right subprograma
+        Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome ++ "' não encontrado"
+
+-- Busca por um subprograma na lista de subprogrmas atraves de sua assinatura
+getSubprogramaLista :: Assinatura -> [Subprograma] -> Maybe Subprograma
+getSubprogramaLista assinatura subprogramas = find (\x -> getAssinaturaSubprograma x == assinatura) subprogramas
