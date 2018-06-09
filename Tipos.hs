@@ -84,7 +84,9 @@ getTipoFromToken (TIPO _ "REAL")         = TipoAtomico "REAL"
 getTipoFromToken (TIPO _ "CARACTERE")    = TipoAtomico "CARACTERE"
 getTipoFromToken (TIPO _ "TEXTO")        = TipoAtomico "TEXTO"
 getTipoFromToken (TIPO _ "LOGICO")       = TipoAtomico "LOGICO"
+getTipoFromToken (TIPO _ tipo)           = TipoEstrutura tipo []
 
+getValorFromToken :: Token -> Valor
 getValorFromToken (INTEIRO _ x)    = ValorInteiro x
 getValorFromToken (REAL _ x)       = ValorReal x
 getValorFromToken (TEXTO _ x)      = ValorTexto x

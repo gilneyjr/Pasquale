@@ -22,17 +22,41 @@ executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subpr
 
 --adiciona as estruturas criadas pelo usuario
 addEstrs :: [ESTR] -> Estado -> IO Estado
-addEstrs []    estado = do return estado
+addEstrs []    estado = return estado
 addEstrs (a:b) estado =
     case novo of
         Right estadoAtualizado -> addEstrs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addTipo (getTipoFromEstr a) estado
+    where novo = addTipo (getTipoFromEstr a estado) estado
           posicao = getPosicaoEstr a
 
 --Retorna o tipo de uma estrutura
-getTipoFromEstr :: ESTR -> Tipo
-getTipoFromEstr _ = TipoAtomico "INTEIRO" --MUDAR (TEMPORARIO)
+getTipoFromEstr :: ESTR -> Estado -> Tipo
+getTipoFromEstr (NOVOESTR (TIPO _ nome) decs) estado = TipoEstrutura nome (getDecEstr nome decs estado)  
+
+--Retorna as declarações de uma estrutura
+getDecEstr :: String -> [DEC_ESTR] -> Estado -> [Declaracao]
+getDecEstr _ [] _ = []
+getDecEstr nomeEstrutura ((NOVADEC_ESTR ponteiros tokenTipo@(TIPO posicao nome) tokenVariaveis):declaracoes) estado =
+    case tipo of
+        Right tipoEncontrado -> (zip variaveis (repeat (getTipoPonteiro ponteiros tipoEncontrado))) ++ (getDecEstr nomeEstrutura declaracoes estado)
+        Left erro -> 
+            if nomeEstrutura == nome then
+                (zip variaveis (repeat (getTipoPonteiro ponteiros (TipoEstrutura nome [])))) ++ (getDecEstr nomeEstrutura declaracoes estado)
+            else
+                fail $ (show erro) ++ ": posição " ++ (show posicao)
+    where tipo = getTipo nome estado
+          variaveis = map getNomeVar tokenVariaveis
+
+getTipoPonteiro :: [PONT] -> Tipo -> Tipo
+getTipoPonteiro [] tipo = tipo
+getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
+getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
+getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
+
+getNomeVar :: VAR_ -> String
+getNomeVar (VAR_SEM (SingleVar (ID _ nome) _)) = nome
+getNomeVar (VAR_COM (CRIAATRIB (SingleVar (ID _ nome) _) _)) = nome
 
 --retorna a posicao da declaracao de uma estrutura para caso esteja repetida
 getPosicaoEstr :: ESTR -> (Int,Int)

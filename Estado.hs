@@ -16,7 +16,8 @@ module Estado (
     atualizarVariavel,
     addTipo,
     addSubprograma,
-    getSubprograma
+    getSubprograma,
+    getTipo
 ) where
 
 import Tipos
@@ -42,9 +43,17 @@ type Assinatura = (String, [Declaracao])
 data ErroEstado = ErroNomeDuplicado String
                 | ErroTipoDuplicado String
                 | ErroSubprogramaDuplicada String
+                | ErroBuscaTipo String
                 | ErroBuscaVariavel String
                 | ErroSubprogramaNaoEncontrado String
-                deriving (Show)
+
+instance Show ErroEstado where
+    show (ErroNomeDuplicado s)            = s
+    show (ErroTipoDuplicado s)            = s
+    show (ErroSubprogramaDuplicada s)     = s
+    show (ErroBuscaTipo s)                = s
+    show (ErroBuscaVariavel s)            = s
+    show (ErroSubprogramaNaoEncontrado s) = s
 
 {- Parâmetros:
 	Integer -> Id do Escopo pai
@@ -160,8 +169,7 @@ atualizarVariavelTabela simbolo@(nome, _, _) tabela =
             let (inicio, fim) = genericSplitAt index' tabela in
             Just $ inicio ++ [simbolo] ++ (tail fim)
         Nothing -> Nothing
-    where index = findIndex (\(nome', _, _) -> nome == nome') tabela
-          
+    where index = findIndex (\(nome', _, _) -> nome == nome') tabela          
 
 -- Adiciona um tipo no estado
 addTipo :: Tipo -> Estado -> Either ErroEstado Estado
@@ -178,6 +186,34 @@ addTipoLista tipo tipos =
         Right $ tipo:tipos
     else
         Left $ ErroTipoDuplicado $ "Tipo '" ++ show tipo ++ "' já foi declarado anteriormente"
+
+-- Busca um tipo primitivo no estado
+getTipo :: String -> Estado -> Either ErroEstado Tipo
+getTipo nome (pilha, tipos, funcoes) =
+    case tipo of
+        Just tipoEncontrado -> Right tipoEncontrado
+        Nothing -> Left $ ErroBuscaTipo $ "Tipo " ++ nome ++ "não encontrado"
+    where tipo = getTipoLista nome tipos
+
+getTipoLista :: String -> [Tipo] -> Maybe Tipo
+getTipoLista _ [] = Nothing
+getTipoLista nome (tipo:tipos) =
+    case tipo of
+        TipoAtomico nome' -> if (nome == nome') then Just tipo else getTipoLista nome tipos
+        TipoEstrutura nome' _ -> if (nome == nome') then Just tipo else getTipoLista nome tipos
+        otherwise -> getTipoLista nome tipos
+
+getTipoAtomico :: String -> [Tipo] -> Maybe Tipo
+getTipoAtomico nome = find (\x -> (TipoAtomico nome) == x)
+
+getTipoEstrutura :: String -> [Tipo] -> Maybe Tipo
+getTipoEstrutura _    [] = Nothing
+getTipoEstrutura nome (tipo@(TipoEstrutura nome' _):tipos) = 
+    if nome == nome' then
+        Just tipo
+    else
+        getTipoEstrutura nome tipos
+getTipoEstrutura nome (_:tipos) = getTipoEstrutura nome tipos
 
 -- Adiciona um subprograma no estado
 addSubprograma :: Subprograma -> Estado -> Either ErroEstado Estado
