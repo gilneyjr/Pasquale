@@ -2,6 +2,7 @@ module Interpretador where
 
 import Data.Fixed
 import Data.List
+import Data.Maybe
 import System.IO
 import Tipos
 import Estado
@@ -14,11 +15,15 @@ estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGIC
 --Funcao para executar a partir da arvore
 executaPrograma :: PROGRAMA -> IO()
 executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subprogs main)))) = do
-    estado1 <- addEstrs estrs estadoinicial
+    estado1 <- addEstrs estrs inicializarPrograma
     estado2 <- addDecs decs estado1
     estado3 <- addSubprogs subprogs estado2
     --rodaMain main estado3
+    print estado3
     return ()
+
+inicializarPrograma :: Estado
+inicializarPrograma = criarEscopo 0 estadoinicial
 
 --adiciona as estruturas criadas pelo usuario
 addEstrs :: [ESTR] -> Estado -> IO Estado
@@ -32,27 +37,55 @@ addEstrs (a:b) estado =
 
 --Retorna o tipo de uma estrutura
 getTipoFromEstr :: ESTR -> Estado -> Tipo
-getTipoFromEstr (NOVOESTR (TIPO _ nome) decs) estado = TipoEstrutura nome (getDecEstr nome decs estado)  
+getTipoFromEstr (NOVOESTR (TIPO _ nome) decs) estado = TipoEstrutura nome (getDecsEstr nome decs estado)  
 
 --Retorna as declarações de uma estrutura
-getDecEstr :: String -> [DEC_ESTR] -> Estado -> [Declaracao]
-getDecEstr _ [] _ = []
-getDecEstr nomeEstrutura ((NOVADEC_ESTR ponteiros tokenTipo@(TIPO posicao nome) tokenVariaveis):declaracoes) estado =
-    case tipo of
-        Right tipoEncontrado -> (zip variaveis (repeat (getTipoPonteiro ponteiros tipoEncontrado))) ++ (getDecEstr nomeEstrutura declaracoes estado)
+getDecsEstr :: String -> [DEC] -> Estado -> [Declaracao]
+getDecsEstr _ [] _ = []
+getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
+    case tipoPrimitivo of
+        Right tipoEncontrado -> (zip variaveis (map (getTipoPonteiro ponteiros) (f tipoEncontrado))) ++ (getDecsEstr nomeEstrutura declaracoes estado)
         Left erro -> 
             if nomeEstrutura == nome then
-                (zip variaveis (repeat (getTipoPonteiro ponteiros (TipoEstrutura nome [])))) ++ (getDecEstr nomeEstrutura declaracoes estado)
+                (zip variaveis (map (getTipoPonteiro ponteiros) (f (TipoEstrutura nome [])))) ++ (getDecsEstr nomeEstrutura declaracoes estado)
             else
                 fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where tipo = getTipo nome estado
-          variaveis = map getNomeVar tokenVariaveis
+    where tipoPrimitivo = getTipo nome estado
+          f tipo = map (\token -> getTipoVetor tipo token estado) tokensVariaveis
+          variaveis = map getNomeVar tokensVariaveis
+
+getDecs :: [DEC] -> Estado -> [Declaracao]
+getDecs [] _ = []
+getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
+    case tipoPrimitivo of
+        Right tipoEncontrado -> (zip variaveis (map (getTipoPonteiro ponteiros) (f tipoEncontrado))) ++ (getDecs declaracoes estado)
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+    where tipoPrimitivo = getTipo nome estado
+          f tipo = map (\token -> getTipoVetor tipo token estado) tokensVariaveis
+          variaveis = map getNomeVar tokensVariaveis
 
 getTipoPonteiro :: [PONT] -> Tipo -> Tipo
 getTipoPonteiro [] tipo = tipo
 getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
 getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
 getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
+
+getTipoVetor :: Tipo -> VAR_ -> Estado -> Tipo
+getTipoVetor tipo (VAR_SEM (SingleVar _ (OptionalSQBrack []))) estado = tipo
+getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar _ (OptionalSQBrack [])) _)) _ = tipo
+getTipoVetor tipo (VAR_SEM (SingleVar posicao (OptionalSQBrack exprs))) estado =
+    if all (\v -> isJust v) valores then
+        TipoVetor (catMaybes valores) tipo
+    else
+        error $ "Expressão não é um valor inteiro valido: posição: " ++ (show posicao)
+    where valores = map (\e -> getValorInteiro (evaluateExpr estado e)) exprs
+
+getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar posicao (OptionalSQBrack exprs)) _)) estado =
+    if all (\v -> isJust v) valores then
+        TipoVetor (catMaybes valores) tipo
+    else
+        error $ "Expressão não é um valor inteiro valido: posição: " ++ (show posicao)
+    where valores = map (\e -> getValorInteiro (evaluateExpr estado e)) exprs
 
 getNomeVar :: VAR_ -> String
 getNomeVar (VAR_SEM (SingleVar (ID _ nome) _)) = nome
@@ -72,33 +105,27 @@ addDecs (a:b) estado = do
 
 --Adiciona uma declaracao global
 addDec :: DEC -> Estado -> IO Estado
-addDec (NOVADEC _ _ (CRIAIDS [])) estado = do return estado
+addDec (NOVADEC _ _ []) estado = do return estado
 
-addDec (NOVADEC pont tipo (CRIAIDS ((VAR_SEM id):b))) estado =
+addDec declaracao@(NOVADEC pont tipo ((VAR_SEM id):b)) estado =
     case res of
-        Right estadoAtualizado -> addDec (NOVADEC pont tipo (CRIAIDS b)) estadoAtualizado
+        Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where res = addVariavel (getNameSingleVar id, (getTipoFromDec (pont,tipo,id,estado)), getValorInicial (getTipoFromDec (pont,tipo,id,estado))) estado
+    where (nome', tipo') = head $ getDecs [declaracao] estado
+          res = addVariavel (nome', tipo', getValorInicial tipo') estado
           posicao = getPosicaoSingleVar id
 
-addDec (NOVADEC pont tipo (CRIAIDS ((VAR_COM (CRIAATRIB id expr)):b))) estado =
+addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
     case res of
-        Right estadoAtualizado -> addDec (NOVADEC pont tipo (CRIAIDS b)) estadoAtualizado
+        Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where res = addVariavel (getNameSingleVar id, (getTipoFromDec (pont,tipo,id,estado)), evaluateExpr expr estado) estado
+    where (nome', tipo') = head $ getDecs [declaracao] estado
+          res = addVariavel (nome', tipo', evaluateExpr estado expr) estado
           posicao = getPosicaoSingleVar id
-
---Retorna o tipo a partir de uma declaração: recebe ([ponteiro], tipo, variavel (talvez com []), estado)
-getTipoFromDec :: ([PONT], Token, SingleVAR, Estado) -> Tipo
-getTipoFromDec _ = TipoAtomico "INTEIRO" --MUDAR (TEMPORARIO)
-
---Retorna uma string com o nome da variavel
-getNameSingleVar :: SingleVAR -> String
-getNameSingleVar (SingleVar (TIPO _ a) _) = a
 
 --Retorna a posicao em que esta o nome de uma variavel
 getPosicaoSingleVar :: SingleVAR -> (Int,Int)
-getPosicaoSingleVar (SingleVar (TIPO a _) _) = a
+getPosicaoSingleVar (SingleVar (ID a _) _) = a
 
 --adiciona os subprogramas criadas pelo usuario
 addSubprogs :: [SUBPROG] -> Estado -> IO Estado
@@ -107,25 +134,25 @@ addSubprogs ((CRIAFUNC func):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addSubprograma (getSubprogFromFunc func) estado
+    where novo = addSubprograma (getSubprogFromFunc func estado) estado
           posicao = getPosicaoFunc func
 addSubprogs ((CRIAPROC proc):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addSubprograma (getSubprogFromProc proc) estado
+    where novo = addSubprograma (getSubprogFromProc proc estado) estado
           posicao = getPosicaoProc proc
 addSubprogs ((CRIAOPER oper):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addSubprograma (getSubprogFromOper oper) estado
+    where novo = addSubprograma (getSubprogFromOper oper estado) estado
           posicao = getPosicaoOper oper
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromFunc :: FUNC -> Subprograma
-getSubprogFromFunc (NOVOFUNC (ID p s) params ponts tipo stmts) = 
-    Right (s, getDecsFromParams params, stmts, getTipoFromTipoRetorno ponts tipo)
+getSubprogFromFunc :: FUNC -> Estado -> Subprograma
+getSubprogFromFunc (NOVOFUNC (ID p s) params ponts tipo stmts) estado = 
+    Right (s, getDecsFromParams params estado, stmts, getTipoFromTipoRetorno ponts tipo estado)
 
 --retorna a posicao da declaracao de uma funcao
 getPosicaoFunc :: FUNC -> (Int,Int)
@@ -133,9 +160,9 @@ getPosicaoFunc (NOVOFUNC (ID p _) _ _ _ _) = p
 
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromProc :: PROC -> Subprograma
-getSubprogFromProc (NOVOPROC (ID p s) params stmts) =
-    Left (s, getDecsFromParams params, stmts)
+getSubprogFromProc :: PROC -> Estado -> Subprograma
+getSubprogFromProc (NOVOPROC (ID p s) params stmts) estado =
+    Left (s, getDecsFromParams params estado, stmts)
 
 --retorna a posicao da declaracao de um procedimento
 getPosicaoProc :: PROC -> (Int,Int)
@@ -143,9 +170,9 @@ getPosicaoProc (NOVOPROC (ID p _) _ _) = p
 
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromOper :: OPER -> Subprograma
-getSubprogFromOper (NOVOOPER op params ponts tipo stmts) =
-    Right (getNomeFromOp op, getDecsFromParams params, stmts, getTipoFromTipoRetorno ponts tipo)
+getSubprogFromOper :: OPER -> Estado -> Subprograma
+getSubprogFromOper (NOVOOPER op params ponts tipo stmts) estado =
+    Right (getNomeFromOp op, getDecsFromParams params estado, stmts, getTipoFromTipoRetorno ponts tipo estado)
     
 --retorna a posicao da declaracao de um operador
 getPosicaoOper :: OPER -> (Int,Int)
@@ -174,49 +201,21 @@ getNomeFromOp (NOVOGreat _) = ">"
 getNomeFromOp (NOVOLess _) = "<"
 
 --Retorna um vetor com as Declaracoes dos parametros do subprograma
-getDecsFromParams :: [PARAM] -> [Declaracao]
-getDecsFromParams _ = [] --MUDAR (TEMPORARIO)
+getDecsFromParams :: [PARAM] -> Estado -> [Declaracao]
+getDecsFromParams [] _ = []
+getDecsFromParams parametros estado = getDecs (map paramToDec parametros) estado
+
+paramToDec :: PARAM -> DEC
+paramToDec (NOVOPARAM ponts tokenTipo (Var variaveis)) = NOVADEC ponts tokenTipo (map (VAR_SEM) variaveis)
 
 --Constroi o tipo de retorno da funcao a partir dos tokens modificadores e de retorno
-getTipoFromTipoRetorno :: [PONT] -> Token -> Tipo
-getTipoFromTipoRetorno _ _ = TipoAtomico "INTEIRO" --MUDAR (TEMPORARIO)
+getTipoFromTipoRetorno :: [PONT] -> Token -> Estado -> Tipo
+getTipoFromTipoRetorno ponteiros (TIPO posicao nome) estado = 
+    case tipoPrimitivo of
+        Right tipoEncontrado -> (getTipoPonteiro ponteiros tipoEncontrado)
+        Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
+    where tipoPrimitivo = getTipo nome estado
 
 --Avalia uma expressao e retorna seu valor
-evaluateExpr :: EXPR -> Estado -> Valor
+evaluateExpr :: Estado -> EXPR -> Valor
 evaluateExpr _ _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
-
-{-
-REESCREVER, adicionar estado
-
-getTipoFromDec :: ([PONT], Token) -> Tipo
-getTipoFromDec ([], y) = getTipoFromToken y
-getTipoFromDec ((_:ponts), y) = TipoPonteiro $ getTipoFromDec (ponts, y)
-
-getDeclaracaoFromDecID :: (SingleVAR, [PONT], Token) -> Declaracao
-getDeclaracaoFromDecID (x, y, z) = (getVarName x, aux x getTipoFromDec (y, z))
-    where
-        aux :: SingleVar -> Declaracao -> Declaracao
-        aux (SingleVar _ (OptionalSQBrack [])) x = x
-        aux (SingleVar _ (OptionalSQBrack ids)) x = (x, TipoVetor ids )
-
-getDec :: DEC -> [Declaracao]
-getDec (NOVADEC x y (CRIAIDS (id:ids))) =
-    if null ids then
-        [(getDeclaracaoFromDecID (getID id, x, y))]
-    else
-        (getDeclaracaoFromDecID (getID id, x, y)):(getDec (NOVADEC x y (CRIAIDS ids)))
-    where
-        getID :: VAR_ -> SingleVAR
-        getID (VAR_SEM x) = x
-        getID (VAR_COM (CRIAATRIB x _)) = x
-
-getTipoFromEstr (NOVOESTR (TIPO _ x) y) = TipoEstrutura x (getDecs y)
-    where
-        getDecs :: [DEC] -> [Declaracao]
-        getDecs (dec:decs) = 
-            if null decs then
-                getDec dec
-            else
-                (getDec dec) ++ (getDecs decs) -}
-
-

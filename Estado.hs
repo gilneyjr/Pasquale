@@ -105,10 +105,10 @@ addVariavelEscopo simbolo (idEscopo, idEscopoAnterior, tabelaAtual) =
 
 -- Adicionar simbolo à tabela de símbolos
 addVariavelTabela :: Variavel -> [Variavel] -> Either ErroEstado [Variavel] 
-addVariavelTabela (nome, _, _) tabela =
+addVariavelTabela variavel@(nome, _, _) tabela =
     case getVariavelTabela nome tabela of
-        Just simbolo -> Right $ simbolo:tabela
-        Nothing -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome:" ++ nome)
+        Just _ -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome:" ++ nome)
+        Nothing -> Right $ variavel:tabela
 
 -- Busca por um símbolo na tabela de símbolos pelo nome
 getVariavelTabela :: String -> [Variavel] -> Maybe Variavel

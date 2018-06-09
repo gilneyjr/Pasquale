@@ -5,7 +5,8 @@ module Tipos(
     Variavel,
     getValorInicial,
     getTipoFromToken,
-    getValorFromToken
+    getValorFromToken,
+    getValorInteiro
 ) where
 
 import Arvore
@@ -22,7 +23,7 @@ data Tipo = TipoAtomico String
 instance Show Tipo where
     show (TipoAtomico s)     = s
     show (TipoVetor _ t)     = "VETOR " ++ show t
-    show (TipoPonteiroFim t) = "PONTEIRO" ++ show t
+    show (TipoPonteiroFim t) = "PONTEIRO " ++ show t
     show (TipoPonteiroRecursivo t)    = "PONTEIRO " ++ show t
     show (TipoEstrutura s _) = "ESTRUTURA " ++ s
 
@@ -93,4 +94,6 @@ getValorFromToken (TEXTO _ x)      = ValorTexto x
 getValorFromToken (CARACTERE _ x)  = ValorCaractere x
 getValorFromToken (LOGICO _ x)     = ValorLogico x
 
-
+getValorInteiro :: Valor -> Maybe Integer
+getValorInteiro (ValorInteiro x) = Just x
+getValorInteiro _ = Nothing

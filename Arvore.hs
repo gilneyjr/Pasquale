@@ -30,15 +30,11 @@ data SUBPROG =
     deriving (Eq,Show)
 
 data DEC =
-    NOVADEC [PONT] {-TIPO-}Token DEC_IDS
+    NOVADEC [PONT] {-TIPO-}Token [VAR_]
     deriving (Eq,Show)
 
 data PONT = 
     NOVOPONT {-PONTEIRO-}Token
-    deriving (Eq,Show)
-    
-data DEC_IDS =
-    CRIAIDS [VAR_]
     deriving (Eq,Show)
     
 data VAR_ =
@@ -47,11 +43,7 @@ data VAR_ =
     deriving (Eq,Show)
 
 data ESTR = 
-    NOVOESTR {-TIPO-}Token [DEC_ESTR]
-    deriving (Eq,Show)
-
-data DEC_ESTR =
-    NOVADEC_ESTR [PONT] {-TIPO-}Token [VAR_]
+    NOVOESTR {-TIPO-}Token [DEC]
     deriving (Eq,Show)
 
 data FUNC =

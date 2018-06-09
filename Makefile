@@ -1,4 +1,4 @@
-all: lexico main
+all: Lexico Main
 
 Lexico:
 	alex Lexico.x

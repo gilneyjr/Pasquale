@@ -59,18 +59,13 @@ parseDec :: ParseArgs DEC
 parseDec = do
     a <- many parsePont
     b <- parseTipo
-    c <- parseDec_ids
+    c <- sepBy1 parseVar_ parseComma
     return $ NOVADEC a b c 
 
 parsePont :: ParseArgs PONT
 parsePont = do
     a <- parsePonteiro
     return $ NOVOPONT a 
-
-parseDec_ids :: ParseArgs DEC_IDS
-parseDec_ids = do
-    a <- sepBy1 parseVar_ parseComma
-    return $ CRIAIDS a 
 
 parseVar_ :: ParseArgs VAR_
 parseVar_ = 
@@ -91,16 +86,9 @@ parseEstr :: ParseArgs ESTR
 parseEstr = do
     parseEstrutura
     a <- parseTipo
-    b <- endBy parseDecestr parseEndcommand
+    b <- endBy parseDec parseEndcommand
     parseFimestrutura
     return $ NOVOESTR a b
-
-parseDecestr :: ParseArgs DEC_ESTR
-parseDecestr = do
-    a <- many parsePont
-    b <- parseTipo
-    c <- sepBy1 parseVar_sem parseComma
-    return $ NOVADEC_ESTR a b (c) 
 
 parseFunc :: ParseArgs FUNC
 parseFunc = do
