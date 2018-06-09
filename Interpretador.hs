@@ -76,10 +76,6 @@ getNameSingleVar (SingleVar (TIPO _ a) _) = a
 getPosicaoSingleVar :: SingleVAR -> (Int,Int)
 getPosicaoSingleVar (SingleVar (TIPO a _) _) = a
 
---Avalia uma expressao e retorna seu valor
-evaluateExpr :: (EXPR, Estado) -> Valor
-evaluateExpr _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
-
 --adiciona os subprogramas criadas pelo usuario
 addSubprogs :: [SUBPROG] -> Estado -> IO Estado
 addSubprogs []    estado = do return estado
@@ -98,6 +94,42 @@ getSubprogFromFunc _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARI
 getPosicaoFunc :: FUNC -> (Int,Int)
 getPosicaoFunc (NOVOFUNC (ID p _) _ _ _ _) = p
 
+addSubprogs ((NOVOPROC proc):b) estado =
+    case novo of
+        Right estadoAtualizado -> addSubprogs b estadoAtualizado
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+    where novo = addSubprograma (getSubprogFromProc proc) estado
+          posicao = getPosicaoProc proc
+
+--Retorna o subprograma a ser salvo na memoria
+getSubprogFromProc :: PROC -> Subprograma
+getSubprogFromProc _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARIO)
+
+--retorna a posicao da declaracao de um procedimento
+getPosicaoProc :: PROC -> (Int,Int)
+getPosicaoProc (NOVOPROC (ID p _) _ _) = p
+
+addSubprogs ((CRIAOPER oper):b) estado =
+    case novo of
+        Right estadoAtualizado -> addSubprogs b estadoAtualizado
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+    where novo = addSubprograma (getSubprogFromOper oper) estado
+          posicao = getPosicaoOper oper
+
+--Retorna o subprograma a ser salvo na memoria
+getSubprogFromOper :: OPER -> Subprograma
+getSubprogFromOper _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARIO)
+
+--retorna a posicao da declaracao de um operador
+getPosicaoOper :: OPER -> (Int,Int)
+getPosicaoOper (NOVOOPER (ID p _) _ _ _ _) = p
+
+
+
+
+--Avalia uma expressao e retorna seu valor
+evaluateExpr :: (EXPR, Estado) -> Valor
+evaluateExpr _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
 {-
 codigo talvez inutil feito por victor
 
