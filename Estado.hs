@@ -20,6 +20,7 @@ module Estado (
 ) where
 
 import Tipos
+import Arvore
 import Data.Maybe
 import Data.Either
 import Data.List
@@ -32,9 +33,9 @@ type Escopo = (Integer, Integer, [Variavel])
 
 type Subprograma = Either Procedimento Funcao
 
-type Funcao = (String, [Declaracao], Tipo)
+type Funcao = (String, [Declaracao], [STMT], Tipo)
 
-type Procedimento = (String, [Declaracao])
+type Procedimento = (String, [Declaracao], [STMT])
 
 type Assinatura = (String, [Declaracao])
 
@@ -196,8 +197,8 @@ addSubprogramaLista subprograma subprogramas =
 
 -- Retorna a assinatura de um subprograma
 getAssinaturaSubprograma :: Subprograma -> Assinatura
-getAssinaturaSubprograma (Left procedimento) = procedimento
-getAssinaturaSubprograma (Right (nome, parametros, _)) = (nome, parametros)
+getAssinaturaSubprograma (Left (nome, parametros, _)) = (nome, parametros)
+getAssinaturaSubprograma (Right (nome, parametros, _, _)) = (nome, parametros)
 
 -- Busca por um subprograma no estado atraves de sua assinatura
 getSubprograma :: Assinatura -> Estado -> Either ErroEstado Subprograma
