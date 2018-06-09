@@ -16,7 +16,7 @@ executaPrograma :: PROGRAMA -> IO()
 executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subprogs main)))) = do
     estado1 <- addEstrs estrs estadoinicial
     estado2 <- addDecs decs estado1
-    --estado3 <- addSubprogs subprogs estado2
+    estado3 <- addSubprogs subprogs estado2
     --rodaMain main estado3
     return ()
 
@@ -79,6 +79,24 @@ getPosicaoSingleVar (SingleVar (TIPO a _) _) = a
 --Avalia uma expressao e retorna seu valor
 evaluateExpr :: (EXPR, Estado) -> Valor
 evaluateExpr _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
+
+--adiciona os subprogramas criadas pelo usuario
+addSubprogs :: [SUBPROG] -> Estado -> IO Estado
+addSubprogs []    estado = do return estado
+addSubprogs ((CRIAFUNC func):b) estado =
+    case novo of
+        Right estadoAtualizado -> addSubprogs b estadoAtualizado
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+    where novo = addSubprograma (getSubprogFromFunc func) estado
+          posicao = getPosicaoFunc func
+
+--Retorna o subprograma a ser salvo na memoria
+getSubprogFromFunc :: FUNC -> Subprograma
+getSubprogFromFunc _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARIO)
+
+--retorna a posicao da declaracao de uma funcao
+getPosicaoFunc :: FUNC -> (Int,Int)
+getPosicaoFunc (NOVOFUNC (ID p _) _ _ _ _) = p
 
 {-
 codigo talvez inutil feito por victor
