@@ -61,7 +61,7 @@ addDec (NOVADEC pont tipo (CRIAIDS ((VAR_COM (CRIAATRIB id expr)):b))) estado =
     case res of
         Right estadoAtualizado -> addDec (NOVADEC pont tipo (CRIAIDS b)) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where res = addVariavel (getNameSingleVar id, (getTipoFromDec (pont,tipo,id,estado)), evaluateExpr (expr, estado)) estado
+    where res = addVariavel (getNameSingleVar id, (getTipoFromDec (pont,tipo,id,estado)), evaluateExpr expr estado) estado
           posicao = getPosicaoSingleVar id
 
 --Retorna o tipo a partir de uma declaração: recebe ([ponteiro], tipo, variavel (talvez com []), estado)
@@ -85,30 +85,12 @@ addSubprogs ((CRIAFUNC func):b) estado =
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
     where novo = addSubprograma (getSubprogFromFunc func) estado
           posicao = getPosicaoFunc func
-
---Retorna o subprograma a ser salvo na memoria
-getSubprogFromFunc :: FUNC -> Subprograma
-getSubprogFromFunc _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARIO)
-
---retorna a posicao da declaracao de uma funcao
-getPosicaoFunc :: FUNC -> (Int,Int)
-getPosicaoFunc (NOVOFUNC (ID p _) _ _ _ _) = p
-
-addSubprogs ((NOVOPROC proc):b) estado =
+addSubprogs ((CRIAPROC proc):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
     where novo = addSubprograma (getSubprogFromProc proc) estado
           posicao = getPosicaoProc proc
-
---Retorna o subprograma a ser salvo na memoria
-getSubprogFromProc :: PROC -> Subprograma
-getSubprogFromProc _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARIO)
-
---retorna a posicao da declaracao de um procedimento
-getPosicaoProc :: PROC -> (Int,Int)
-getPosicaoProc (NOVOPROC (ID p _) _ _) = p
-
 addSubprogs ((CRIAOPER oper):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
@@ -117,21 +99,70 @@ addSubprogs ((CRIAOPER oper):b) estado =
           posicao = getPosicaoOper oper
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromOper :: OPER -> Subprograma
-getSubprogFromOper _ = Right ("a", [], TipoAtomico "INTEIRO") --MUDAR (TEMPORARIO)
+getSubprogFromFunc :: FUNC -> Subprograma
+getSubprogFromFunc (NOVOFUNC (ID p s) params ponts tipo stmts) = 
+    Right (s, getDecsFromParams params, stmts, getTipoFromTipoRetorno ponts tipo)
 
+--retorna a posicao da declaracao de uma funcao
+getPosicaoFunc :: FUNC -> (Int,Int)
+getPosicaoFunc (NOVOFUNC (ID p _) _ _ _ _) = p
+
+
+--Retorna o subprograma a ser salvo na memoria
+getSubprogFromProc :: PROC -> Subprograma
+getSubprogFromProc (NOVOPROC (ID p s) params stmts) =
+    Left (s, getDecsFromParams params, stmts)
+
+--retorna a posicao da declaracao de um procedimento
+getPosicaoProc :: PROC -> (Int,Int)
+getPosicaoProc (NOVOPROC (ID p _) _ _) = p
+
+
+--Retorna o subprograma a ser salvo na memoria
+getSubprogFromOper :: OPER -> Subprograma
+getSubprogFromOper (NOVOOPER op params ponts tipo stmts) =
+    Right (getNomeFromOp op, getDecsFromParams params, stmts, getTipoFromTipoRetorno ponts tipo)
+    
 --retorna a posicao da declaracao de um operador
 getPosicaoOper :: OPER -> (Int,Int)
-getPosicaoOper (NOVOOPER (ID p _) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOAdd (Add p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOSub (Sub p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOMult (Mult p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVODiv (Div p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOGeq (Geq p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOLeq (Leq p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVODiff (Diff p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOEqual (Equal p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOGreat (Great p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVOLess (Less p)) _ _ _ _) = p
 
+--Retorna a string com o simbolo do operador
+getNomeFromOp :: OP -> String
+getNomeFromOp (NOVOAdd _) = "+"
+getNomeFromOp (NOVOSub _) = "-"
+getNomeFromOp (NOVOMult _) = "*"
+getNomeFromOp (NOVODiv _) = "/"
+getNomeFromOp (NOVOGeq _) = ">="
+getNomeFromOp (NOVOLeq _) = "<="
+getNomeFromOp (NOVODiff _) = "-"
+getNomeFromOp (NOVOEqual _) = "="
+getNomeFromOp (NOVOGreat _) = ">"
+getNomeFromOp (NOVOLess _) = "<"
 
+--Retorna um vetor com as Declaracoes dos parametros do subprograma
+getDecsFromParams :: [PARAM] -> [Declaracao]
+getDecsFromParams _ = [] --MUDAR (TEMPORARIO)
 
+--Constroi o tipo de retorno da funcao a partir dos tokens modificadores e de retorno
+getTipoFromTipoRetorno :: [PONT] -> Token -> Tipo
+getTipoFromTipoRetorno _ _ = TipoAtomico "INTEIRO" --MUDAR (TEMPORARIO)
 
 --Avalia uma expressao e retorna seu valor
-evaluateExpr :: (EXPR, Estado) -> Valor
-evaluateExpr _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
+evaluateExpr :: EXPR -> Estado -> Valor
+evaluateExpr _ _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
+
 {-
-codigo talvez inutil feito por victor
+REESCREVER, adicionar estado
 
 getTipoFromDec :: ([PONT], Token) -> Tipo
 getTipoFromDec ([], y) = getTipoFromToken y

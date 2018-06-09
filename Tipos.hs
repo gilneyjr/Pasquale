@@ -14,14 +14,16 @@ import Data.List
 
 data Tipo = TipoAtomico String
           | TipoVetor [Integer] Tipo
-          | TipoPonteiro Tipo
+          | TipoPonteiroFim String
+          | TipoPonteiroRecursivo Tipo
           | TipoEstrutura String [Declaracao]
           deriving (Eq)
 
 instance Show Tipo where
     show (TipoAtomico s)     = s
     show (TipoVetor _ t)     = "VETOR " ++ show t
-    show (TipoPonteiro t)    = "PONTEIRO " ++ show t
+    show (TipoPonteiroFim t) = "PONTEIRO" ++ show t
+    show (TipoPonteiroRecursivo t)    = "PONTEIRO " ++ show t
     show (TipoEstrutura s _) = "ESTRUTURA " ++ s
 
 data Valor = ValorInteiro Integer
@@ -55,7 +57,8 @@ getValorInicial (TipoAtomico "LOGICO")     = ValorLogico False
 getValorInicial (TipoAtomico "TEXTO")      = ValorTexto ""
 getValorInicial (TipoAtomico "CARACTER")   = ValorCaractere ' '
 getValorInicial (TipoAtomico "REAL")       = ValorReal 0
-getValorInicial (TipoPonteiro _)           = ValorPonteiro ""
+getValorInicial (TipoPonteiroFim _)           = ValorPonteiro ""
+getValorInicial (TipoPonteiroRecursivo _)           = ValorPonteiro ""
 getValorInicial (TipoVetor (dimensao:dimensoes) tipo) =
     if null dimensoes then
         ValorVetor $ genericReplicate dimensao (getValorInicial tipo)
