@@ -13,13 +13,16 @@ import Expressoes
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
 
+--                            Return Break Continue
+type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
+
 --Funcao para executar a partir da arvore
 executaPrograma :: PROGRAMA -> IO()
 executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subprogs main)))) = do
     estado1 <- addEstrs estrs inicializarPrograma
     estado2 <- addDecs decs estado1
     estado3 <- addSubprogs subprogs estado2
-    --rodaMain main estado3
+    --iniciaBlocoMain main estado3
     print estado3
     return ()
 
@@ -57,7 +60,7 @@ getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariavei
                     (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
                 ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
             else
-                fail $ (show erro) ++ ": posição " ++ (show posicao)
+                error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
           f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
           variaveis = map getNomeVar tokensVariaveis
@@ -74,7 +77,7 @@ getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) es
             let (tipos, estadoIntermediario) = f tipoEncontrado
                 (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
             ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
-        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
           f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
           variaveis = map getNomeVar tokensVariaveis
@@ -242,15 +245,62 @@ getTipoFromTipoRetorno ponteiros (TIPO posicao nome) estado =
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
 
-rodaMain :: MAIN -> Estado -> IO Estado
-radaMain (Main []) estado = return estado
-rodaMain (Main (stmt:stmts)) estado = (executarStmt stmt estado) >>= (rodaMain (Main stmts))
+--Insere o escopo da Main, executa, e depois remove
+iniciaBlocoMain :: MAIN -> Estado -> IO EstadoCompleto
+iniciaBlocoMain (Main stmts) estado = do
+    (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts (criarEscopo 1 estado)
+    case (temRetorno, temSaia, temContinue) of
+        (False, False, False) -> rodaStmts stmts estado1
+        (True, False, False) -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+        otherwise -> case maybePos of
+            Just p -> error $ "Erro com comando na posição: " ++ show p
 
-executarStmt :: STMT -> Estado -> IO Estado
-executarStmt (NOVODEC dec) estado = addDec dec estado
+--Insere o escopo do Se, executa, e depois remove
+iniciaBlocoSe :: [STMT] -> Estado -> IO EstadoCompleto
+iniciaBlocoSe stmts estado = do
+    (estado1, a, b, c, d, e) <- rodaStmts stmts (criarEscopo (getIdEscopoAtual estado) estado)
+    return (removerEscopo estado1, a, b, c, d, e)
+
+--Insere o escopo do Enquanto, executa, e depois remove
+iniciaBlocoEnquanto :: Token -> EXPR -> [STMT] -> Estado -> IO EstadoCompleto
+iniciaBlocoEnquanto t expr stmts estado = do
+    (estado1, a, b, c, d, e) <- rodaEnquanto t expr stmts (criarEscopo (getIdEscopoAtual estado) estado)
+    return (removerEscopo estado1, a, b, c, d, e)
+
+--Insere o escopo do Bloco, executa, e depois remove
+iniciaBloco :: [STMT] -> Estado -> IO EstadoCompleto
+iniciaBloco stmts estado = do
+    (estado1, a, b, c, d, e) <- rodaStmts stmts (criarEscopo (getIdEscopoAtual estado) estado)
+    return (removerEscopo estado1, a, b, c, d, e)
+
+--Controla a execução do ENQUANTO
+rodaEnquanto :: Token -> EXPR -> [STMT] -> Estado -> IO EstadoCompleto
+rodaEnquanto (ENQUANTO p) expr stmts estado = do
+    (val,estado1) <- (return (evaluateExpr estado expr))
+    case val of
+        ValorLogico False -> return (estado1, False, False, False, Nothing, Nothing)
+        ValorLogico True -> do
+            (estado2, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts estado1
+            case (temRetorno, temSaia, temContinue) of
+                (False, False, _) -> rodaEnquanto (ENQUANTO p) expr stmts estado2
+                otherwise -> return (estado2, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+        otherwise -> error $ "Tipo da expressão não LOGICO no ENQUANTO: posição: " ++ show p
+
+--Executa lista de stmts
+rodaStmts :: [STMT] -> Estado -> IO EstadoCompleto
+radaStmts ([]) estado = return (estado, False, False, False, Nothing, Nothing)
+rodaStmts ((stmt:stmts)) estado = do
+    (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- (executarStmt stmt estado)
+    case (temRetorno, temSaia, temContinue) of
+        (False, False, False) -> rodaStmts stmts estado1
+        otherwise -> return (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+
+--Executa um stmt
+executarStmt :: STMT -> Estado -> IO EstadoCompleto
+executarStmt (NOVODEC dec) estado = undefined
 executarStmt (NOVOATRIBSTMT expr expr') estado =
     case estadoAtualizado  of
-        Right estado' -> return estado'
+        Right estado' -> return (estado', False, False, False, Nothing, Nothing)
         Left erro -> fail $ show erro
     where (nome, tipo) = getDeclaracaoFromExpr expr
           (valor, estadoIntermediario) = evaluateExpr estado expr'
@@ -263,13 +313,13 @@ executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):ca
                 case getValorInteiro valor of
                     Just valor' ->
                         case atualizarVariavel (nome, tipo, ValorInteiro (succ valor')) estado of
-                            Right estado' -> return estado'
+                            Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                             Left erro -> fail $ show erro ++ ": posição " ++ (show p)
                     Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
             else
                 let valorEstrutura = incrementaValorEstrutura campos valor in
                 case atualizarVariavel (nome, tipo, valorEstrutura) estado of
-                    Right estado' -> return estado'
+                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                     Left erro -> fail $ show erro ++ ": posição " ++ (show p)
         Left erro -> fail $ show erro ++ ": posição " ++ (show p)
 
@@ -280,27 +330,73 @@ executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):
                 case getValorInteiro valor of
                     Just valor' ->
                         case atualizarVariavel (nome, tipo, ValorInteiro (valor' - 1)) estado of
-                            Right estado' -> return estado'
+                            Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                             Left erro -> fail $ show erro ++ ": posição " ++ (show p)
                     Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
             else
                 let valorEstrutura = incrementaValorEstrutura campos valor in
                 case atualizarVariavel (nome, tipo, valorEstrutura) estado of
-                    Right estado' -> return estado'
+                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                     Left erro -> fail $ show erro ++ ": posição " ++ (show p)
         Left erro -> fail $ show erro ++ ": posição " ++ (show p)
 
 executarStmt (NOVOCHAMADA cHAMADA) estado = undefined
-executarStmt (NOVOSE nodeSE) estado = undefined
-executarStmt (NOVOENQUANTO nodeENQUANTO) estado = undefined
-executarStmt (NOVORETORNEFUNC rETORNEFUNC) estado = undefined
-executarStmt (NOVORETORNEPROC rETORNEPROC) estado = undefined
-executarStmt (NOVOSAIA nodeSAIA) estado = undefined
-executarStmt (NOVOCONTINUE nodeCONTINUE) estado = undefined
+
+executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
+    case res of
+        ValorLogico True -> iniciaBlocoSe stmts1 estado1
+        ValorLogico False -> iniciaBlocoSe stmts2 estado1
+        otherwise -> fail $ "Expressao não retorna LOGICO: posição: " ++ (show getPosSE)
+    where
+        (res, estado1) = evaluateExpr estado expr
+        getPosSE :: Token -> (Int, Int)
+        getPosSE (SE p) = p
+
+executarStmt (NOVOENQUANTO (CRIAENQUANTO t expr stmts)) estado =
+    iniciaBlocoEnquanto t expr stmts estado
+
+executarStmt (NOVORETORNEFUNC (CRIARETORNEF (RETORNE p) expr)) estado = 
+    return (estado, True, False, False, Just expr, Just p)
+    
+executarStmt (NOVORETORNEPROC (CRIARETORNEP (RETORNE p))) estado = 
+    return (estado, True, False, False, Nothing, Just p)
+    
+executarStmt (NOVOSAIA (CRIASAIA (SAIA p))) estado = 
+    return (estado, False, True, False, Nothing, Just p)
+    
+executarStmt (NOVOCONTINUE (CRIACONTINUE (CONTINUE p))) estado = 
+    return (estado, False, False, True, Nothing, Just p)
+    
 executarStmt (NOVODELETE nodeDELETE) estado = undefined
-executarStmt (NOVOESCREVA nodeESCREVA) estado = undefined
+
+executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado = do
+    case valor1 of
+        ValorTexto val -> do
+            putStr val
+            return (estado1, False, False, False, Nothing, Nothing)
+        ValorInteiro val -> do
+            putStr $ show val
+            return (estado1, False, False, False, Nothing, Nothing)
+        ValorReal val -> do
+            putStr $ show val
+            return (estado1, False, False, False, Nothing, Nothing)
+        ValorLogico val -> do
+            putStr $ showLogico val
+            return (estado1, False, False, False, Nothing, Nothing)
+        ValorCaractere val -> do
+            putStr $ show val
+            return (estado1, False, False, False, Nothing, Nothing)
+        otherwise -> error $ "Comando ESCREVA para tipo não primitivo: posição: " ++ show p
+    where
+        (valor1, estado1) = evaluateExpr estado expr
+        showLogico :: Bool -> String
+        showLogico True = "VERDADEIRO"
+        showLogico False = "FALSO"
+
 executarStmt (NOVOLEIA nodeLEIA) estado = undefined
-executarStmt (NOVOBLOCO nodeBLOCO) estado = undefined
+
+executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
+    iniciaBloco stmts estado
 
 getDeclaracaoFromExpr :: EXPR -> Declaracao
 getDeclaracaoFromExpr = undefined
@@ -332,3 +428,4 @@ decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (Valo
     else
         ValorEstrutura (campo:camposAtualizado)
     where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
+    

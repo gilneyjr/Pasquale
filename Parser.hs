@@ -307,14 +307,14 @@ parseNovobloco = do
 
 parseRetornefunc :: ParseArgs RETORNEFUNC
 parseRetornefunc = do
-    parseRetorne
-    a <- parseExpr
-    return $ CRIARETORNEF a 
+    a <- parseRetorne
+    b <- parseExpr
+    return $ CRIARETORNEF a b
 
 parseRetorneproc :: ParseArgs RETORNEPROC
 parseRetorneproc = do
-    parseRetorne
-    return $ CRIARETORNEP
+    a <- parseRetorne
+    return $ CRIARETORNEP a
 
 parseAtrib :: ParseArgs ATRIB
 parseAtrib = do
@@ -359,19 +359,19 @@ parseNovoleia = do
 
 parseNodeleia :: ParseArgs NodeLEIA
 parseNodeleia = do
-    parseLeia
+    a <- parseLeia
     parseOpenbrack
-    a <- sepBy1 parseVar parseComma
+    b <- sepBy1 parseVar parseComma
     parseClosebrack
-    return $ CRIALEIA a 
+    return $ CRIALEIA a b
 
 parseNodeescreva :: ParseArgs NodeESCREVA
 parseNodeescreva = do
-    parseEscreva
+    a <- parseEscreva
     parseOpenbrack
-    a <- parseExpr
+    b <- parseExpr
     parseClosebrack
-    return $ CRIAESCREVA a 
+    return $ CRIAESCREVA a b
 
 parseNodebloco :: ParseArgs NodeBLOCO
 parseNodebloco = do
@@ -409,13 +409,13 @@ parseEmptysqbrack = do
 
 parseNodese :: ParseArgs NodeSE
 parseNodese = do
-    parseSe
+    token <- parseSe
     a <- parseExpr
     parseEntao
     b <- many parseStmt
     c <- parseOptionalsenao
     parseFimse
-    return $ CRIASE a b c 
+    return $ CRIASE token a b c 
 
 parseOptionalsenao :: ParseArgs OptionalSENAO
 parseOptionalsenao =
@@ -434,12 +434,12 @@ parseEmptysenao = do
 
 parseNodeenquanto :: ParseArgs NodeENQUANTO
 parseNodeenquanto = do
-    parseEnquanto
-    a <- parseExpr
+    a <- parseEnquanto
+    b <- parseExpr
     parseExecute
-    b <- many parseStmt
+    c <- many parseStmt
     parseFimenquanto
-    return $ CRIAENQUANTO a b 
+    return $ CRIAENQUANTO a b c
 
 parseNodecontinue :: ParseArgs NodeCONTINUE
 parseNodecontinue = do
