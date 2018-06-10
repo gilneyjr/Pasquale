@@ -98,11 +98,11 @@ data STMT =
     deriving (Eq,Show)
 
 data RETORNEFUNC =
-    CRIARETORNEF EXPR
+    CRIARETORNEF {-RETORNE-}Token EXPR
     deriving (Eq,Show)
 
 data RETORNEPROC =
-    CRIARETORNEP
+    CRIARETORNEP {-RETORNE-}Token
     deriving (Eq,Show)
 
 data ATRIB =
@@ -122,11 +122,11 @@ data CHAMADA =
     deriving (Eq,Show)
 
 data NodeLEIA = 
-    CRIALEIA [VAR]
+    CRIALEIA {-LEIA-}Token [VAR]
     deriving (Eq,Show)
     
 data NodeESCREVA = 
-    CRIAESCREVA EXPR
+    CRIAESCREVA {-ESCREVA-}Token EXPR
     deriving (Eq,Show)
 
 data NodeBLOCO =
@@ -182,7 +182,7 @@ data OptionalSQBRACK =
     deriving (Eq,Show)
 
 data NodeSE =
-    CRIASE EXPR [STMT] OptionalSENAO
+    CRIASE Token EXPR [STMT] OptionalSENAO
     deriving (Eq,Show)
 
 data OptionalSENAO =
@@ -190,7 +190,7 @@ data OptionalSENAO =
     deriving (Eq,Show)
 
 data NodeENQUANTO =
-    CRIAENQUANTO EXPR [STMT]
+    CRIAENQUANTO {-ENQUANTO-}Token EXPR [STMT]
     deriving (Eq,Show)
 
 data NodeCONTINUE = 
