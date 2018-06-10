@@ -199,7 +199,7 @@ parseParam :: ParseArgs PARAM
 parseParam = do
     a <- many parsePont
     b <- parseTipo
-    c <- parseSingleVar
+    c <- parseSinglevar
     return $ NOVOPARAM a b c
 
 parseMain :: ParseArgs MAIN
@@ -477,10 +477,10 @@ parseContinuaou a = do
     op <- parseOu <|> parseSlowou
     b <- parseCriae
     if isOu op then do
-        c <- parseTentaou $ CRIAOU a b 
+        c <- parseTentaou $ CRIAOU a op b 
         return c
     else do
-        c <- parseTentaou $ CRIASLOWOU a b
+        c <- parseTentaou $ CRIASLOWOU a op b
         return c
     where
         isOu (OU _) = True
@@ -500,10 +500,10 @@ parseContinuae a = do
     op <- parseE <|> parseSlowe
     b <- parseComp
     if isE op then do
-        c <- parseTentae $ CRIAE a b
+        c <- parseTentae $ CRIAE a op b
         return c 
     else do
-        c <- parseTentae $ CRIASLOWE a b
+        c <- parseTentae $ CRIASLOWE a op b
         return c
     where
         isE (E _) = True
@@ -524,22 +524,22 @@ parseContinuacomp a = do
     b <- parseCriaadd
     
     if isLess op then
-        return $ CRIALESS a b
+        return $ CRIALESS a op b
     
     else if isLeq op then
-        return $ CRIALEQ a b
+        return $ CRIALEQ a op b
     
     else if isEqual op then
-        return $ CRIAEQUAL a b
+        return $ CRIAEQUAL a op b
     
     else if isGeq op then
-        return $ CRIAGEQ a b
+        return $ CRIAGEQ a op b
     
     else if isGreat op then
-        return $ CRIAGREAT a b
+        return $ CRIAGREAT a op b
     
     else
-        return $ CRIADIFF a b
+        return $ CRIADIFF a op b
     
     where
         isLess (Less _) = True
@@ -567,10 +567,10 @@ parseContinuaadd a = do
     op <- parseAdd <|> parseSub
     b <- parseCriamult
     if isAdd op then do
-        c <- parseTentaadd $ CRIAADD a b
+        c <- parseTentaadd $ CRIAADD a op b
         return c
     else do
-        c <- parseTentaadd $ CRIASUB a b
+        c <- parseTentaadd $ CRIASUB a op b
         return c
     where
         isAdd (Add _) = True
@@ -590,19 +590,20 @@ parseContinuamult a = do
     op <- parseMult <|> parseDiv <|> parseMod
     b <- parseAtomico
     if isMult op then do
-        c <- parseTentamult $ CRIAMULT a b 
+        c <- parseTentamult $ CRIAMULT a op b 
         return c
     else if isDiv op then do
-        c <- parseTentamult $ CRIADIV a b
+        c <- parseTentamult $ CRIADIV a op b
         return c
     else do
-        c <- parseTentamult $ CRIAMOD a b
+        c <- parseTentamult $ CRIAMOD a op b
         return c
     where
         isMult (Mult _) = True
         isMult _ = False
         isDiv (Div _) = True
         isDiv _ = False
+
 
 parseAtomico :: ParseArgs EXPR
 parseAtomico = 
@@ -622,15 +623,15 @@ parseAtomico =
 
 parseCrianeg :: ParseArgs EXPR
 parseCrianeg = do
-    parseSub
+    op <- parseSub
     a <- parseExpr
-    return $ CRIANEG a 
+    return $ CRIANEG op a 
 
 parseCrianot :: ParseArgs EXPR
 parseCrianot = do
-    parseNot
+    op <- parseNot
     a <- parseExpr
-    return $ CRIANOT a 
+    return $ CRIANOT op a 
 
 parseCriatexto :: ParseArgs EXPR
 parseCriatexto = do
@@ -709,8 +710,7 @@ parseCriaparenteses = do
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do
     parseOpenbrack
-    a <- many parsePont
-    b <- parseTipo
+    a <- parseTipo
     parseClosebrack
-    c <- parseExpr
-    return $ CRIACONVERSAO a b c
+    b <- parseExpr
+    return $ CRIACONVERSAO a b 
