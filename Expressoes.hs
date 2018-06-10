@@ -362,11 +362,125 @@ evaluateExpr estado (CRIALOGICO (LOGICO _ l)) = (ValorLogico l, estado) -- OK
 evaluateExpr estado (CRIAREAL (REAL _ r)) = (ValorReal r, estado) -- OK
 evaluateExpr estado (CRIAPARENTESES a) = evaluateExpr estado a -- OK
 
+-- variável simples
+evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack [])])) = 
+    case (getVariavel nome estado) of
+        Right (_,_,valor) -> (valor,estado)
+        Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
+
+-- variáveis simples com acesso a vetor
+evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack ids)])) =
+    case (getVariavel nome estado) of
+        Right (_, TipoVetor faixas _, valor) ->
+            case (evaluateVet estado valor faixas ids) of
+                Right result -> result
+                Left err     -> error $ err ++ ": posição " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
+
 {-
+    estado
+    vetor
+    limites
+    indices
+
+    retorna (Valor,Estado)
+-}
+evaluateVet :: Estado -> Valor -> [Integer] -> [EXPR] -> Either String (Valor,Estado)
+evaluateVet _ _ [] [expr] = Left "O número de índices é maior que o número de dimensões no vetor"
+evaluateVet _ _ [dim] [] = Left "O número de índices é menor que o número de dimensões no vetor"
+evaluateVet estado (ValorVetor valores) [dim] [expr] = 
+    case res_expr of
+        (ValorInteiro i, estado_atualizado) ->
+            case getIth valores i of
+                Right valor -> Right (valor, estado_atualizado)
+                Left err    -> Left err
+        (ValorLogico _, _)    -> Left "Valor LOGICO passado como subscrito de vetor"
+        (ValorTexto _, _)     -> Left "Valor TEXTO passado como subscrito de vetor"
+        (ValorCaractere _, _) -> Left "Valor CARACTERE passado como subscrito de vetor"
+        (ValorReal _, _)      -> Left "Valor REAL passado como subscrito de vetor"
+        (ValorVetor _, _)     -> Left "vetor passado como subscrito de outro vetor"
+        (ValorPonteiro p, _)  -> Left $ "PONTEIRO " ++ p ++ " passado como subscrito de outro vetor"
+        (ValorEstrutura _, _) -> Left "ESTRUTURA passada como subscrito de vetor"
+    where
+        res_expr = evaluateExpr estado expr
+
+evaluateVet estado (ValorVetor valores) (dim:dims) (expr:exprs) = 
+    case res_expr of
+        (ValorInteiro i, estado_atualizado) ->
+            case getIth valores i of
+                Right valor -> evaluateVet estado_atualizado valor dims exprs 
+                Left err    -> Left err
+        (ValorLogico _, _)    -> Left "Valor LOGICO passado como subscrito de vetor"
+        (ValorTexto _, _)     -> Left "Valor TEXTO passado como subscrito de vetor"
+        (ValorCaractere _, _) -> Left "Valor CARACTERE passado como subscrito de vetor"
+        (ValorReal _, _)      -> Left "Valor REAL passado como subscrito de vetor"
+        (ValorVetor _, _)     -> Left "vetor passado como subscrito de outro vetor"
+        (ValorPonteiro p, _)  -> Left $ "PONTEIRO " ++ p ++ " passado como subscrito de outro vetor"
+        (ValorEstrutura _, _) -> Left "ESTRUTURA passada como subscrito de vetor"
+    where
+        res_expr = evaluateExpr estado expr
+
+getIth :: [t] -> Integer -> Either String t
+getIth [] _ = Left "Indice fora de faixa"
+getIth (a:b) i
+    | i < 1     = Left "Indice fora de faixa" 
+    | i == 1    = Right a
+    | otherwise = getIth b (i-1)
+
+
+{-
+-- Variável única sem colchetes
+evaluateExpr estado (Var [(SingleVar (ID posicao nome) (OptionalSQBRACK []))]) =
+    case (getVariavel nome estado) of
+        Right (_,_,valor) -> (valor,estado)
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+
+-- Variável única com colchetes -- TERMINAR
+evaluateExpr estado (Var [(SingleVar (ID posicao nome) (OptionalSQBRACK indices)]) = 
+    case (getVariavel nome) of
+        Right (_, TipoVetor faixas _,valor) -> 
+            
+                Left erro -> fail $ erro ++ ": posição " ++ (show posicao) ++ "\nForneça índices inteiros para o vetor."
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+
+-- Lista de Var onde a cabeça sem colchetes
+evaluateExpr estado (Var ((SingleVar (ID posicao nome) (OptionalSQBRACK [])):vars)) =
+    case (getVariavel nome estado) of
+        Right (_, TipoEstrutura nome_estr _, var_estr:vars_estr) -> 
+        Right _ -> fail $ "Varariável " ++ nome ++ " não é uma ESTRUTURA: posição " ++ (show posicao) 
+        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
+
+-- Lista de Var onde a cabeça com colchetes
+evaluateExpr (Var ((SingleVar (ID _ nome) (OptionalSQBRACK [])):vars)) = do
+
+evaluateEstr :: [SingleVar] -> [Variavel] -> Either String Valor
+-- Caso só haja somente um campo para acessar e ele não seja um vetor 
+evaluateEstr [SingleVar (ID posicao nome) (OptionalSQBRACK [])] vars =
+    case (getVariavelTabela nome vars) of
+        Just (_,_,valor) -> Right valor
+        Nothing -> Left $ "não possui o campo " ++ nome
+
+-- Caso 
+
+-- Caso haja mais de um campo para acessar, e o primeiro não seja um vetor
+evaluateEstr (SingleVar (ID posicao nome) (OptionalSQBRACK []):campos) vars =
+    case (getVariavelTabela nome vars) of
+        Just (_, TipoEstrutura tipoEstr _, ValorEstrutura vars_estr) ->
+            -- Procure pelos campos restantes na lista de variáveis da estrutura
+            case (evaluateEstr campos vars_estr) of
+                Right valor -> Right valor
+                Left erro -> fail $ "Variável " ++ nome ++ erro ++ ": posição " ++ (show posicao)
+        Just (_, _, _) -> fail $ "Variável " ++ nome ++ " não é uma ESTRUTURA: posição " ++ (show posicao)
+        Nothing -> Left $ "não possui o campo " ++ nome /
+-}
+
+
+
+{-
+
     CRIAVAR VAR |
     CRIACHAMADAFUNC CHAMADA |
     CRIANOVO [PONT] {-TIPO-}Token OptionalSQBRACK |
     CRIAVALOREXPR VAL |
     CRIACONVERSAO {-TIPO-}Token EXPR
 -}
-
