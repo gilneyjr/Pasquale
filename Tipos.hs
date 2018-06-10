@@ -22,7 +22,7 @@ data Tipo = TipoAtomico String
 
 instance Show Tipo where
     show (TipoAtomico s)     = s
-    show (TipoVetor _ t)     = "VETOR " ++ show t
+    show (TipoVetor d t)     = "VETOR" ++ show d ++ " " ++ show t
     show (TipoPonteiroFim t) = "PONTEIRO " ++ show t
     show (TipoPonteiroRecursivo t)    = "PONTEIRO " ++ show t
     show (TipoEstrutura s _) = "ESTRUTURA " ++ s

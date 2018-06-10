@@ -199,7 +199,7 @@ parseParam :: ParseArgs PARAM
 parseParam = do
     a <- many parsePont
     b <- parseTipo
-    c <- parseVar
+    c <- parseSingleVar
     return $ NOVOPARAM a b c
 
 parseMain :: ParseArgs MAIN

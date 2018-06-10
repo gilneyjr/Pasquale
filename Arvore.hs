@@ -72,7 +72,7 @@ data OP =
     deriving (Eq,Show)
         
 data PARAM = 
-    NOVOPARAM [PONT] {-TIPO-}Token VAR
+    NOVOPARAM [PONT] {-TIPO-}Token SingleVAR
     deriving (Eq,Show)
 
 data MAIN = 

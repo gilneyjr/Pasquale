@@ -206,7 +206,7 @@ getDecsFromParams [] _ = []
 getDecsFromParams parametros estado = getDecs (map paramToDec parametros) estado
 
 paramToDec :: PARAM -> DEC
-paramToDec (NOVOPARAM ponts tokenTipo (Var variaveis)) = NOVADEC ponts tokenTipo (map (VAR_SEM) variaveis)
+paramToDec (NOVOPARAM ponts tokenTipo variavel) = NOVADEC ponts tokenTipo [(VAR_SEM variavel)]
 
 --Constroi o tipo de retorno da funcao a partir dos tokens modificadores e de retorno
 getTipoFromTipoRetorno :: [PONT] -> Token -> Estado -> Tipo
