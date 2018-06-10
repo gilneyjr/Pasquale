@@ -8,6 +8,7 @@ import Tipos
 import Estado
 import Lexico
 import Arvore
+import Expressoes
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
@@ -32,36 +33,50 @@ addEstrs (a:b) estado =
     case novo of
         Right estadoAtualizado -> addEstrs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addTipo (getTipoFromEstr a estado) estado
+    where (tipoEstrutura, estadoFinal) = (getTipoFromEstr a estado)
+          novo = addTipo tipoEstrutura estadoFinal
           posicao = getPosicaoEstr a
 
 --Retorna o tipo de uma estrutura
-getTipoFromEstr :: ESTR -> Estado -> Tipo
-getTipoFromEstr (NOVOESTR (TIPO _ nome) decs) estado = TipoEstrutura nome (getDecsEstr nome decs estado)  
+getTipoFromEstr :: ESTR -> Estado -> (Tipo, Estado)
+getTipoFromEstr (NOVOESTR (TIPO _ nome) decs) estado = ((TipoEstrutura nome declaracoes), estadoFinal)
+    where (declaracoes, estadoFinal) = (getDecsEstr nome decs estado)
 
 --Retorna as declarações de uma estrutura
-getDecsEstr :: String -> [DEC] -> Estado -> [Declaracao]
-getDecsEstr _ [] _ = []
+getDecsEstr :: String -> [DEC] -> Estado -> ([Declaracao], Estado)
+getDecsEstr _ [] estado = ([], estado)
 getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
     case tipoPrimitivo of
-        Right tipoEncontrado -> (zip variaveis (map (getTipoPonteiro ponteiros) (f tipoEncontrado))) ++ (getDecsEstr nomeEstrutura declaracoes estado)
+        Right tipoEncontrado -> 
+            let (tipos, estadoIntermediario) = f tipoEncontrado
+                (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
+            ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
         Left erro -> 
             if nomeEstrutura == nome then
-                (zip variaveis (map (getTipoPonteiro ponteiros) (f (TipoEstrutura nome [])))) ++ (getDecsEstr nomeEstrutura declaracoes estado)
+                let (tipos, estadoIntermediario) = f (TipoEstrutura nome [])
+                    (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
+                ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
             else
                 fail $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
-          f tipo = map (\token -> getTipoVetor tipo token estado) tokensVariaveis
+          f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
           variaveis = map getNomeVar tokensVariaveis
 
-getDecs :: [DEC] -> Estado -> [Declaracao]
-getDecs [] _ = []
+funcaoFold' :: Tipo -> ([Tipo], Estado) -> VAR_ -> ([Tipo], Estado)
+funcaoFold' tipo (tipos, estadoInicial) token = ((tipo':tipos), estadoFinal)
+    where (tipo', estadoFinal) = (getTipoVetor tipo token estadoInicial)
+
+getDecs :: [DEC] -> Estado -> ([Declaracao], Estado)
+getDecs [] estado = ([], estado)
 getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
     case tipoPrimitivo of
-        Right tipoEncontrado -> (zip variaveis (map (getTipoPonteiro ponteiros) (f tipoEncontrado))) ++ (getDecs declaracoes estado)
+        Right tipoEncontrado -> 
+            let (tipos, estadoIntermediario) = f tipoEncontrado
+                (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
+            ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
-          f tipo = map (\token -> getTipoVetor tipo token estado) tokensVariaveis
+          f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
           variaveis = map getNomeVar tokensVariaveis
 
 getTipoPonteiro :: [PONT] -> Tipo -> Tipo
@@ -70,22 +85,26 @@ getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
 getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
 getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
 
-getTipoVetor :: Tipo -> VAR_ -> Estado -> Tipo
-getTipoVetor tipo (VAR_SEM (SingleVar _ (OptionalSQBrack []))) estado = tipo
-getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar _ (OptionalSQBrack [])) _)) _ = tipo
+getTipoVetor :: Tipo -> VAR_ -> Estado -> (Tipo, Estado)
+getTipoVetor tipo (VAR_SEM (SingleVar _ (OptionalSQBrack []))) estado = (tipo, estado)
+getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar _ (OptionalSQBrack [])) _)) estado = (tipo, estado)
 getTipoVetor tipo (VAR_SEM (SingleVar posicao (OptionalSQBrack exprs))) estado =
     if all (\v -> isJust v) valores then
-        TipoVetor (catMaybes valores) tipo
+        (TipoVetor (catMaybes valores) tipo, estadoFinal)
     else
         error $ "Expressão não é um valor inteiro valido: posição: " ++ (show posicao)
-    where valores = map (\e -> getValorInteiro (evaluateExpr estado e)) exprs
+    where (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
 
 getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar posicao (OptionalSQBrack exprs)) _)) estado =
     if all (\v -> isJust v) valores then
-        TipoVetor (catMaybes valores) tipo
+        (TipoVetor (catMaybes valores) tipo, estadoFinal)
     else
         error $ "Expressão não é um valor inteiro valido: posição: " ++ (show posicao)
-    where valores = map (\e -> getValorInteiro (evaluateExpr estado e)) exprs
+    where (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
+
+funcaoFold :: ([Maybe Integer], Estado) -> EXPR -> ([Maybe Integer], Estado)
+funcaoFold (valores, estadoInicial) expr = (((getValorInteiro valor):valores), estadoFinal)
+    where (valor, estadoFinal) = evaluateExpr estadoInicial expr
 
 getNomeVar :: VAR_ -> String
 getNomeVar (VAR_SEM (SingleVar (ID _ nome) _)) = nome
@@ -111,16 +130,17 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_SEM id):b)) estado =
     case res of
         Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where (nome', tipo') = head $ getDecs [declaracao] estado
-          res = addVariavel (nome', tipo', getValorInicial tipo') estado
+    where ((nome', tipo'):_, estadoIntermediario) = getDecs [declaracao] estado
+          res = addVariavel (nome', tipo', getValorInicial tipo') estadoIntermediario
           posicao = getPosicaoSingleVar id
 
 addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
     case res of
         Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where (nome', tipo') = head $ getDecs [declaracao] estado
-          res = addVariavel (nome', tipo', evaluateExpr estado expr) estado
+    where ((nome', tipo'):_, estadoIntermediario) = getDecs [declaracao] estado
+          (valor, estado') = evaluateExpr estadoIntermediario expr
+          res = addVariavel (nome', tipo', valor) estado'
           posicao = getPosicaoSingleVar id
 
 --Retorna a posicao em que esta o nome de uma variavel
@@ -134,25 +154,29 @@ addSubprogs ((CRIAFUNC func):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addSubprograma (getSubprogFromFunc func estado) estado
+    where (subprograma, estadoIntermediario) = getSubprogFromFunc func estado
+          novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoFunc func
 addSubprogs ((CRIAPROC proc):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addSubprograma (getSubprogFromProc proc estado) estado
+    where (subprograma, estadoIntermediario) = getSubprogFromProc proc estado
+          novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoProc proc
 addSubprogs ((CRIAOPER oper):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where novo = addSubprograma (getSubprogFromOper oper estado) estado
+    where (subprograma, estadoIntermediario) = getSubprogFromOper oper estado
+          novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoOper oper
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromFunc :: FUNC -> Estado -> Subprograma
+getSubprogFromFunc :: FUNC -> Estado -> (Subprograma, Estado)
 getSubprogFromFunc (NOVOFUNC (ID p s) params ponts tipo stmts) estado = 
-    Right (s, getDecsFromParams params estado, stmts, getTipoFromTipoRetorno ponts tipo estado)
+    (Right (s, decs, stmts, getTipoFromTipoRetorno ponts tipo estadoFinal), estadoFinal)
+    where (decs, estadoFinal) = getDecsFromParams params estado
 
 --retorna a posicao da declaracao de uma funcao
 getPosicaoFunc :: FUNC -> (Int,Int)
@@ -160,9 +184,10 @@ getPosicaoFunc (NOVOFUNC (ID p _) _ _ _ _) = p
 
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromProc :: PROC -> Estado -> Subprograma
+getSubprogFromProc :: PROC -> Estado -> (Subprograma, Estado)
 getSubprogFromProc (NOVOPROC (ID p s) params stmts) estado =
-    Left (s, getDecsFromParams params estado, stmts)
+    (Left (s, decs, stmts), estadoFinal)
+    where (decs, estadoFinal) = getDecsFromParams params estado
 
 --retorna a posicao da declaracao de um procedimento
 getPosicaoProc :: PROC -> (Int,Int)
@@ -170,9 +195,10 @@ getPosicaoProc (NOVOPROC (ID p _) _ _) = p
 
 
 --Retorna o subprograma a ser salvo na memoria
-getSubprogFromOper :: OPER -> Estado -> Subprograma
+getSubprogFromOper :: OPER -> Estado -> (Subprograma, Estado)
 getSubprogFromOper (NOVOOPER op params ponts tipo stmts) estado =
-    Right (getNomeFromOp op, getDecsFromParams params estado, stmts, getTipoFromTipoRetorno ponts tipo estado)
+    (Right (getNomeFromOp op, decs, stmts, getTipoFromTipoRetorno ponts tipo estadoFinal), estadoFinal)
+    where (decs, estadoFinal) = getDecsFromParams params estado
     
 --retorna a posicao da declaracao de um operador
 getPosicaoOper :: OPER -> (Int,Int)
@@ -201,8 +227,8 @@ getNomeFromOp (NOVOGreat _) = ">"
 getNomeFromOp (NOVOLess _) = "<"
 
 --Retorna um vetor com as Declaracoes dos parametros do subprograma
-getDecsFromParams :: [PARAM] -> Estado -> [Declaracao]
-getDecsFromParams [] _ = []
+getDecsFromParams :: [PARAM] -> Estado -> ([Declaracao], Estado)
+getDecsFromParams [] estado = ([], estado)
 getDecsFromParams parametros estado = getDecs (map paramToDec parametros) estado
 
 paramToDec :: PARAM -> DEC
@@ -216,6 +242,93 @@ getTipoFromTipoRetorno ponteiros (TIPO posicao nome) estado =
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
 
---Avalia uma expressao e retorna seu valor
-evaluateExpr :: Estado -> EXPR -> Valor
-evaluateExpr _ _ = ValorInteiro 0 --MUDAR (TEMPORARIO)
+rodaMain :: MAIN -> Estado -> IO Estado
+radaMain (Main []) estado = return estado
+rodaMain (Main (stmt:stmts)) estado = (executarStmt stmt estado) >>= (rodaMain (Main stmts))
+
+executarStmt :: STMT -> Estado -> IO Estado
+executarStmt (NOVODEC dec) estado = addDec dec estado
+executarStmt (NOVOATRIBSTMT expr expr') estado =
+    case estadoAtualizado  of
+        Right estado' -> return estado'
+        Left erro -> fail $ show erro
+    where (nome, tipo) = getDeclaracaoFromExpr expr
+          (valor, estadoIntermediario) = evaluateExpr estado expr'
+          estadoAtualizado = atualizarVariavel (nome, tipo, valor) estadoIntermediario
+
+executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado = 
+    case getVariavel nomeCampo estado of
+        Right (nome, tipo, valor) ->
+            if null campos then
+                case getValorInteiro valor of
+                    Just valor' ->
+                        case atualizarVariavel (nome, tipo, ValorInteiro (succ valor')) estado of
+                            Right estado' -> return estado'
+                            Left erro -> fail $ show erro ++ ": posição " ++ (show p)
+                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+            else
+                let valorEstrutura = incrementaValorEstrutura campos valor in
+                case atualizarVariavel (nome, tipo, valorEstrutura) estado of
+                    Right estado' -> return estado'
+                    Left erro -> fail $ show erro ++ ": posição " ++ (show p)
+        Left erro -> fail $ show erro ++ ": posição " ++ (show p)
+
+executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado = 
+    case getVariavel nomeCampo estado of
+        Right (nome, tipo, valor) ->
+            if null campos then
+                case getValorInteiro valor of
+                    Just valor' ->
+                        case atualizarVariavel (nome, tipo, ValorInteiro (valor' - 1)) estado of
+                            Right estado' -> return estado'
+                            Left erro -> fail $ show erro ++ ": posição " ++ (show p)
+                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+            else
+                let valorEstrutura = incrementaValorEstrutura campos valor in
+                case atualizarVariavel (nome, tipo, valorEstrutura) estado of
+                    Right estado' -> return estado'
+                    Left erro -> fail $ show erro ++ ": posição " ++ (show p)
+        Left erro -> fail $ show erro ++ ": posição " ++ (show p)
+
+executarStmt (NOVOCHAMADA cHAMADA) estado = undefined
+executarStmt (NOVOSE nodeSE) estado = undefined
+executarStmt (NOVOENQUANTO nodeENQUANTO) estado = undefined
+executarStmt (NOVORETORNEFUNC rETORNEFUNC) estado = undefined
+executarStmt (NOVORETORNEPROC rETORNEPROC) estado = undefined
+executarStmt (NOVOSAIA nodeSAIA) estado = undefined
+executarStmt (NOVOCONTINUE nodeCONTINUE) estado = undefined
+executarStmt (NOVODELETE nodeDELETE) estado = undefined
+executarStmt (NOVOESCREVA nodeESCREVA) estado = undefined
+executarStmt (NOVOLEIA nodeLEIA) estado = undefined
+executarStmt (NOVOBLOCO nodeBLOCO) estado = undefined
+
+getDeclaracaoFromExpr :: EXPR -> Declaracao
+getDeclaracaoFromExpr = undefined
+
+incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
+incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado posição: " ++ (show p)
+incrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (ValorEstrutura (campo@(nome, tipo, valor):campos)) =
+    if nomeCampo == nome then
+        if null nomeCampos then
+            case getValorInteiro valor of
+                Just valor' -> ValorEstrutura ((nome, tipo, ValorInteiro (succ valor')):campos)
+                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+        else
+            ValorEstrutura ((nome, tipo, (incrementaValorEstrutura nomeCampos valor)):campos)
+    else
+        ValorEstrutura (campo:camposAtualizado)
+    where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
+
+decrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
+decrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado posição: " ++ (show p)
+decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (ValorEstrutura (campo@(nome, tipo, valor):campos)) =
+    if nomeCampo == nome then
+        if null nomeCampos then
+            case getValorInteiro valor of
+                Just valor' -> ValorEstrutura ((nome, tipo, ValorInteiro (valor' - 1)):campos)
+                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+        else
+            ValorEstrutura ((nome, tipo, (incrementaValorEstrutura nomeCampos valor)):campos)
+    else
+        ValorEstrutura (campo:camposAtualizado)
+    where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
