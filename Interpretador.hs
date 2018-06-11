@@ -249,7 +249,10 @@ iniciaBlocoMain :: MAIN -> Estado -> IO EstadoCompleto
 iniciaBlocoMain (Main stmts) estado = do
     (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts (criarEscopo 1 estado)
     case (temRetorno, temSaia, temContinue) of
-        (_, False, False) -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+        (_, False, False) -> 
+            case maybeExpr of
+                Nothing -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+                otherwise -> error $ "Erro retorno não vazio: posição: " ++ show p
         otherwise -> case maybePos of
             Just p -> error $ "Erro com comando na posição: " ++ show p
 
@@ -281,7 +284,7 @@ rodaEnquanto (ENQUANTO p) expr stmts estado = do
             (estado2, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts estado1
             case (temRetorno, temSaia, temContinue) of
                 (False, False, _) -> rodaEnquanto (ENQUANTO p) expr stmts estado2
-                otherwise -> return (estado2, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+                otherwise -> return (estado2, temRetorno, False, temContinue, maybeExpr, maybePos)
         otherwise -> error $ "Tipo da expressão não LOGICO no ENQUANTO: posição: " ++ show p
 
 --Executa lista de stmts
