@@ -13,6 +13,7 @@ module Estado (
     removerEscopo,
     addVariavel,
     getVariavel,
+    removerVariavel,
     atualizarVariavel,
     addTipo,
     addSubprograma,
@@ -172,7 +173,43 @@ atualizarVariavelTabela simbolo@(nome, _, _) tabela =
             let (inicio, fim) = genericSplitAt index' tabela in
             Just $ inicio ++ [simbolo] ++ (tail fim)
         Nothing -> Nothing
-    where index = findIndex (\(nome', _, _) -> nome == nome') tabela          
+    where index = findIndex (\(nome', _, _) -> nome == nome') tabela        
+
+-- Remove um símbolo no estado passado
+removerVariavel :: Variavel -> Estado -> Either ErroEstado Estado
+removerVariavel simbolo (pilhaAtual, tipos, funcoes) =
+    case pilhaAtualizada of
+        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes)
+        Left error -> Left error
+    where pilhaAtualizada = removerVariavelPilha simbolo pilhaAtual
+
+-- Remove um símbolo no pilha de escopos passada
+removerVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
+removerVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
+    case pilha of
+        Just pilhaAtualizada -> Right pilhaAtualizada
+        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+    where pilha = removerVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
+
+-- Auxiliar para a remoção do símbolo na pilha
+removerVariavelPilha' :: Variavel -> Maybe Escopo -> [Escopo] -> Maybe [Escopo]
+removerVariavelPilha' _ Nothing _ = Nothing
+removerVariavelPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnterior, tabelaAtual)) pilha =
+    case tabela of
+        Just tabelaAtualizada -> Just $ inicio ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ (tail fim)
+        Nothing -> removerVariavelPilha' simbolo (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
+    where tabela = removerVariavelTabela simbolo tabelaAtual
+          (inicio, fim) = genericSplitAt ((genericLength pilha) - idEscopoAtual) pilha
+
+-- Remove um símbolo na tabela de símbolos
+removerVariavelTabela :: Variavel -> [Variavel] -> Maybe [Variavel]
+removerVariavelTabela simbolo@(nome, _, _) tabela =
+    case index of
+        Just index' -> 
+            let (inicio, fim) = genericSplitAt index' tabela in
+            Just $ inicio ++ (tail fim)
+        Nothing -> Nothing
+    where index = findIndex (\(nome', _, _) -> nome == nome') tabela     
 
 -- Adiciona um tipo no estado
 addTipo :: Tipo -> Estado -> Either ErroEstado Estado

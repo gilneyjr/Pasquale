@@ -366,7 +366,19 @@ executarStmt (NOVOSAIA (CRIASAIA (SAIA p))) estado =
 executarStmt (NOVOCONTINUE (CRIACONTINUE (CONTINUE p))) estado = 
     return (estado, False, False, True, Nothing, Just p)
     
-executarStmt (NOVODELETE nodeDELETE) estado = undefined
+executarStmt (NOVODELETE (CRIADELETE tok expr)) estado = 
+    case val of
+        ValorPonteiro s -> case removerVariavel (justVar (getVariavel s estado1)) estado1 of
+            Right estado2 -> return (estado2, False, False, False, Nothing, Nothing)
+            Left erro -> error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
+        otherwise -> error $ "Operação de delete para expressão que não retorna Ponteiro: posição: " ++ (show $ getPosFromDelete tok)
+    where
+        (val, estado1) = evaluateExpr estado expr
+        justVar :: (Either ErroEstado Variavel) -> Variavel
+        justVar (Right x) = x
+        justVar (Left _) = error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
+        getPosFromDelete :: Token -> (Int, Int)
+        getPosFromDelete (DELETE p) = p
 
 executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
     case valor1 of
