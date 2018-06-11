@@ -110,7 +110,7 @@ addVariavelEscopo simbolo (idEscopo, idEscopoAnterior, tabelaAtual) =
 addVariavelTabela :: Variavel -> [Variavel] -> Either ErroEstado [Variavel] 
 addVariavelTabela variavel@(nome, _, _) tabela =
     case getVariavelTabela nome tabela of
-        Just _ -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome:" ++ nome)
+        Just _ -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome: " ++ nome)
         Nothing -> Right $ variavel:tabela
 
 -- Busca por um símbolo na tabela de símbolos pelo nome
@@ -126,7 +126,7 @@ getVariavelPilha :: String -> [Escopo] -> Either ErroEstado Variavel
 getVariavelPilha nome pilha =
     case simbolo of
         Just simbolo' -> Right simbolo'
-        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+        Nothing -> Left $ ErroBuscaVariavel $ " '" ++ nome ++ "' não encontrado!"
     where simbolo = getVariavelPilha' nome (Just (head pilha)) pilha
 
 -- Auxiliar para a busca por um símbolo na pilha
@@ -152,7 +152,7 @@ atualizarVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
 atualizarVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
     case pilha of
         Just pilhaAtualizada -> Right pilhaAtualizada
-        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+        Nothing -> Left $ ErroBuscaVariavel $ "'" ++ nome ++ "' não encontrado!"
     where pilha = atualizarVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
 
 -- Auxiliar para a atualização do símbolo na pilha
@@ -232,7 +232,7 @@ getTipo :: String -> Estado -> Either ErroEstado Tipo
 getTipo nome (pilha, tipos, funcoes) =
     case tipo of
         Just tipoEncontrado -> Right tipoEncontrado
-        Nothing -> Left $ ErroBuscaTipo $ "Tipo " ++ nome ++ "não encontrado"
+        Nothing -> Left $ ErroBuscaTipo $ "Tipo '" ++ nome ++ "' não encontrado"
     where tipo = getTipoLista nome tipos
 
 getTipoLista :: String -> [Tipo] -> Maybe Tipo
@@ -267,7 +267,7 @@ addSubprograma subprograma (pilha, tipos, subprogramasAtuais) =
 addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
 addSubprogramaLista subprograma subprogramas = 
     case getSubprogramaLista assinatura subprogramas of
-        Just _ -> Left $ ErroSubprogramaDuplicada $ "Função '" ++ nome ++ "' já foi criada do jeito informado"
+        Just _ -> Left $ ErroSubprogramaDuplicada $ "Função '" ++ nome ++ "' já foi criada com a mesma assinatura"
         Nothing -> Right $ subprograma:subprogramas
     where assinatura@(nome, _) = getAssinaturaSubprograma subprograma
 
