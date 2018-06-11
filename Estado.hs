@@ -267,7 +267,7 @@ addSubprograma subprograma (pilha, tipos, subprogramasAtuais) =
 addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
 addSubprogramaLista subprograma subprogramas = 
     case getSubprogramaLista assinatura subprogramas of
-        Just _ -> Left $ ErroSubprogramaDuplicada $ "Função '" ++ nome ++ "' já foi criada com a mesma assinatura"
+        Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma '" ++ nome ++ "' já foi criado com a mesma assinatura"
         Nothing -> Right $ subprograma:subprogramas
     where assinatura@(nome, _) = getAssinaturaSubprograma subprograma
 
