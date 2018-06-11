@@ -13,6 +13,7 @@ module Estado (
     removerEscopo,
     addVariavel,
     getVariavel,
+    getVariavelTabela,
     removerVariavel,
     atualizarVariavel,
     addTipo,
