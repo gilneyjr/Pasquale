@@ -362,22 +362,12 @@ evaluateExpr estado (CRIALOGICO (LOGICO _ l)) = (ValorLogico l, estado) -- OK
 evaluateExpr estado (CRIAREAL (REAL _ r)) = (ValorReal r, estado) -- OK
 evaluateExpr estado (CRIAPARENTESES a) = evaluateExpr estado a -- OK
 
-evaluateExpr estado (CRIAVALOREXPR (CRIAULTVAL (VALOR p) var)) = 
+evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr) = 
     case val of
         ValorPonteiro s -> (getValor $ getVariavel s estado1, estado1)
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro: posição: " ++ (show p)
     where 
-        (val, estado1) = evaluateExpr estado (CRIAVAR var)
-        getValor :: (Either ErroEstado Variavel) -> Valor
-        getValor (Left _) = error $ "Ponteiro aponta para posição inválida: posição: " ++ (show p)
-        getValor (Right (_,_,val)) = val
-
-evaluateExpr estado (CRIAVALOREXPR (CRIASEQVAL (VALOR p) seqval)) = 
-    case val of
-        ValorPonteiro s -> (getValor $ getVariavel s estado1, estado1)
-        otherwise -> error $ "Busca por valor em variável que não é um ponteiro: posição: " ++ (show p)
-    where 
-        (val, estado1) = evaluateExpr estado (CRIAVALOREXPR seqval)
+        (val, estado1) = evaluateExpr estado expr
         getValor :: (Either ErroEstado Variavel) -> Valor
         getValor (Left _) = error $ "Ponteiro aponta para posição inválida: posição: " ++ (show p)
         getValor (Right (_,_,val)) = val
