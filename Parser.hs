@@ -8,8 +8,12 @@ import Arvore
 import ParserTokens
 import Lexico
 
-parsePasquale :: String -> Either ParseError PROGRAMA
-parsePasquale input = runParser parsePrograma () "" (getTokens input)
+parsePasquale :: String -> PROGRAMA
+parsePasquale input =
+    getRight (runParser parsePrograma () "" (getTokens input))
+    where
+        getRight (Right x) = x
+        getRight (Left x) = error $ show x
 
 parsePrograma :: ParseArgs PROGRAMA
 parsePrograma = do
@@ -678,27 +682,11 @@ parseCrianovo = do
 
 parseCriavalorexpr :: ParseArgs EXPR
 parseCriavalorexpr = do
-    a <- parseCriavalor
-    return $ CRIAVALOREXPR a
-
-parseCriavalor :: ParseArgs VAL
-parseCriavalor = (try parseCriaultval) <|> parseCriaseqval
-    
-parseCriaultval :: ParseArgs VAL
-parseCriaultval = do
-    parseValor
+    a <- parseValor
     parseOpenbrack
-    a <- parseVar
+    b <- parseExpr
     parseClosebrack
-    return $ CRIAULTVAL a
-
-parseCriaseqval :: ParseArgs VAL
-parseCriaseqval = do
-    parseValor
-    parseOpenbrack
-    a <- parseCriavalor
-    parseClosebrack
-    return $ CRIASEQVAL a
+    return $ CRIAVALOREXPR a b
 
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do

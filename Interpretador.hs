@@ -14,10 +14,6 @@ import Expressoes
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
 
-programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVODEC (NOVADEC [] (TIPO (2,9) "INTEIRO") [VAR_COM (CRIAATRIB (SingleVar (ID (2,17) "n") (OptionalSQBrack [])) (CRIAINT (INTEIRO (2,22) 10)))]),NOVOENQUANTO (CRIAENQUANTO (ENQUANTO (3,9)) (CRIALOGICO (LOGICO (3,18) True)) [NOVOSE (CRIASE (SE (4,13)) (CRIAEQUAL (CRIAMOD (CRIAVAR (Var [SingleVar (ID (4,16) "n") (OptionalSQBrack [])])) (MOD (4,18)) (CRIAINT (INTEIRO (4,22) 10))) (Equal (4,25)) (CRIAINT (INTEIRO (4,27) 0))) [NOVODEC (NOVADEC [] (TIPO (5,17) "INTEIRO") [VAR_COM (CRIAATRIB (SingleVar (ID (5,25) "i") (OptionalSQBrack [])) (CRIAINT (INTEIRO (5,30) 2)))]),NOVOENQUANTO (CRIAENQUANTO (ENQUANTO (6,17)) (CRIALEQ (CRIAVAR (Var [SingleVar (ID (6,26) "i") (OptionalSQBrack [])])) (Leq (6,28)) (CRIAINT (INTEIRO (6,31) 10))) [NOVOINC (CRIAINC (Var [SingleVar (ID (7,21) "n") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (8,21)) (CRIAADD (CRIAADD (CRIATEXTO (TEXTO (8,29) "Novo n = ")) (Add (8,41)) (CRIACONVERSAO (TIPO (8,44) "TEXTO") (CRIAVAR (Var [SingleVar (ID (8,50) "n") (OptionalSQBrack [])])))) (Add (8,52)) (CRIATEXTO (TEXTO (8,54) "\n")))),NOVOINC (CRIAINC (Var [SingleVar (ID (9,21) "i") (OptionalSQBrack [])])),NOVOSE (CRIASE (SE (10,21)) (CRIAEQUAL (CRIAVAR (Var [SingleVar (ID (10,24) "i") (OptionalSQBrack [])])) (Equal (10,26)) (CRIAINT (INTEIRO (10,28) 7))) [NOVOSAIA (CRIASAIA (SAIA (11,25)))] (OptionalSenao []))])] (OptionalSenao [NOVOSE (CRIASE (SE (15,17)) (CRIAEQUAL (CRIAMOD (CRIAVAR (Var [SingleVar (ID (15,20) "n") (OptionalSQBrack [])])) (MOD (15,22)) (CRIAINT (INTEIRO (15,26) 3))) (Equal (15,28)) (CRIAINT (INTEIRO (15,30) 0))) [NOVODEC (NOVADEC [] (TIPO (16,21) "INTEIRO") [VAR_COM (CRIAATRIB (SingleVar (ID (16,29) "i") (OptionalSQBrack [])) (CRIAINT (INTEIRO (16,34) 2)))]),NOVOENQUANTO (CRIAENQUANTO (ENQUANTO (17,21)) (CRIALEQ (CRIAVAR (Var [SingleVar (ID (17,30) "i") (OptionalSQBrack [])])) (Leq (17,32)) (CRIAINT (INTEIRO (17,35) 6))) [NOVOINC (CRIAINC (Var [SingleVar (ID (18,25) "n") (OptionalSQBrack [])])),NOVOINC (CRIAINC (Var [SingleVar (ID (19,25) "i") (OptionalSQBrack [])]))]),NOVOESCREVA (CRIAESCREVA (ESCREVA (21,21)) (CRIATEXTO (TEXTO (21,29) "Mais 5\n"))),NOVOCONTINUE (CRIACONTINUE (CONTINUE (22,21)))] (OptionalSenao [NOVOSAIA (CRIASAIA (SAIA (24,17)))]))])),NOVOESCREVA (CRIAESCREVA (ESCREVA (27,13)) (CRIATEXTO (TEXTO (27,21) "Opa\n")))]),NOVOESCREVA (CRIAESCREVA (ESCREVA (29,9)) (CRIATEXTO (TEXTO (29,17) "Fim\n")))])))))
-
-
---                            Return Break Continue
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
 
 --Funcao para executar a partir da arvore
@@ -27,7 +23,6 @@ executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subpr
     estado2 <- addDecs decs estado1
     estado3 <- addSubprogs subprogs estado2
     estado4 <- iniciaBlocoMain main estado3
-    --print estado4
     return ()
 
 inicializarPrograma :: Estado
@@ -366,7 +361,19 @@ executarStmt (NOVOSAIA (CRIASAIA (SAIA p))) estado =
 executarStmt (NOVOCONTINUE (CRIACONTINUE (CONTINUE p))) estado = 
     return (estado, False, False, True, Nothing, Just p)
     
-executarStmt (NOVODELETE nodeDELETE) estado = undefined
+executarStmt (NOVODELETE (CRIADELETE tok expr)) estado = 
+    case val of
+        ValorPonteiro s -> case removerVariavel (justVar (getVariavel s estado1)) estado1 of
+            Right estado2 -> return (estado2, False, False, False, Nothing, Nothing)
+            Left erro -> error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
+        otherwise -> error $ "Operação de delete para expressão que não retorna Ponteiro: posição: " ++ (show $ getPosFromDelete tok)
+    where
+        (val, estado1) = evaluateExpr estado expr
+        justVar :: (Either ErroEstado Variavel) -> Variavel
+        justVar (Right x) = x
+        justVar (Left _) = error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
+        getPosFromDelete :: Token -> (Int, Int)
+        getPosFromDelete (DELETE p) = p
 
 executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
     case valor1 of
