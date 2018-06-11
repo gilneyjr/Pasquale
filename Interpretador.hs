@@ -13,7 +13,7 @@ import Expressoes
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
-programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVODEC (NOVADEC [] (TIPO (2,9) "INTEIRO") [VAR_SEM (SingleVar (ID (2,17) "c") (OptionalSQBrack []))]),NOVOINC (CRIAINC (Var [SingleVar (ID (3,9) "c") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (4,9)) (CRIAVAR (Var [SingleVar (ID (4,18) "c") (OptionalSQBrack [])])))])))))
+programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVOINC (CRIAINC (Var [SingleVar (ID (2,9) "c") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (3,9)) (CRIAVAR (Var [SingleVar (ID (3,18) "c") (OptionalSQBrack [])])))])))))
 
 --                            Return Break Continue
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
@@ -373,6 +373,7 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
             putStr val
             return (estado1, False, False, False, Nothing, Nothing)
         ValorInteiro val -> do
+            putStr $ "\n" ++ (show estado1) ++ "\n"
             putStr $ show val
             return (estado1, False, False, False, Nothing, Nothing)
         ValorReal val -> do

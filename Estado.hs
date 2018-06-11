@@ -73,7 +73,8 @@ getEscopoById idEscopoAtual (pilhaEscopo, _, _) = fromJust $ getEscopoByIdFromPi
 -- Função auxiliar para getEscopoById
 getEscopoByIdFromPilha :: Integer -> [Escopo] -> Maybe Escopo
 getEscopoByIdFromPilha _        []    = Nothing
-getEscopoByIdFromPilha idEscopo pilha = Just $ genericIndex pilha idEscopo
+getEscopoByIdFromPilha 0        _     = Nothing
+getEscopoByIdFromPilha idEscopo pilha = Just $ genericIndex pilha (idEscopo - 1)
 
 -- Retorna o escopo atual a partir do estado
 getEscopoAtual :: Estado -> Escopo
@@ -156,7 +157,7 @@ atualizarVariavelPilha' :: Variavel -> Maybe Escopo -> [Escopo] -> Maybe [Escopo
 atualizarVariavelPilha' _ Nothing _ = Nothing
 atualizarVariavelPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnterior, tabelaAtual)) pilha =
     case tabela of
-        Just tabelaAtualizada -> Just $ inicio ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ tail fim
+        Just tabelaAtualizada -> Just $ (init inicio) ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ fim
         Nothing -> atualizarVariavelPilha' simbolo (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
     where tabela = atualizarVariavelTabela simbolo tabelaAtual
           (inicio, fim) = genericSplitAt idEscopoAtual pilha
