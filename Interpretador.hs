@@ -300,7 +300,7 @@ executarStmt (NOVOATRIBSTMT expr expr') estado =
     case estadoAtualizado  of
         Right estado' -> return (estado', False, False, False, Nothing, Nothing)
         Left erro -> fail $ show erro
-    where (nome, tipo) = getDeclaracaoFromExpr expr
+    where (nome, tipo, _) = getVariavelFromExpr expr estado
           (valor, estadoIntermediario) = evaluateExpr estado expr'
           estadoAtualizado = atualizarVariavel (nome, tipo, valor) estadoIntermediario
 
@@ -393,42 +393,54 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
         showLogico False = "FALSO"
 
 executarStmt (NOVOLEIA (CRIALEIA (LEIA p) [])) estado = return (estado, False, False, False, Nothing, Nothing)
-executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado =
-    case tipo of
+executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado = do
+    let (_, tipo, valor) = getVariavelFromExpr (CRIAVAR expr) estado
+    let tipoAtualizado = case tipo of { TipoAtomico s -> tipo; TipoVetor s tipoPrimitivo -> tipoPrimitivo }
+    case tipoAtualizado of
         TipoAtomico "INTEIRO" -> do
+            hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Integer of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIAINT (INTEIRO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+                Nothing -> error $ "Valor não permitido como INTEIRO: posição: " ++ (show p)
         TipoAtomico "REAL" -> do
+            hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Double of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIAREAL (REAL p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+                Nothing -> error $ "Valor não permitido como REAL: posição: " ++ (show p)
         TipoAtomico "CARACTERE" -> do
+            hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Char of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIACARACTERE (CARACTERE p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+                Nothing -> error $ "Valor não permitido como CARACTERE: posição: " ++ (show p)
         TipoAtomico "TEXTO" -> do
+            hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe String of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIATEXTO (TEXTO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+                Nothing -> error $ "Valor não permitido como TEXTO: posição: " ++ (show p)
         TipoAtomico "LOGICO" -> do
+            hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Bool of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIALOGICO (LOGICO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+                Nothing -> error $ "Valor não permitido como LOGICO: posição: " ++ (show p)
         otherwise -> error $ "Comando LEIA para tipo não primitivo: posição: " ++ show p
-    where
-        (_, tipo) = getDeclaracaoFromExpr (CRIAVAR expr)
 
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
     iniciaBloco stmts estado
 
-getDeclaracaoFromExpr :: EXPR -> Declaracao
-getDeclaracaoFromExpr = undefined
+getVariavelFromExpr :: EXPR -> Estado -> Variavel
+getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):vars))) estado = 
+    case var of
+        Right var' -> var'
+        Left erro -> error $ (show erro) ++ ": posição: " ++ (show posicao)
+    where var = getVariavel nome estado
+
+getVariavelFromExpr _ _ = error $ "deu erro"
+
 
 incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
 incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado posição: " ++ (show p)

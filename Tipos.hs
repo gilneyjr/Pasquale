@@ -12,6 +12,7 @@ module Tipos(
 import Arvore
 import Lexico
 import Data.List
+import Text.Read
 
 data Tipo = TipoAtomico String
           | TipoVetor [Integer] Tipo
