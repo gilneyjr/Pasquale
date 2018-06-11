@@ -690,19 +690,19 @@ parseCriavalor = (try parseCriaultval) <|> parseCriaseqval
     
 parseCriaultval :: ParseArgs VAL
 parseCriaultval = do
-    parseValor
+    a <- parseValor
     parseOpenbrack
-    a <- parseVar
+    b <- parseVar
     parseClosebrack
-    return $ CRIAULTVAL a
+    return $ CRIAULTVAL a b
 
 parseCriaseqval :: ParseArgs VAL
 parseCriaseqval = do
-    parseValor
+    a <- parseValor
     parseOpenbrack
-    a <- parseCriavalor
+    b <- parseCriavalor
     parseClosebrack
-    return $ CRIASEQVAL a
+    return $ CRIASEQVAL a b
 
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do

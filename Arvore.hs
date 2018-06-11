@@ -169,8 +169,8 @@ data VAR =
     deriving (Eq,Show)
 
 data VAL =
-    CRIAULTVAL VAR |
-    CRIASEQVAL VAL
+    CRIAULTVAL {-VALOR-}Token VAR |
+    CRIASEQVAL {-VALOR-}Token VAL
     deriving (Eq,Show)
 
 data SingleVAR =
