@@ -25,7 +25,7 @@ executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subpr
     estado2 <- addDecs decs estado1
     estado3 <- addSubprogs subprogs estado2
     estado4 <- iniciaBlocoMain main estado3
-    print estado4
+    --print estado4
     return ()
 
 inicializarPrograma :: Estado
@@ -249,8 +249,7 @@ iniciaBlocoMain :: MAIN -> Estado -> IO EstadoCompleto
 iniciaBlocoMain (Main stmts) estado = do
     (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts (criarEscopo 1 estado)
     case (temRetorno, temSaia, temContinue) of
-        (False, False, False) -> rodaStmts stmts estado1
-        (True, False, False) -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
+        (_, False, False) -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
         otherwise -> case maybePos of
             Just p -> error $ "Erro com comando na posição: " ++ show p
 
