@@ -453,9 +453,9 @@ parseNodesaia = do
 
 parseNodedelete :: ParseArgs NodeDELETE
 parseNodedelete = do
-    parseDelete
-    a <- parseVar
-    return $ CRIADELETE a
+    a <- parseDelete
+    b <- parseCriavalorexpr <|> parseCriavar;
+    return $ CRIADELETE a b
 
 parseExpr :: ParseArgs EXPR
 parseExpr = parseCriaou

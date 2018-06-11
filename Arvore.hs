@@ -202,6 +202,6 @@ data NodeSAIA =
     deriving (Eq,Show)
 
 data NodeDELETE =
-    CRIADELETE VAR
+    CRIADELETE {-DELETE-}Token EXPR
     deriving (Eq,Show)
 
