@@ -624,13 +624,13 @@ parseAtomico =
 parseCrianeg :: ParseArgs EXPR
 parseCrianeg = do
     op <- parseSub
-    a <- parseExpr
+    a <- parseAtomico
     return $ CRIANEG op a 
 
 parseCrianot :: ParseArgs EXPR
 parseCrianot = do
     op <- parseNot
-    a <- parseExpr
+    a <- parseAtomico
     return $ CRIANOT op a 
 
 parseCriatexto :: ParseArgs EXPR
@@ -712,5 +712,5 @@ parseCriaconversao = do
     parseOpenbrack
     a <- parseTipo
     parseClosebrack
-    b <- parseExpr
+    b <- parseAtomico
     return $ CRIACONVERSAO a b 

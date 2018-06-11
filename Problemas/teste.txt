@@ -5,7 +5,7 @@ PRINCIPAL
 	        INTEIRO i := 2;
 	        ENQUANTO i <= 10 EXECUTE
 	            n++;
-	            ESCREVA(("Novo n = " + (TEXTO)n) + "\n");
+	            ESCREVA("Novo n = " + (TEXTO)n + "\n");
 	            i++;
 	            SE i = 7 ENTAO
 	                SAIA;
