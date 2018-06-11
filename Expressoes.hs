@@ -375,8 +375,48 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
             case (evaluateVet estado valor faixas ids) of
                 Right result -> result
                 Left err     -> error $ err ++ ": posição " ++ (show posicao)
+        Right _ -> error $ "Variável " ++ nome ++ " não é um vetor: posição " ++ (show posicao)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
 
+-- variáveis com acesso a campo e sem acesso a vetor
+evaluateExpr estado (CRIAVAR (Var (SingleVar ( ((ID posicao nome) (OptionalSQBrack [])):snglVars)))) =
+    case (getVariavel nome estado) of
+        Right (_, TipoEstrutura nome_estr _, valor_estr) ->
+            case evaluateEstr estado valor_estr snglVars of
+                Right result -> result
+                Left err -> error $ (show erro) ++ ": posição " ++ (show posicao)
+        Right _ -> error $ "Variável " ++ nome ++ " não é uma estrutura: posição " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
+
+
+-- Avalia uma estrutura
+evaluateEstr :: Estado -> Valor -> [SingleVAR] -> Either String (Valor,Estado)
+-- Avalia uma estrutura para um campo de endereçamento
+evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (OptionalSQBrack [])] =
+    case (getVariavelTabela var vars_estr) of
+        Just (_,_, valor) -> Right (valor,estado)
+        Nothing -> Left $ "não possui o campo " ++ var
+
+-- Avalia um vetor de estruturas com acesso a um campo de endereçamento Ex.: vet[10,10].b
+evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (OptionalSQBrack exprs@(_:_))] =
+    case (getVariavelTabela var vars_estr) of
+        Just (_,TipoVetor dims _, valor) ->
+            case evaluateVet estado valor dims exprs of
+                Right result -> Right result
+                Left err -> error $ err ++ ": posição " ++ (show posicao)
+        Just _ -> error $ "Variável " ++ var ++ " não é um vetor: posição " ++ (show posicao)
+        Nothing -> Left $ "não possui o campo " ++ var
+
+-- Avalia uma estrutura para vários acessos à campo. Ex.: vet.a.first.b.k.p
+evaluateEstr estado (ValorEstrutura vars_estr) (var:vars) = 
+    -- Pega da tab
+    case (getVariavelTabela var vars_estr) of
+        Just (_, TipoEstrutura nome_estr _, valor_estr) ->  evaluateEstr estado valor_estr vars
+        Just _ -> "não é uma estrutura"
+        Nothing -> Left $ "não possui o campo " ++ var
+
+-- type Variavel = (String, Tipo, Valor)
+-- TipoEstrutura String [Declaracao]
 {-
     estado
     vetor
@@ -385,7 +425,7 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
 
     retorna (Valor,Estado)
 -}
-evaluateVet :: Estado -> Valor -> [Integer] -> [EXPR] -> Either String (Valor,Estado)
+evaluateVet :: Estado -> Valor  -> [Integer] -> [EXPR] -> Either String (Valor,Estado)
 evaluateVet _ _ [] [expr] = Left "O número de índices é maior que o número de dimensões no vetor"
 evaluateVet _ _ [dim] [] = Left "O número de índices é menor que o número de dimensões no vetor"
 evaluateVet estado (ValorVetor valores) [dim] [expr] = 
@@ -481,6 +521,5 @@ evaluateEstr (SingleVar (ID posicao nome) (OptionalSQBRACK []):campos) vars =
     CRIAVAR VAR |
     CRIACHAMADAFUNC CHAMADA |
     CRIANOVO [PONT] {-TIPO-}Token OptionalSQBRACK |
-    CRIAVALOREXPR VAL |
-    CRIACONVERSAO {-TIPO-}Token EXPR
+    CRIAVALOREXPR VAL
 -}
