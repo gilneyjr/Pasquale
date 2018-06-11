@@ -448,9 +448,6 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
                 Left err -> error $ err ++ ": posição " ++ (show posicao)
         Just _ -> error $ nome ++ " não é uma vetor: posição " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ nome
-
--- type Variavel = (String, Tipo, Valor)
--- TipoEstrutura String [Declaracao]
 {-
     estado
     vetor
@@ -500,55 +497,6 @@ getIth (a:b) i
     | i < 1     = Left "Indice fora de faixa" 
     | i == 1    = Right a
     | otherwise = getIth b (i-1)
-
-
-{-
--- Variável única sem colchetes
-evaluateExpr estado (Var [(SingleVar (ID posicao nome) (OptionalSQBRACK []))]) =
-    case (getVariavel nome estado) of
-        Right (_,_,valor) -> (valor,estado)
-        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-
--- Variável única com colchetes -- TERMINAR
-evaluateExpr estado (Var [(SingleVar (ID posicao nome) (OptionalSQBRACK indices)]) = 
-    case (getVariavel nome) of
-        Right (_, TipoVetor faixas _,valor) -> 
-            
-                Left erro -> fail $ erro ++ ": posição " ++ (show posicao) ++ "\nForneça índices inteiros para o vetor."
-        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-
--- Lista de Var onde a cabeça sem colchetes
-evaluateExpr estado (Var ((SingleVar (ID posicao nome) (OptionalSQBRACK [])):vars)) =
-    case (getVariavel nome estado) of
-        Right (_, TipoEstrutura nome_estr _, var_estr:vars_estr) -> 
-        Right _ -> fail $ "Varariável " ++ nome ++ " não é uma ESTRUTURA: posição " ++ (show posicao) 
-        Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-
--- Lista de Var onde a cabeça com colchetes
-evaluateExpr (Var ((SingleVar (ID _ nome) (OptionalSQBRACK [])):vars)) = do
-
-evaluateEstr :: [SingleVar] -> [Variavel] -> Either String Valor
--- Caso só haja somente um campo para acessar e ele não seja um vetor 
-evaluateEstr [SingleVar (ID posicao nome) (OptionalSQBRACK [])] vars =
-    case (getVariavelTabela nome vars) of
-        Just (_,_,valor) -> Right valor
-        Nothing -> Left $ "não possui o campo " ++ nome
-
--- Caso 
-
--- Caso haja mais de um campo para acessar, e o primeiro não seja um vetor
-evaluateEstr (SingleVar (ID posicao nome) (OptionalSQBRACK []):campos) vars =
-    case (getVariavelTabela nome vars) of
-        Just (_, TipoEstrutura tipoEstr _, ValorEstrutura vars_estr) ->
-            -- Procure pelos campos restantes na lista de variáveis da estrutura
-            case (evaluateEstr campos vars_estr) of
-                Right valor -> Right valor
-                Left erro -> fail $ "Variável " ++ nome ++ erro ++ ": posição " ++ (show posicao)
-        Just (_, _, _) -> fail $ "Variável " ++ nome ++ " não é uma ESTRUTURA: posição " ++ (show posicao)
-        Nothing -> Left $ "não possui o campo " ++ nome /
--}
-
-
 
 {-
 
