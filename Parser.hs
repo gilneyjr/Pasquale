@@ -8,8 +8,12 @@ import Arvore
 import ParserTokens
 import Lexico
 
-parsePasquale :: String -> Either ParseError PROGRAMA
-parsePasquale input = runParser parsePrograma () "" (getTokens input)
+parsePasquale :: String -> PROGRAMA
+parsePasquale input =
+    getRight (runParser parsePrograma () "" (getTokens input))
+    where
+        getRight (Right x) = x
+        getRight (Left x) = error $ show x
 
 parsePrograma :: ParseArgs PROGRAMA
 parsePrograma = do
