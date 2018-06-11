@@ -379,25 +379,29 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
 
 -- variáveis com acesso a campo de estrutura
-evaluateExpr estado (CRIAVAR (Var (SingleVar ( ((ID posicao nome) (OptionalSQBrack [])):snglVars)))) =
+evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack [])):snglVars))) =
     case (getVariavel nome estado) of
         Right (_, TipoEstrutura nome_estr _, valor_estr) ->
             case evaluateEstr estado valor_estr snglVars of
                 Right result -> result
-                Left err -> error $ nome_estr ++ " " ++ (show erro) ++ ": posição " ++ (show posicao)
+                Left erro -> error $ nome_estr ++ " " ++ (show erro) ++ ": posição " ++ (show posicao)
         Right _ -> error $ "Variável " ++ nome ++ " não é uma estrutura: posição " ++ (show posicao)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
 
 -- variáveis vetores de estruturas com acesso aos campos
-evaluateExpr estado (CRIAVAR (Var (SingleVar ( ((ID posicao nome) (OptionalSQBrack ids)):snglVars)))) =
+evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack ids)):snglVars))) =
     -- procura por nome na tabela de símbolos
     case (getVariavel nome estado) of
         -- Se for um vetor
         Right (_, TipoVetor faixas _, valor) ->
             -- pega elemento correspondente no vetor
             case (evaluateVet estado valor faixas ids) of
-                -- Se for uma estrutura, calcula o valor correspondente
-                Right ((ValorEstrutura vars_estr),estado_atualizado) -> evaluateEstr estado_atualizado vars_estr snglVars
+                -- Se for uma estrutura
+                Right (val_estr@(ValorEstrutura _),estado_atualizado) -> 
+                -- Calcula o valor para outros campos
+                    case evaluateEstr estado_atualizado val_estr snglVars of
+                        Right result -> result
+                        Left err -> error $ err ++ ": posição " ++ (show posicao)
                 Right _  -> error $ nome ++ " não é um vetor de estruturas: posição " ++ (show posicao)
                 Left err -> error $ err ++ ": posição " ++ (show posicao)
         Right _ -> error $ "Variável " ++ nome ++ " não é um vetor: posição " ++ (show posicao)
@@ -426,7 +430,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (Opt
         Nothing -> Left $ "não possui o campo " ++ nome
 
 -- Avalia uma estrutura para vários acessos à campo. Ex.: a.first.b.k.p
-evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (OptionalSQBrack []):snglVars) = 
+evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (OptionalSQBrack [])):snglVars) = 
     -- procura o primeiro campo 'nome' na lista de campos da estrutura
     case (getVariavelTabela nome vars_estr) of
         -- Se for outra esrtrutura, procura para o resto dos campos
@@ -435,16 +439,16 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
         Nothing -> Left $ "não possui o campo " ++ nome
 
 -- Avalia um vetor de estruturas com vários acessos a campo. Ex.: vet[10].a.b.c
-evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (OptionalSQBrack exprs@(_:_)):snglVars) = 
+evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (OptionalSQBrack exprs@(_:_))):snglVars) = 
     -- procura no escopo pelo variável nome
     case (getVariavelTabela nome vars_estr) of
         -- Se nome for um vetor
         Just (_, TipoVetor dims _, valor_vet) ->
             -- pega o elemento correspondente no vetor
-            case evaluateVet estado valor_vet exprs of
+            case evaluateVet estado valor_vet dims exprs of
                 -- Se tal elemento for uma estrutura, procura para o resto dos campos
-                Right ((ValorEstrutura valor_estr),estado_atualizado) -> evaluateEstr estado_atualizado valor_estr snglVars
-                Right _ -> nome ++ " não é uma estrutura: posição " ++ (show posicao)
+                Right (val_estr@(ValorEstrutura _),estado_atualizado) -> evaluateEstr estado_atualizado val_estr snglVars
+                Right _ -> error $ nome ++ " não é uma estrutura: posição " ++ (show posicao)
                 Left err -> error $ err ++ ": posição " ++ (show posicao)
         Just _ -> error $ nome ++ " não é uma vetor: posição " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ nome
