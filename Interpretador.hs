@@ -3,6 +3,7 @@ module Interpretador where
 import Data.Fixed
 import Data.List
 import Data.Maybe
+import Text.Read
 import System.IO
 import Tipos
 import Estado
@@ -12,6 +13,7 @@ import Expressoes
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
+programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVODEC (NOVADEC [] (TIPO (2,9) "INTEIRO") [VAR_SEM (SingleVar (ID (2,17) "c") (OptionalSQBrack []))]),NOVOINC (CRIAINC (Var [SingleVar (ID (3,9) "c") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (4,9)) (CRIAVAR (Var [SingleVar (ID (4,18) "c") (OptionalSQBrack [])])))])))))
 
 --                            Return Break Continue
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
@@ -22,8 +24,8 @@ executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subpr
     estado1 <- addEstrs estrs inicializarPrograma
     estado2 <- addDecs decs estado1
     estado3 <- addSubprogs subprogs estado2
-    --iniciaBlocoMain main estado3
-    print estado3
+    estado4 <- iniciaBlocoMain main estado3
+    print estado4
     return ()
 
 inicializarPrograma :: Estado
@@ -92,7 +94,7 @@ getTipoVetor :: Tipo -> VAR_ -> Estado -> (Tipo, Estado)
 getTipoVetor tipo (VAR_SEM (SingleVar _ (OptionalSQBrack []))) estado = (tipo, estado)
 getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar _ (OptionalSQBrack [])) _)) estado = (tipo, estado)
 getTipoVetor tipo (VAR_SEM (SingleVar posicao (OptionalSQBrack exprs))) estado =
-    if all (\v -> isJust v) valores then
+    if all isJust valores then
         (TipoVetor (catMaybes valores) tipo, estadoFinal)
     else
         error $ "Expressão não é um valor inteiro valido: posição: " ++ (show posicao)
@@ -120,10 +122,7 @@ getPosicaoEstr (NOVOESTR (TIPO p _) _) = p
 --Adiciona as declaracoes das variaveis globais
 addDecs :: [DEC] -> Estado -> IO Estado
 addDecs []    estado = do return estado
-addDecs (a:b) estado = do
-    estadoAtualizado <- (addDec a estado)
-    res <- addDecs b estadoAtualizado
-    return res
+addDecs (a:b) estado = (addDec a estado) >>= (addDecs b)
 
 --Adiciona uma declaracao global
 addDec :: DEC -> Estado -> IO Estado
@@ -288,7 +287,7 @@ rodaEnquanto (ENQUANTO p) expr stmts estado = do
 
 --Executa lista de stmts
 rodaStmts :: [STMT] -> Estado -> IO EstadoCompleto
-radaStmts ([]) estado = return (estado, False, False, False, Nothing, Nothing)
+rodaStmts [] estado = return (estado, False, False, False, Nothing, Nothing)
 rodaStmts ((stmt:stmts)) estado = do
     (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- (executarStmt stmt estado)
     case (temRetorno, temSaia, temContinue) of
@@ -297,7 +296,7 @@ rodaStmts ((stmt:stmts)) estado = do
 
 --Executa um stmt
 executarStmt :: STMT -> Estado -> IO EstadoCompleto
-executarStmt (NOVODEC dec) estado = undefined
+executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
 executarStmt (NOVOATRIBSTMT expr expr') estado =
     case estadoAtualizado  of
         Right estado' -> return (estado', False, False, False, Nothing, Nothing)
@@ -369,7 +368,7 @@ executarStmt (NOVOCONTINUE (CRIACONTINUE (CONTINUE p))) estado =
     
 executarStmt (NOVODELETE nodeDELETE) estado = undefined
 
-executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado = do
+executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
     case valor1 of
         ValorTexto val -> do
             putStr val
@@ -393,7 +392,37 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado = do
         showLogico True = "VERDADEIRO"
         showLogico False = "FALSO"
 
-executarStmt (NOVOLEIA nodeLEIA) estado = undefined
+executarStmt (NOVOLEIA (CRIALEIA (LEIA p) [])) estado = return (estado, False, False, False, Nothing, Nothing)
+executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado =
+    case tipo of
+        TipoAtomico "INTEIRO" -> do
+            s <- getLine
+            case readMaybe s :: Maybe Integer of
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIAINT (INTEIRO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+        TipoAtomico "REAL" -> do
+            s <- getLine
+            case readMaybe s :: Maybe Double of
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIAREAL (REAL p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+        TipoAtomico "CARACTERE" -> do
+            s <- getLine
+            case readMaybe s :: Maybe Char of
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIACARACTERE (CARACTERE p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+        TipoAtomico "TEXTO" -> do
+            s <- getLine
+            case readMaybe s :: Maybe String of
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIATEXTO (TEXTO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+        TipoAtomico "LOGICO" -> do
+            s <- getLine
+            case readMaybe s :: Maybe Bool of
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIALOGICO (LOGICO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Nothing -> error $ "Valor não permitido como inteiro: posição: " ++ (show p)
+        otherwise -> error $ "Comando LEIA para tipo não primitivo: posição: " ++ show p
+    where
+        (_, tipo) = getDeclaracaoFromExpr (CRIAVAR expr)
 
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
     iniciaBloco stmts estado
