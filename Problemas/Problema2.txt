@@ -2,7 +2,7 @@
 
 PRINCIPAL
     INTEIRO x, a, b, c, d;
-    ESCREVA("Digite um número:");
+    ESCREVA("Digite um número: ");
     LEIA(x);
     ENQUANTO x >= 0 EXECUTE
         SE x <= 25 ENTAO
@@ -20,9 +20,9 @@ PRINCIPAL
                 FIMSE
             FIMSE
         FIMSE
-        ESCREVA("Digite um número:");
+        ESCREVA("Digite um número: ");
         LEIA(x);
     FIMENQUANTO
-    ESCREVA("Quantidade de números de 0 a 25: " + (TEXTO) a + " de 26 a 50:  " + (TEXTO) b + " de 51 a 75: " + (TEXTO) c + " de 76 a 100: " + (TEXTO) d  + "\n" );
+    ESCREVA("Quantidade de números \n de 0 a 25: " + (TEXTO) a + "\n de 26 a 50:  " + (TEXTO) b + "\n de 51 a 75: " + (TEXTO) c + "\n de 76 a 100: " + (TEXTO) d  + "\n" );
 FIMPRINCIPAL
 

@@ -1,6 +1,5 @@
 import Text.ParserCombinators.Parsec
 import qualified Parser
-import qualified Lexico
 import qualified Interpretador
 
 import System.Environment
@@ -11,6 +10,6 @@ main = do
     args <- getArgs
     fileText <- openFile (args !! 0) ReadMode
     s <- hGetContents fileText
-    --print $ Lexico.getTokens s
-    print $ Parser.parsePasquale s
+    Interpretador.executaPrograma $ Parser.parsePasquale s
+    
 

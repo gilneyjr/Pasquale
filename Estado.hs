@@ -13,6 +13,7 @@ module Estado (
     removerEscopo,
     addVariavel,
     getVariavel,
+    removerVariavel,
     atualizarVariavel,
     addTipo,
     addSubprograma,
@@ -109,7 +110,7 @@ addVariavelEscopo simbolo (idEscopo, idEscopoAnterior, tabelaAtual) =
 addVariavelTabela :: Variavel -> [Variavel] -> Either ErroEstado [Variavel] 
 addVariavelTabela variavel@(nome, _, _) tabela =
     case getVariavelTabela nome tabela of
-        Just _ -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome:" ++ nome)
+        Just _ -> Left $ ErroNomeDuplicado ("Já existe uma variável com o nome: " ++ nome)
         Nothing -> Right $ variavel:tabela
 
 -- Busca por um símbolo na tabela de símbolos pelo nome
@@ -125,7 +126,7 @@ getVariavelPilha :: String -> [Escopo] -> Either ErroEstado Variavel
 getVariavelPilha nome pilha =
     case simbolo of
         Just simbolo' -> Right simbolo'
-        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+        Nothing -> Left $ ErroBuscaVariavel $ " '" ++ nome ++ "' não encontrado!"
     where simbolo = getVariavelPilha' nome (Just (head pilha)) pilha
 
 -- Auxiliar para a busca por um símbolo na pilha
@@ -151,7 +152,7 @@ atualizarVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
 atualizarVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
     case pilha of
         Just pilhaAtualizada -> Right pilhaAtualizada
-        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+        Nothing -> Left $ ErroBuscaVariavel $ "'" ++ nome ++ "' não encontrado!"
     where pilha = atualizarVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
 
 -- Auxiliar para a atualização do símbolo na pilha
@@ -172,7 +173,43 @@ atualizarVariavelTabela simbolo@(nome, _, _) tabela =
             let (inicio, fim) = genericSplitAt index' tabela in
             Just $ inicio ++ [simbolo] ++ (tail fim)
         Nothing -> Nothing
-    where index = findIndex (\(nome', _, _) -> nome == nome') tabela          
+    where index = findIndex (\(nome', _, _) -> nome == nome') tabela        
+
+-- Remove um símbolo no estado passado
+removerVariavel :: Variavel -> Estado -> Either ErroEstado Estado
+removerVariavel simbolo (pilhaAtual, tipos, funcoes) =
+    case pilhaAtualizada of
+        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes)
+        Left error -> Left error
+    where pilhaAtualizada = removerVariavelPilha simbolo pilhaAtual
+
+-- Remove um símbolo no pilha de escopos passada
+removerVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
+removerVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
+    case pilha of
+        Just pilhaAtualizada -> Right pilhaAtualizada
+        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+    where pilha = removerVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
+
+-- Auxiliar para a remoção do símbolo na pilha
+removerVariavelPilha' :: Variavel -> Maybe Escopo -> [Escopo] -> Maybe [Escopo]
+removerVariavelPilha' _ Nothing _ = Nothing
+removerVariavelPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnterior, tabelaAtual)) pilha =
+    case tabela of
+        Just tabelaAtualizada -> Just $ inicio ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ (tail fim)
+        Nothing -> removerVariavelPilha' simbolo (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
+    where tabela = removerVariavelTabela simbolo tabelaAtual
+          (inicio, fim) = genericSplitAt ((genericLength pilha) - idEscopoAtual) pilha
+
+-- Remove um símbolo na tabela de símbolos
+removerVariavelTabela :: Variavel -> [Variavel] -> Maybe [Variavel]
+removerVariavelTabela simbolo@(nome, _, _) tabela =
+    case index of
+        Just index' -> 
+            let (inicio, fim) = genericSplitAt index' tabela in
+            Just $ inicio ++ (tail fim)
+        Nothing -> Nothing
+    where index = findIndex (\(nome', _, _) -> nome == nome') tabela     
 
 -- Adiciona um tipo no estado
 addTipo :: Tipo -> Estado -> Either ErroEstado Estado
@@ -195,7 +232,7 @@ getTipo :: String -> Estado -> Either ErroEstado Tipo
 getTipo nome (pilha, tipos, funcoes) =
     case tipo of
         Just tipoEncontrado -> Right tipoEncontrado
-        Nothing -> Left $ ErroBuscaTipo $ "Tipo " ++ nome ++ "não encontrado"
+        Nothing -> Left $ ErroBuscaTipo $ "Tipo '" ++ nome ++ "' não encontrado"
     where tipo = getTipoLista nome tipos
 
 getTipoLista :: String -> [Tipo] -> Maybe Tipo
@@ -230,7 +267,7 @@ addSubprograma subprograma (pilha, tipos, subprogramasAtuais) =
 addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
 addSubprogramaLista subprograma subprogramas = 
     case getSubprogramaLista assinatura subprogramas of
-        Just _ -> Left $ ErroSubprogramaDuplicada $ "Função '" ++ nome ++ "' já foi criada do jeito informado"
+        Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma '" ++ nome ++ "' já foi criado com a mesma assinatura"
         Nothing -> Right $ subprograma:subprogramas
     where assinatura@(nome, _) = getAssinaturaSubprograma subprograma
 
