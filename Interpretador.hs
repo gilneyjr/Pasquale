@@ -13,7 +13,7 @@ import Expressoes
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
-programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVOINC (CRIAINC (Var [SingleVar (ID (2,9) "c") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (3,9)) (CRIAVAR (Var [SingleVar (ID (3,18) "c") (OptionalSQBrack [])])))])))))
+programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVODEC (NOVADEC [] (TIPO (2,9) "INTEIRO") [VAR_SEM (SingleVar (ID (2,17) "c") (OptionalSQBrack []))]),NOVOINC (CRIAINC (Var [SingleVar (ID (3,9) "c") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (4,9)) (CRIAVAR (Var [SingleVar (ID (4,17) "c") (OptionalSQBrack [])])))])))))
 
 --                            Return Break Continue
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
@@ -307,14 +307,15 @@ executarStmt (NOVOATRIBSTMT expr expr') estado =
           (valor, estadoIntermediario) = evaluateExpr estado expr'
           estadoAtualizado = atualizarVariavel (nome, tipo, valor) estadoIntermediario
 
-executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado = 
+executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
         Right (nome, tipo, valor) ->
             if null campos then
                 case getValorInteiro valor of
                     Just valor' ->
                         case atualizarVariavel (nome, tipo, ValorInteiro (succ valor')) estado of
-                            Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                            Right estado' -> do
+                                return (estado', False, False, False, Nothing, Nothing)
                             Left erro -> fail $ show erro ++ ": posição " ++ (show p)
                     Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
             else
@@ -376,7 +377,6 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
             putStr val
             return (estado1, False, False, False, Nothing, Nothing)
         ValorInteiro val -> do
-            putStr $ "\n" ++ (show estado1) ++ "\n"
             putStr $ show val
             return (estado1, False, False, False, Nothing, Nothing)
         ValorReal val -> do

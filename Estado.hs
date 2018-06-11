@@ -25,6 +25,7 @@ import Arvore
 import Data.Maybe
 import Data.Either
 import Data.List
+--import Debug.Trace
 
 -- pilha de escopos, lista de tipos
 type Estado = ([Escopo], [Tipo], [Subprograma])
@@ -158,10 +159,10 @@ atualizarVariavelPilha' :: Variavel -> Maybe Escopo -> [Escopo] -> Maybe [Escopo
 atualizarVariavelPilha' _ Nothing _ = Nothing
 atualizarVariavelPilha' simbolo (Just escopoAtual@(idEscopoAtual, idEscopoAnterior, tabelaAtual)) pilha =
     case tabela of
-        Just tabelaAtualizada -> Just $ (init inicio) ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ fim
+        Just tabelaAtualizada -> Just $ inicio ++ [(idEscopoAtual, idEscopoAnterior, tabelaAtualizada)] ++ (tail fim)
         Nothing -> atualizarVariavelPilha' simbolo (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
     where tabela = atualizarVariavelTabela simbolo tabelaAtual
-          (inicio, fim) = genericSplitAt idEscopoAtual pilha
+          (inicio, fim) = genericSplitAt ((genericLength pilha) - idEscopoAtual) pilha
 
 -- Atualiza um símbolo na tabela de símbolos
 atualizarVariavelTabela :: Variavel -> [Variavel] -> Maybe [Variavel]
