@@ -252,7 +252,7 @@ iniciaBlocoMain (Main stmts) estado = do
         (_, False, False) -> 
             case maybeExpr of
                 Nothing -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
-                otherwise -> error $ "Erro retorno não vazio: posição: " ++ show p
+                otherwise -> error $ "Erro retorno não vazio: posição: " ++ (show $ fromJust maybePos) 
         otherwise -> case maybePos of
             Just p -> error $ "Erro com comando na posição: " ++ show p
 

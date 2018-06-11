@@ -74,7 +74,7 @@ getEscopoById idEscopoAtual (pilhaEscopo, _, _) = fromJust $ getEscopoByIdFromPi
 getEscopoByIdFromPilha :: Integer -> [Escopo] -> Maybe Escopo
 getEscopoByIdFromPilha _        []    = Nothing
 getEscopoByIdFromPilha 0        _     = Nothing
-getEscopoByIdFromPilha idEscopo pilha = Just $ genericIndex pilha (idEscopo - 1)
+getEscopoByIdFromPilha idEscopo pilha = Just $ genericIndex pilha ((genericLength pilha) - idEscopo)
 
 -- Retorna o escopo atual a partir do estado
 getEscopoAtual :: Estado -> Escopo
@@ -133,7 +133,8 @@ getVariavelPilha' _ Nothing _ = Nothing
 getVariavelPilha' nome (Just (_, idEscopoAnterior, tabelaVariavels)) pilha =
     case simbolo of
         Just simbolo' -> Just simbolo'
-        Nothing -> getVariavelPilha' nome (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
+        Nothing -> do
+            getVariavelPilha' nome (getEscopoByIdFromPilha idEscopoAnterior pilha) pilha
     where simbolo = getVariavelTabela nome tabelaVariavels
 
 -- Atualiza um símbolo no estado passado
