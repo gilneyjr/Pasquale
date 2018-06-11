@@ -13,7 +13,9 @@ import Expressoes
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
-programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVODEC (NOVADEC [] (TIPO (2,9) "INTEIRO") [VAR_SEM (SingleVar (ID (2,17) "c") (OptionalSQBrack []))]),NOVOINC (CRIAINC (Var [SingleVar (ID (3,9) "c") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (4,9)) (CRIAVAR (Var [SingleVar (ID (4,17) "c") (OptionalSQBrack [])])))])))))
+
+programa = (CRIAPROG (INICIOESTRS [] (INICIODECS [] (INICIOFUNCS [] (Main [NOVODEC (NOVADEC [] (TIPO (2,9) "INTEIRO") [VAR_COM (CRIAATRIB (SingleVar (ID (2,17) "n") (OptionalSQBrack [])) (CRIAINT (INTEIRO (2,22) 10)))]),NOVOENQUANTO (CRIAENQUANTO (ENQUANTO (3,9)) (CRIALOGICO (LOGICO (3,18) True)) [NOVOSE (CRIASE (SE (4,13)) (CRIAEQUAL (CRIAMOD (CRIAVAR (Var [SingleVar (ID (4,16) "n") (OptionalSQBrack [])])) (MOD (4,18)) (CRIAINT (INTEIRO (4,22) 10))) (Equal (4,25)) (CRIAINT (INTEIRO (4,27) 0))) [NOVODEC (NOVADEC [] (TIPO (5,17) "INTEIRO") [VAR_COM (CRIAATRIB (SingleVar (ID (5,25) "i") (OptionalSQBrack [])) (CRIAINT (INTEIRO (5,30) 2)))]),NOVOENQUANTO (CRIAENQUANTO (ENQUANTO (6,17)) (CRIALEQ (CRIAVAR (Var [SingleVar (ID (6,26) "i") (OptionalSQBrack [])])) (Leq (6,28)) (CRIAINT (INTEIRO (6,31) 10))) [NOVOINC (CRIAINC (Var [SingleVar (ID (7,21) "n") (OptionalSQBrack [])])),NOVOESCREVA (CRIAESCREVA (ESCREVA (8,21)) (CRIAADD (CRIAPARENTESES (CRIAADD (CRIATEXTO (TEXTO (8,30) "Novo n = ")) (Add (8,42)) (CRIACONVERSAO (TIPO (8,45) "TEXTO") (CRIAVAR (Var [SingleVar (ID (8,51) "n") (OptionalSQBrack [])]))))) (Add (8,54)) (CRIATEXTO (TEXTO (8,56) "\n")))),NOVOINC (CRIAINC (Var [SingleVar (ID (9,21) "i") (OptionalSQBrack [])])),NOVOSE (CRIASE (SE (10,21)) (CRIAEQUAL (CRIAVAR (Var [SingleVar (ID (10,24) "i") (OptionalSQBrack [])])) (Equal (10,26)) (CRIAINT (INTEIRO (10,28) 7))) [NOVOSAIA (CRIASAIA (SAIA (11,25)))] (OptionalSenao []))])] (OptionalSenao [NOVOSE (CRIASE (SE (15,17)) (CRIAEQUAL (CRIAMOD (CRIAVAR (Var [SingleVar (ID (15,20) "n") (OptionalSQBrack [])])) (MOD (15,22)) (CRIAINT (INTEIRO (15,26) 3))) (Equal (15,28)) (CRIAINT (INTEIRO (15,30) 0))) [NOVODEC (NOVADEC [] (TIPO (16,21) "INTEIRO") [VAR_COM (CRIAATRIB (SingleVar (ID (16,29) "i") (OptionalSQBrack [])) (CRIAINT (INTEIRO (16,34) 2)))]),NOVOENQUANTO (CRIAENQUANTO (ENQUANTO (17,21)) (CRIALEQ (CRIAVAR (Var [SingleVar (ID (17,30) "i") (OptionalSQBrack [])])) (Leq (17,32)) (CRIAINT (INTEIRO (17,35) 6))) [NOVOINC (CRIAINC (Var [SingleVar (ID (18,25) "n") (OptionalSQBrack [])])),NOVOINC (CRIAINC (Var [SingleVar (ID (19,25) "i") (OptionalSQBrack [])]))]),NOVOESCREVA (CRIAESCREVA (ESCREVA (21,21)) (CRIATEXTO (TEXTO (21,29) "Mais 5\n"))),NOVOCONTINUE (CRIACONTINUE (CONTINUE (22,21)))] (OptionalSenao [NOVOSAIA (CRIASAIA (SAIA (24,17)))]))])),NOVOESCREVA (CRIAESCREVA (ESCREVA (27,13)) (CRIATEXTO (TEXTO (27,21) "Opa\n")))]),NOVOESCREVA (CRIAESCREVA (ESCREVA (29,9)) (CRIATEXTO (TEXTO (29,17) "Fim\n")))])))))
+
 
 --                            Return Break Continue
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
@@ -262,29 +264,24 @@ iniciaBlocoSe stmts estado = do
     (estado1, a, b, c, d, e) <- rodaStmts stmts (criarEscopo (getIdEscopoAtual estado) estado)
     return (removerEscopo estado1, a, b, c, d, e)
 
---Insere o escopo do Enquanto, executa, e depois remove
-iniciaBlocoEnquanto :: Token -> EXPR -> [STMT] -> Estado -> IO EstadoCompleto
-iniciaBlocoEnquanto t expr stmts estado = do
-    (estado1, a, b, c, d, e) <- rodaEnquanto t expr stmts (criarEscopo (getIdEscopoAtual estado) estado)
-    return (removerEscopo estado1, a, b, c, d, e)
-
 --Insere o escopo do Bloco, executa, e depois remove
 iniciaBloco :: [STMT] -> Estado -> IO EstadoCompleto
 iniciaBloco stmts estado = do
     (estado1, a, b, c, d, e) <- rodaStmts stmts (criarEscopo (getIdEscopoAtual estado) estado)
     return (removerEscopo estado1, a, b, c, d, e)
 
---Controla a execução do ENQUANTO
+--Efetua a execução do ENQUANTO
 rodaEnquanto :: Token -> EXPR -> [STMT] -> Estado -> IO EstadoCompleto
 rodaEnquanto (ENQUANTO p) expr stmts estado = do
     (val,estado1) <- (return (evaluateExpr estado expr))
     case val of
         ValorLogico False -> return (estado1, False, False, False, Nothing, Nothing)
         ValorLogico True -> do
-            (estado2, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts estado1
-            case (temRetorno, temSaia, temContinue) of
-                (False, False, _) -> rodaEnquanto (ENQUANTO p) expr stmts estado2
-                otherwise -> return (estado2, temRetorno, False, temContinue, maybeExpr, maybePos)
+            (estado2, temRetorno, temSaia, _, maybeExpr, maybePos) <- rodaStmts stmts (criarEscopo (getIdEscopoAtual estado) estado)
+            estado3 <- (return $ removerEscopo estado2)
+            case (temRetorno, temSaia) of
+                (False, False) -> rodaEnquanto (ENQUANTO p) expr stmts estado3
+                otherwise -> return (estado3, temRetorno, False, False, maybeExpr, maybePos)
         otherwise -> error $ "Tipo da expressão não LOGICO no ENQUANTO: posição: " ++ show p
 
 --Executa lista de stmts
@@ -355,7 +352,7 @@ executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
         getPosSE (SE p) = p
 
 executarStmt (NOVOENQUANTO (CRIAENQUANTO t expr stmts)) estado =
-    iniciaBlocoEnquanto t expr stmts estado
+    rodaEnquanto t expr stmts estado
 
 executarStmt (NOVORETORNEFUNC (CRIARETORNEF (RETORNE p) expr)) estado = 
     return (estado, True, False, False, Just expr, Just p)
