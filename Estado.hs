@@ -16,6 +16,7 @@ module Estado (
     getVariavelTabela,
     removerVariavel,
     atualizarVariavel,
+    addVariavelGlobal,
     addTipo,
     addSubprograma,
     getSubprograma,
@@ -30,7 +31,7 @@ import Data.List
 --import Debug.Trace
 
 -- pilha de escopos, lista de tipos
-type Estado = ([Escopo], [Tipo], [Subprograma], Int)
+type Estado = ([Escopo], [Tipo], [Subprograma], Integer)
 
 -- Número do Escopo, Número do escopo anterior, Tabela de declaracoes
 type Escopo = (Integer, Integer, [Variavel])
@@ -90,6 +91,14 @@ getIdEscopoAtual estado = idEscopoAtual where (idEscopoAtual, _, _) = getEscopoA
 -- Remove o escopo do topo da pilha
 removerEscopo :: Estado -> Estado
 removerEscopo ((escopo:pilhaEscopo), tipos, funcoes, cont) = (pilhaEscopo, tipos, funcoes, cont)
+    
+-- Adicionar símbolo ao estado, no escopo global
+addVariavelGlobal :: Variavel -> Estado -> Either ErroEstado Estado
+addVariavelGlobal simbolo estado@(escopos, tipos, funcoes, cont) = 
+    case escopo of
+        Right escopoAtualizado -> Right $ ((init escopos) ++ [escopoAtualizado], tipos, funcoes, cont)
+        Left erro -> Left erro
+    where escopo = addVariavelEscopo simbolo (getEscopoById 1 estado)
     
 -- Adicionar símbolo ao estado
 addVariavel :: Variavel -> Estado -> Either ErroEstado Estado

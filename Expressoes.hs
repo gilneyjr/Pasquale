@@ -435,6 +435,30 @@ evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack
         Right _ -> error $ "Variável " ++ nome ++ " não é um vetor: posição " ++ (show posicao)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
 
+-- Alocação dinâmica de um elemento
+evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO ponts tipo (OptionalSQBrack [])) =
+    case res of
+        Right estadoAtualizado -> (ValorPonteiro nome', criaPonteiro tipo', estadoAtualizado)
+        Left erro -> error ("erro impossível de acontecer: " ++ show erro)
+    where
+        id = "$" ++ show prevCont 
+        cont = prevCont+1
+        estado = (escopo, tipos, subprogs, cont)
+        ((nome', tipo'), estadoIntermediario) =
+            getDec ponts tipo id estado
+        res = addVariavelGlobal (nome', tipo', getValorInicial tipo') estadoIntermediario
+        criaPonteiro :: Tipo -> Tipo
+        criaPonteiro t@(TipoPonteiroFim _) = TipoPonteiroRecursivo t
+        criaPonteiro t@(TipoPonteiroRecursivo _) = TipoPonteiroRecursivo t
+        criaPonteiro t@(TipoAtomico s) = TipoPonteiroFim s
+        criaPonteiro t@(TipoEstrutura s _) = TipoPonteiroFim s
+        getDec :: [PONT] -> Token -> String -> Estado -> (Declaracao, Estado)
+        getDec ponteiros (TIPO posicao nome) variavel estado =
+            case tipoPrimitivo of
+                Right tipoEncontrado -> ((variavel, getTipoPonteiro ponteiros tipoEncontrado), estado)
+                Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
+            where tipoPrimitivo = getTipo nome estado
+
 -- Avalia uma estrutura
 evaluateEstr :: Estado -> Valor -> [SingleVAR] -> Either String (Valor,Tipo,Estado)
 -- Avalia uma estrutura para um campo de endereçamento. Ex.: a.b

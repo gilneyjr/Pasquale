@@ -6,7 +6,8 @@ module Tipos(
     getValorInicial,
     getTipoFromToken,
     getValorFromToken,
-    getValorInteiro
+    getValorInteiro,
+    getTipoPonteiro
 ) where
 
 import Arvore
@@ -98,3 +99,9 @@ getValorFromToken (LOGICO _ x)     = ValorLogico x
 getValorInteiro :: Valor -> Maybe Integer
 getValorInteiro (ValorInteiro x) = Just x
 getValorInteiro _ = Nothing
+
+getTipoPonteiro :: [PONT] -> Tipo -> Tipo
+getTipoPonteiro [] tipo = tipo
+getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
+getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
+getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
