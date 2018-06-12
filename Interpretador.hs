@@ -20,19 +20,27 @@ type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
 --Funcao para executar a partir da arvore
 executaPrograma :: PROGRAMA -> IO()
 executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subprogs main)))) = do
+    -- Adiciona declarações de novos tipos estrutura
     estado1 <- addEstrs estrs inicializarPrograma
+    -- Adiciona declarações de variáveis globais
     estado2 <- addDecs decs estado1
+    -- Adiciona as funções e procedimentos definidos pelo usuário
     estado3 <- addSubprogs subprogs estado2
+    -- Inicia a execução do programa
     estado4 <- iniciaBlocoMain main estado3
     return ()
 
+-- Estado inicial do programa
 inicializarPrograma :: Estado
 inicializarPrograma = criarEscopo 0 estadoinicial
 
---adiciona as estruturas criadas pelo usuario
+-- Adiciona as estruturas criadas pelo usuario
 addEstrs :: [ESTR] -> Estado -> IO Estado
+-- Caso não hajam estruturas para adicionar
 addEstrs []    estado = return estado
+-- Caso hajam estruturas para adicionar
 addEstrs (a:b) estado =
+    -- Caso tenha adicionado com sucesso, chama recursivamente para o resto das estruturas
     case novo of
         Right estadoAtualizado -> addEstrs b estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
@@ -40,12 +48,12 @@ addEstrs (a:b) estado =
           novo = addTipo tipoEstrutura estadoFinal
           posicao = getPosicaoEstr a
 
---Retorna o tipo de uma estrutura
+-- Dados a estrutura na árvore e o estado atual, retorna o tipo de uma estrutura
 getTipoFromEstr :: ESTR -> Estado -> (Tipo, Estado)
 getTipoFromEstr (NOVOESTR (TIPO _ nome) decs) estado = ((TipoEstrutura nome declaracoes), estadoFinal)
     where (declaracoes, estadoFinal) = (getDecsEstr nome decs estado)
 
---Retorna as declarações de uma estrutura
+-- Dados o nome da estrutura, a lista de declarações dela na árvore e o estado atual, retorna as declarações dessa estrutura
 getDecsEstr :: String -> [DEC] -> Estado -> ([Declaracao], Estado)
 getDecsEstr _ [] estado = ([], estado)
 getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
