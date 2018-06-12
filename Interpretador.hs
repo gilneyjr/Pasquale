@@ -106,7 +106,7 @@ getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar posicao (OptionalSQBrack exprs)
 
 funcaoFold :: ([Maybe Integer], Estado) -> EXPR -> ([Maybe Integer], Estado)
 funcaoFold (valores, estadoInicial) expr = (((getValorInteiro valor):valores), estadoFinal)
-    where (valor, estadoFinal) = evaluateExpr estadoInicial expr
+    where (valor, _, estadoFinal) = evaluateExpr estadoInicial expr
 
 getNomeVar :: VAR_ -> String
 getNomeVar (VAR_SEM (SingleVar (ID _ nome) _)) = nome
@@ -138,7 +138,7 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
         Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
     where ((nome', tipo'):_, estadoIntermediario) = getDecs [declaracao] estado
-          (valor, estado') = evaluateExpr estadoIntermediario expr
+          (valor, _, estado') = evaluateExpr estadoIntermediario expr
           res = addVariavel (nome', tipo', valor) estado'
           posicao = getPosicaoSingleVar id
 
@@ -268,7 +268,7 @@ iniciaBloco stmts estado = do
 --Efetua a execução do ENQUANTO
 rodaEnquanto :: Token -> EXPR -> [STMT] -> Estado -> IO EstadoCompleto
 rodaEnquanto (ENQUANTO p) expr stmts estado = do
-    (val,estado1) <- (return (evaluateExpr estado expr))
+    (val,_,estado1) <- (return (evaluateExpr estado expr))
     case val of
         ValorLogico False -> return (estado1, False, False, False, Nothing, Nothing)
         ValorLogico True -> do
@@ -296,7 +296,7 @@ executarStmt (NOVOATRIBSTMT expr expr') estado =
         Right estado' -> return (estado', False, False, False, Nothing, Nothing)
         Left erro -> fail $ show erro
     where (nome, tipo, _) = getVariavelFromExpr expr estado
-          (valor, estadoIntermediario) = evaluateExpr estado expr'
+          (valor, _, estadoIntermediario) = evaluateExpr estado expr'
           estadoAtualizado = atualizarVariavel (nome, tipo, valor) estadoIntermediario
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
@@ -342,7 +342,7 @@ executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
         ValorLogico False -> iniciaBlocoSe stmts2 estado1
         otherwise -> fail $ "Expressao não retorna LOGICO: posição: " ++ (show getPosSE)
     where
-        (res, estado1) = evaluateExpr estado expr
+        (res, _, estado1) = evaluateExpr estado expr
         getPosSE :: Token -> (Int, Int)
         getPosSE (SE p) = p
 
@@ -368,7 +368,7 @@ executarStmt (NOVODELETE (CRIADELETE tok expr)) estado =
             Left erro -> error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
         otherwise -> error $ "Operação de delete para expressão que não retorna Ponteiro: posição: " ++ (show $ getPosFromDelete tok)
     where
-        (val, estado1) = evaluateExpr estado expr
+        (val, _, estado1) = evaluateExpr estado expr
         justVar :: (Either ErroEstado Variavel) -> Variavel
         justVar (Right x) = x
         justVar (Left _) = error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
@@ -394,7 +394,7 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
             return (estado1, False, False, False, Nothing, Nothing)
         otherwise -> error $ "Comando ESCREVA para tipo não primitivo: posição: " ++ show p
     where
-        (valor1, estado1) = evaluateExpr estado expr
+        (valor1, _, estado1) = evaluateExpr estado expr
         showLogico :: Bool -> String
         showLogico True = "VERDADEIRO"
         showLogico False = "FALSO"
