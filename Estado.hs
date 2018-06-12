@@ -30,7 +30,7 @@ import Data.List
 --import Debug.Trace
 
 -- pilha de escopos, lista de tipos
-type Estado = ([Escopo], [Tipo], [Subprograma])
+type Estado = ([Escopo], [Tipo], [Subprograma], Int)
 
 -- Número do Escopo, Número do escopo anterior, Tabela de declaracoes
 type Escopo = (Integer, Integer, [Variavel])
@@ -63,15 +63,15 @@ instance Show ErroEstado where
 	Estado  -> Estado atual do programa
 -}
 criarEscopo :: Integer -> Estado -> Estado
-criarEscopo idEscopoAtual (pilhaEscopo, tipos, funcoes) =
-        (((genericLength pilhaEscopo) + 1, idEscopoAtual, []):pilhaEscopo, tipos, funcoes)
+criarEscopo idEscopoAtual (pilhaEscopo, tipos, funcoes, cont) =
+        (((genericLength pilhaEscopo) + 1, idEscopoAtual, []):pilhaEscopo, tipos, funcoes, cont   )
 
 {- Parâmetros:
 	Integer -> Id do Escopo a ser procurado
 	Estado  -> Estado atual do programa
 -}
 getEscopoById :: Integer -> Estado -> Escopo
-getEscopoById idEscopoAtual (pilhaEscopo, _, _) = fromJust $ getEscopoByIdFromPilha idEscopoAtual pilhaEscopo
+getEscopoById idEscopoAtual (pilhaEscopo, _, _, _) = fromJust $ getEscopoByIdFromPilha idEscopoAtual pilhaEscopo
 
 -- Função auxiliar para getEscopoById
 getEscopoByIdFromPilha :: Integer -> [Escopo] -> Maybe Escopo
@@ -81,7 +81,7 @@ getEscopoByIdFromPilha idEscopo pilha = Just $ genericIndex pilha ((genericLengt
 
 -- Retorna o escopo atual a partir do estado
 getEscopoAtual :: Estado -> Escopo
-getEscopoAtual (pilhaEscopo, _, _) = head pilhaEscopo
+getEscopoAtual (pilhaEscopo, _, _, _) = head pilhaEscopo
 
 -- Retorna o Id do escopo atual
 getIdEscopoAtual :: Estado -> Integer
@@ -89,13 +89,13 @@ getIdEscopoAtual estado = idEscopoAtual where (idEscopoAtual, _, _) = getEscopoA
 
 -- Remove o escopo do topo da pilha
 removerEscopo :: Estado -> Estado
-removerEscopo ((escopo:pilhaEscopo), tipos, funcoes) = (pilhaEscopo, tipos, funcoes)
+removerEscopo ((escopo:pilhaEscopo), tipos, funcoes, cont) = (pilhaEscopo, tipos, funcoes, cont)
     
 -- Adicionar símbolo ao estado
 addVariavel :: Variavel -> Estado -> Either ErroEstado Estado
-addVariavel simbolo estado@(escopos, tipos, funcoes) = 
+addVariavel simbolo estado@(escopos, tipos, funcoes, cont) = 
     case escopo of
-        Right escopoAtualizado -> Right $ (escopoAtualizado: tail escopos, tipos, funcoes)
+        Right escopoAtualizado -> Right $ (escopoAtualizado: tail escopos, tipos, funcoes, cont)
         Left erro -> Left erro
     where escopo = addVariavelEscopo simbolo (getEscopoAtual estado)
 
@@ -120,7 +120,7 @@ getVariavelTabela nome tabela = find (\(nome', _, _) -> nome == nome') tabela
 
 -- Busca por um símbolo no estado pelo nome
 getVariavel :: String -> Estado -> Either ErroEstado Variavel
-getVariavel nome (pilhaEscopo, _, _) = getVariavelPilha nome pilhaEscopo
+getVariavel nome (pilhaEscopo, _, _, _) = getVariavelPilha nome pilhaEscopo
 
 -- Busca por um síbolo na pilha de escopos pelo nome
 getVariavelPilha :: String -> [Escopo] -> Either ErroEstado Variavel
@@ -142,9 +142,9 @@ getVariavelPilha' nome (Just (_, idEscopoAnterior, tabelaVariavels)) pilha =
 
 -- Atualiza um símbolo no estado passado
 atualizarVariavel :: Variavel -> Estado -> Either ErroEstado Estado
-atualizarVariavel simbolo (pilhaAtual, tipos, funcoes) =
+atualizarVariavel simbolo (pilhaAtual, tipos, funcoes, cont) =
     case pilhaAtualizada of
-        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes)
+        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes, cont)
         Left error -> Left error
     where pilhaAtualizada = atualizarVariavelPilha simbolo pilhaAtual
 
@@ -178,9 +178,9 @@ atualizarVariavelTabela simbolo@(nome, _, _) tabela =
 
 -- Remove um símbolo no estado passado
 removerVariavel :: Variavel -> Estado -> Either ErroEstado Estado
-removerVariavel simbolo (pilhaAtual, tipos, funcoes) =
+removerVariavel simbolo (pilhaAtual, tipos, funcoes, cont) =
     case pilhaAtualizada of
-        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes)
+        Right pilhaAtualizada -> Right $ (pilhaAtualizada, tipos, funcoes, cont)
         Left error -> Left error
     where pilhaAtualizada = removerVariavelPilha simbolo pilhaAtual
 
@@ -214,9 +214,9 @@ removerVariavelTabela simbolo@(nome, _, _) tabela =
 
 -- Adiciona um tipo no estado
 addTipo :: Tipo -> Estado -> Either ErroEstado Estado
-addTipo tipo (pilha, tiposAtuais, funcoes) =
+addTipo tipo (pilha, tiposAtuais, funcoes, cont) =
     case tipos of
-        Right tiposAtualizados -> Right $ (pilha, tiposAtualizados, funcoes)
+        Right tiposAtualizados -> Right $ (pilha, tiposAtualizados, funcoes, cont)
         Left error -> Left error
     where tipos = addTipoLista tipo tiposAtuais
 
@@ -230,7 +230,7 @@ addTipoLista tipo tipos =
 
 -- Busca um tipo primitivo no estado
 getTipo :: String -> Estado -> Either ErroEstado Tipo
-getTipo nome (pilha, tipos, funcoes) =
+getTipo nome (_, tipos, _, _) =
     case tipo of
         Just tipoEncontrado -> Right tipoEncontrado
         Nothing -> Left $ ErroBuscaTipo $ "Tipo '" ++ nome ++ "' não encontrado"
@@ -258,9 +258,9 @@ getTipoEstrutura nome (_:tipos) = getTipoEstrutura nome tipos
 
 -- Adiciona um subprograma no estado
 addSubprograma :: Subprograma -> Estado -> Either ErroEstado Estado
-addSubprograma subprograma (pilha, tipos, subprogramasAtuais) =
+addSubprograma subprograma (pilha, tipos, subprogramasAtuais, cont) =
     case subprogramas of
-        Right subprogramasAtualizadas -> Right (pilha, tipos, subprogramasAtualizadas)
+        Right subprogramasAtualizadas -> Right (pilha, tipos, subprogramasAtualizadas, cont)
         Left error -> Left error
     where subprogramas = addSubprogramaLista subprograma subprogramasAtuais
 
@@ -279,7 +279,7 @@ getAssinaturaSubprograma (Right (nome, parametros, _, _)) = (nome, parametros)
 
 -- Busca por um subprograma no estado atraves de sua assinatura
 getSubprograma :: Assinatura -> Estado -> Either ErroEstado Subprograma
-getSubprograma assinatura@(nome, _) (_, _, funcoes) = 
+getSubprograma assinatura@(nome, _) (_, _, funcoes, _) = 
     case getSubprogramaLista assinatura funcoes of
         Just subprograma -> Right subprograma
         Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome ++ "' não encontrado"
