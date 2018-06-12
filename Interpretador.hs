@@ -82,12 +82,11 @@ getDecs [] estado = ([], estado)
 getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
     case tipoPrimitivo of
         Right tipoEncontrado -> 
-            let (tipos, estadoIntermediario) = f tipoEncontrado
+            let (tipos, estadoIntermediario) = foldl (funcaoFold' tipoEncontrado) ([], estado) tokensVariaveis
                 (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
-            trace (show estadoFinal) ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
+            ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
-          f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
           variaveis = map getNomeVar tokensVariaveis
 
 getTipoPonteiro :: [PONT] -> Tipo -> Tipo
@@ -138,7 +137,7 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_SEM id):b)) estado =
     case res of
         Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where ((nome', tipo'):_, estadoIntermediario) = getDecs [declaracao] estado
+    where ((nome', tipo'):_, estadoIntermediario) = getDecs [(NOVADEC pont tipo [(VAR_SEM id)])] estado
           res = addVariavel (nome', tipo', getValorInicial tipo') estadoIntermediario
           posicao = getPosicaoSingleVar id
 
@@ -146,7 +145,7 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
     case res of
         Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
         Left erro -> fail $ (show erro) ++ ": posição " ++ (show posicao)
-    where ((nome', tipo'):_, estadoIntermediario) = getDecs [declaracao] estado
+    where ((nome', tipo'):_, estadoIntermediario) = getDecs [(NOVADEC pont tipo [(VAR_COM (CRIAATRIB id expr))])] estado
           (valor, _, estado') = evaluateExpr estadoIntermediario expr
           res = addVariavel (nome', tipo', valor) estado'
           posicao = getPosicaoSingleVar id
@@ -455,7 +454,7 @@ getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):vars)
         Left erro -> error $ (show erro) ++ ": posição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr _ _ = error $ "Não é possível realizar a atribuição: posição: " ++ (show posicao)
+getVariavelFromExpr _ _ = error $ "Não é possível realizar a atribuição: posição: "
 
 
 incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
