@@ -682,11 +682,27 @@ parseCrianovo = do
 
 parseCriavalorexpr :: ParseArgs EXPR
 parseCriavalorexpr = do
+    a <- parseCriavalor
+    return $ CRIAVALOREXPR a
+
+parseCriavalor :: ParseArgs VAL
+parseCriavalor = (try parseCriaultval) <|> parseCriaseqval
+    
+parseCriaultval :: ParseArgs VAL
+parseCriaultval = do
     a <- parseValor
     parseOpenbrack
-    b <- parseExpr
+    b <- parseVar
     parseClosebrack
-    return $ CRIAVALOREXPR a b
+    return $ CRIAULTVAL a b
+
+parseCriaseqval :: ParseArgs VAL
+parseCriaseqval = do
+    a <- parseValor
+    parseOpenbrack
+    b <- parseCriavalor
+    parseClosebrack
+    return $ CRIASEQVAL a b
 
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
