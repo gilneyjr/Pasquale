@@ -7,11 +7,8 @@ module Tipos(
     getTipoFromToken,
     getValorFromToken,
     getValorInteiro,
-<<<<<<< HEAD
-    getTipoFromValor
-=======
+    getTipoFromValor,
     getTipoPonteiro
->>>>>>> 7eb823967ac607374d1b147bbe7c86b0d0cf0a0d
 ) where
 
 import Arvore
@@ -104,7 +101,6 @@ getValorInteiro :: Valor -> Maybe Integer
 getValorInteiro (ValorInteiro x) = Just x
 getValorInteiro _ = Nothing
 
-<<<<<<< HEAD
 getTipoFromValor :: Valor -> Tipo
 getTipoFromValor (ValorInteiro _) = TipoAtomico "INTEIRO"
 getTipoFromValor (ValorLogico _) = TipoAtomico "LOGICO"
@@ -123,10 +119,10 @@ getDimensoes valor = [genericLength valor]
 getTipoPrimitivoVetor :: [Valor] -> Tipo
 getTipoPrimitivoVetor ((ValorVetor valores):_) = (getTipoPrimitivoVetor valores)
 getTipoPrimitivoVetor (valor:_) = getTipoFromValor valor
-=======
+
 getTipoPonteiro :: [PONT] -> Tipo -> Tipo
 getTipoPonteiro [] tipo = tipo
 getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
 getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
 getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
->>>>>>> 7eb823967ac607374d1b147bbe7c86b0d0cf0a0d
+

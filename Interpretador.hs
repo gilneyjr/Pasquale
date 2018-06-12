@@ -300,12 +300,12 @@ executarStmt (NOVOATRIBSTMT expr expr') estado =
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
         TipoVetor dimensoes _ ->
-            let (vetorNovo, estadoFinal) = (atualizarVetor expr dimensoes valorAntigo valor estadoIntermediario) in
+            let (vetorNovo, estadoFinal) = (atualizarVetor expr tipo dimensoes valorAntigo valor tipoExpr estadoIntermediario) in
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
     where (nome, tipo, valorAntigo) = getVariavelFromExpr expr estado
-          (valor, _, estadoIntermediario) = evaluateExpr estado expr'
+          (valor, tipoExpr, estadoIntermediario) = evaluateExpr estado expr'
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
@@ -487,30 +487,46 @@ decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (Valo
 {-
 Atualiza uma posição do vetor:
 expressão nome
+tipo da expressão nome
 dimensões
 valor antigo do vetor
 valor a ser inserido na posição
+tipo do valor a ser inserido
 -}
+
 --atualizarVetor expr dimensoes valorAntigo valor
-atualizarVetor :: EXPR -> [Integer] -> Valor -> Valor -> Estado -> (Valor, Estado)
-atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) dimensoes (ValorVetor valoresAntigos) valorNovo estado =
+atualizarVetor :: EXPR -> Tipo -> [Integer] -> Valor -> Valor -> Tipo -> Estado -> (Valor, Estado)
+atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVetor dimensoes (ValorVetor valoresAntigos) valorNovo tipoNovo estado =
     if all isJust posicoes then
-        ((ValorVetor (atualizarVetor' valoresAntigos dimensoes (catMaybes posicoes) valorNovo)), estadoAtualizado)
+        ((ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes (catMaybes posicoes) valorNovo tipoNovo)), estadoAtualizado)
     else
         error $ "Expressão não é um valor inteiro valido"
     where (posicoes, estadoAtualizado) = foldl funcaoFold ([], estado) exprs
 
-atualizarVetor' :: [Valor] -> [Integer] -> [Integer] -> Valor -> [Valor]
-atualizarVetor' valoresVetor (dimensao:_) [posicao] valorNovo =
-    if (posicao >= 1) && (posicao <= dimensao) && ((getTipoFromValor (head valoresVetor)) == (getTipoFromValor valorNovo)) then
-        inicio ++ [valorNovo] ++ (tail fim)
+--Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo
+atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> [Valor]
+
+atualizarVetor' valoresVetor _ [] _ valorNovo _ = error "Segmentation fault!!!!!!!!"
+
+atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posicao] valorNovo tipoNovo =
+    if (posicao >= 1) && (posicao <= dimensao) then
+        if (tipoElem == tipoNovo) && (dimensoes == []) then
+            inicio ++ [valorNovo] ++ (tail fim)
+        else
+            error "Atribuição inválida"
     else
         error "Segmentation fault!!!!!!!!"
     where (inicio, fim) = genericSplitAt (posicao - 1) valoresVetor
-atualizarVetor' valoresVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo = 
+
+atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo = 
     if (posicao >= 1) && (posicao <= dimensao) then
-        inicio ++ (atualizarVetor' valoresAntigos dimensoes posicoes valorNovo) ++ fim
+        inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo)] ++ fim
     else
         error $ "Segmentation fault!!!!!!!!" ++ (show posicao) ++ " " ++ (show dimensao)
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
           ((ValorVetor valoresAntigos):fim) = meio
+
+
+
+
+
