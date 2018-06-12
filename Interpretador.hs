@@ -13,7 +13,7 @@ import Expressoes
 import Debug.Trace
 
 --Estado antes da execucao
-estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
+estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [], 1)
 
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
 
@@ -88,12 +88,6 @@ getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) es
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
           variaveis = map getNomeVar tokensVariaveis
-
-getTipoPonteiro :: [PONT] -> Tipo -> Tipo
-getTipoPonteiro [] tipo = tipo
-getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
-getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
-getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
 
 getTipoVetor :: Tipo -> VAR_ -> Estado -> (Tipo, Estado)
 getTipoVetor tipo (VAR_SEM (SingleVar _ (OptionalSQBrack []))) estado = (tipo, estado)
