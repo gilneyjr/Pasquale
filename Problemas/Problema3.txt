@@ -16,42 +16,40 @@ PRINCIPAL
     INTEIRO b[lB,cB];
 
     //leitura da primeira matriz
-    INTEIRO i := 1;
-    INTEIRO j := 1;
+    INTEIRO i := 1, j;
     ESCREVA("Digite os elementos da primeira matriz:\n");
     ENQUANTO  i <= lA EXECUTE
+        j := 1;
         ENQUANTO j <= cA EXECUTE
             LEIA(a[i,j]);
             j++;
         FIMENQUANTO
-        j := 1;
         i++;
     FIMENQUANTO
-
+    
     //leitura da segunda matriz
     i := 1;
-    j := 1;
     ESCREVA("Digite os elementos da segunda matriz:\n");
     ENQUANTO i <= lB EXECUTE
+        j := 1;
         ENQUANTO j <= cB EXECUTE
             LEIA(b[i,j]);
             j++;
         FIMENQUANTO
-        j := 1;
         i++;
     FIMENQUANTO
 
     //Soma das matrizes
     SE lA = lB E cA = cB ENTAO
-        i:= 1; j := i;
+        i:= 1;
         ESCREVA("Resultado da soma das matrizes: \n");
         ENQUANTO i <= lA EXECUTE
+            j := 1;
             ENQUANTO j <= cA EXECUTE
                 ESCREVA((TEXTO) (a[i,j] + b[i,j])  + " ");
                 j++;
             FIMENQUANTO
             ESCREVA("\n");
-            j := 1;
             i++;
         FIMENQUANTO
     SENAO
@@ -60,21 +58,20 @@ PRINCIPAL
 
     //Multiplicação das matrizes
     SE cA = lB ENTAO
-        i:= 1; j := i;
-        INTEIRO k := 1;
-        INTEIRO resposta[lA, cB];
+        i:= 1;
         ESCREVA("Resultado da multiplicação das matrizes: \n");
         ENQUANTO i <= lA EXECUTE
+            j := 1;
             ENQUANTO j <= cB EXECUTE
+                INTEIRO k := 1, soma;
                 ENQUANTO k <= cA EXECUTE
-                    resposta[i,j] := resposta[i,j] + a[i,k] * b[k,j];
+                    soma := soma + a[i,k] * b[k,j];
                     k++;
                 FIMENQUANTO
-                ESCREVA((TEXTO) resposta[i,j]  + " ");
+                ESCREVA((TEXTO) soma  + " ");
                 j++;
             FIMENQUANTO
             ESCREVA("\n");
-            j := 1;
             i++;
         FIMENQUANTO
     SENAO
