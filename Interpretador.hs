@@ -286,7 +286,7 @@ rodaEnquanto (ENQUANTO p) expr stmts estado = do
             case (temRetorno, temSaia) of
                 (False, False) -> rodaEnquanto (ENQUANTO p) expr stmts estado3
                 otherwise -> return (estado3, temRetorno, False, False, maybeExpr, maybePos)
-        otherwise -> error $ "Tipo da expressão não LOGICO no ENQUANTO: posição: " ++ show p
+        otherwise -> error $ "Tipo da expressão não LOGICO na condição do ENQUANTO: posição: " ++ show p
 
 --Executa lista de stmts
 rodaStmts :: [STMT] -> Estado -> IO EstadoCompleto
@@ -318,7 +318,7 @@ executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):ca
                             Right estado' -> do
                                 return (estado', False, False, False, Nothing, Nothing)
                             Left erro -> fail $ show erro ++ ": posição " ++ (show p)
-                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEIRO: posição: " ++ (show p)
             else
                 let valorEstrutura = incrementaValorEstrutura campos valor in
                 case atualizarVariavel (nome, tipo, valorEstrutura) estado of
@@ -335,7 +335,7 @@ executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):
                         case atualizarVariavel (nome, tipo, ValorInteiro (valor' - 1)) estado of
                             Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                             Left erro -> fail $ show erro ++ ": posição " ++ (show p)
-                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEIRO: posição: " ++ (show p)
             else
                 let valorEstrutura = incrementaValorEstrutura campos valor in
                 case atualizarVariavel (nome, tipo, valorEstrutura) estado of
@@ -349,7 +349,7 @@ executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
     case res of
         ValorLogico True -> iniciaBlocoSe stmts1 estado1
         ValorLogico False -> iniciaBlocoSe stmts2 estado1
-        otherwise -> fail $ "Expressao não retorna LOGICO: posição: " ++ (show getPosSE)
+        otherwise -> fail $ "Expressão não é do tipo LOGICO: posição: " ++ (show getPosSE)
     where
         (res, _, estado1) = evaluateExpr estado expr
         getPosSE :: Token -> (Int, Int)
@@ -455,17 +455,17 @@ getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):vars)
         Left erro -> error $ (show erro) ++ ": posição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr _ _ = error $ "deu erro"
+getVariavelFromExpr _ _ = error $ "Não é possível realizar a atribuição: posição: " ++ (show posicao)
 
 
 incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
-incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado posição: " ++ (show p)
+incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado: posição: " ++ (show p)
 incrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (ValorEstrutura (campo@(nome, tipo, valor):campos)) =
     if nomeCampo == nome then
         if null nomeCampos then
             case getValorInteiro valor of
                 Just valor' -> ValorEstrutura ((nome, tipo, ValorInteiro (succ valor')):campos)
-                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é do tipo INTEIRO: posição: " ++ (show p)
         else
             ValorEstrutura ((nome, tipo, (incrementaValorEstrutura nomeCampos valor)):campos)
     else
@@ -479,7 +479,7 @@ decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (Valo
         if null nomeCampos then
             case getValorInteiro valor of
                 Just valor' -> ValorEstrutura ((nome, tipo, ValorInteiro (valor' - 1)):campos)
-                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEGER: posição: " ++ (show p)
+                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é do tipo INTEIRO: posição: " ++ (show p)
         else
             ValorEstrutura ((nome, tipo, (incrementaValorEstrutura nomeCampos valor)):campos)
     else
