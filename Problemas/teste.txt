@@ -1,31 +1,6 @@
 PRINCIPAL
-	INTEIRO n := 10;
-	ENQUANTO VERDADEIRO EXECUTE
-	    SE n MOD 10 = 0 ENTAO
-	        INTEIRO i := 2;
-	        ENQUANTO i <= 10 EXECUTE
-	            n++;
-	            ESCREVA("Novo n = " + (TEXTO)n + "\n");
-	            i++;
-	            SE i = 7 ENTAO
-	                SAIA;
-                FIMSE
-	        FIMENQUANTO
-	    SENAO
-	        SE n MOD 3 = 0 ENTAO
-	            INTEIRO i := 2;
-	            ENQUANTO i <= 6 EXECUTE
-	                n++;
-	                i++;
-	            FIMENQUANTO
-	            ESCREVA("Mais 5\n");
-	            CONTINUE;
-            SENAO
-                SAIA;
-            FIMSE
-	    FIMSE
-	    ESCREVA("Opa\n");
-	FIMENQUANTO
-	ESCREVA("Fim\n");
+    INTEIRO x[3], y;
+	y := x[1];
+	ESCREVA((TEXTO)y + "\n");
 FIMPRINCIPAL
 

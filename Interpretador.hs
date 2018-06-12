@@ -10,6 +10,7 @@ import Estado
 import Lexico
 import Arvore
 import Expressoes
+import Debug.Trace
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [])
@@ -75,7 +76,7 @@ getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) es
         Right tipoEncontrado -> 
             let (tipos, estadoIntermediario) = f tipoEncontrado
                 (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
-            ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
+            trace (show estadoFinal) ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
           f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
