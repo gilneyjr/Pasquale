@@ -489,8 +489,8 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
     retorna (Valor,Estado)
 -}
 evaluateVet :: Estado -> Valor  -> Tipo -> [Integer] -> [EXPR] -> Either String (Valor,Tipo,Estado)
-evaluateVet _ _ _ [] [expr] = Left "O número de índices é maior que o número de dimensões no vetor"
-evaluateVet _ _ _ [dim] [] = Left "O número de índices é menor que o número de dimensões no vetor"
+evaluateVet _ _ _ [] (_:_) = Left "O número de índices é maior que o número de dimensões no vetor"
+evaluateVet _ _ _ (_:_) [] = Left "O número de índices é menor que o número de dimensões no vetor"
 evaluateVet estado (ValorVetor valores) (TipoVetor _ tipo) [dim] [expr] = 
     case res_expr of
         (ValorInteiro i, _, estado_atualizado) ->
