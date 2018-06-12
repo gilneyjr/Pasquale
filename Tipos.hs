@@ -6,7 +6,8 @@ module Tipos(
     getValorInicial,
     getTipoFromToken,
     getValorFromToken,
-    getValorInteiro
+    getValorInteiro,
+    getTipoFromValor
 ) where
 
 import Arvore
@@ -98,3 +99,22 @@ getValorFromToken (LOGICO _ x)     = ValorLogico x
 getValorInteiro :: Valor -> Maybe Integer
 getValorInteiro (ValorInteiro x) = Just x
 getValorInteiro _ = Nothing
+
+getTipoFromValor :: Valor -> Tipo
+getTipoFromValor (ValorInteiro _) = TipoAtomico "INTEIRO"
+getTipoFromValor (ValorLogico _) = TipoAtomico "LOGICO"
+getTipoFromValor (ValorTexto _) = TipoAtomico "TEXTO"
+getTipoFromValor (ValorCaractere _) = TipoAtomico "CARACTERE"
+getTipoFromValor (ValorReal _) = TipoAtomico "REAL"
+getTipoFromValor (ValorVetor valores) = TipoVetor (getDimensoes valores) (getTipoPrimitivoVetor valores)
+--getTipoFromValor (ValorPonteiro s) = TipoPonteiro ""
+getTipoFromValor (ValorEstrutura variaveis) = TipoEstrutura "" (map f variaveis)
+    where f (n,t,_) = (n,t)
+
+getDimensoes :: [Valor] -> [Integer]
+getDimensoes valor@((ValorVetor valores):_) = ((genericLength valor):(getDimensoes valores))
+getDimensoes valor = [genericLength valor]
+
+getTipoPrimitivoVetor :: [Valor] -> Tipo
+getTipoPrimitivoVetor ((ValorVetor valores):_) = (getTipoPrimitivoVetor valores)
+getTipoPrimitivoVetor (valor:_) = getTipoFromValor valor

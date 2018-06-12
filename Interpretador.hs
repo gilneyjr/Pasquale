@@ -300,12 +300,18 @@ rodaStmts ((stmt:stmts)) estado = do
 executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
 executarStmt (NOVOATRIBSTMT expr expr') estado =
-    case estadoAtualizado  of
-        Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-        Left erro -> fail $ show erro
-    where (nome, tipo, _) = getVariavelFromExpr expr estado
+    case tipo of
+        TipoAtomico s ->
+            case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
+                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                Left erro -> fail $ show erro
+        TipoVetor dimensoes _ ->
+            let (vetorNovo, estadoFinal) = (atualizarVetor expr dimensoes valorAntigo valor estadoIntermediario) in
+            case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
+                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                Left erro -> fail $ show erro
+    where (nome, tipo, valorAntigo) = getVariavelFromExpr expr estado
           (valor, _, estadoIntermediario) = evaluateExpr estado expr'
-          estadoAtualizado = atualizarVariavel (nome, tipo, valor) estadoIntermediario
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
@@ -448,14 +454,13 @@ executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
     iniciaBloco stmts estado
 
 getVariavelFromExpr :: EXPR -> Estado -> Variavel
-getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):vars))) estado = 
+getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):_))) estado = 
     case var of
         Right var' -> var'
         Left erro -> error $ (show erro) ++ ": posição: " ++ (show posicao)
     where var = getVariavel nome estado
 
 getVariavelFromExpr _ _ = error $ "Não é possível realizar a atribuição: posição: "
-
 
 incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
 incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado: posição: " ++ (show p)
@@ -484,4 +489,34 @@ decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (Valo
     else
         ValorEstrutura (campo:camposAtualizado)
     where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
-    
+
+{-
+Atualiza uma posição do vetor:
+expressão nome
+dimensões
+valor antigo do vetor
+valor a ser inserido na posição
+-}
+--atualizarVetor expr dimensoes valorAntigo valor
+atualizarVetor :: EXPR -> [Integer] -> Valor -> Valor -> Estado -> (Valor, Estado)
+atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) dimensoes (ValorVetor valoresAntigos) valorNovo estado =
+    if all isJust posicoes then
+        ((ValorVetor (atualizarVetor' valoresAntigos dimensoes (catMaybes posicoes) valorNovo)), estadoAtualizado)
+    else
+        error $ "Expressão não é um valor inteiro valido"
+    where (posicoes, estadoAtualizado) = foldl funcaoFold ([], estado) exprs
+
+atualizarVetor' :: [Valor] -> [Integer] -> [Integer] -> Valor -> [Valor]
+atualizarVetor' valoresVetor (dimensao:_) [posicao] valorNovo =
+    if (posicao >= 1) && (posicao <= dimensao) && ((getTipoFromValor (head valoresVetor)) == (getTipoFromValor valorNovo)) then
+        inicio ++ [valorNovo] ++ (tail fim)
+    else
+        error "Segmentation fault!!!!!!!!"
+    where (inicio, fim) = genericSplitAt (posicao - 1) valoresVetor
+atualizarVetor' valoresVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo = 
+    if (posicao >= 1) && (posicao <= dimensao) then
+        inicio ++ (atualizarVetor' valoresAntigos dimensoes posicoes valorNovo) ++ fim
+    else
+        error $ "Segmentation fault!!!!!!!!" ++ (show posicao) ++ " " ++ (show dimensao)
+    where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
+          ((ValorVetor valoresAntigos):fim) = meio
