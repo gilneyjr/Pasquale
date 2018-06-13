@@ -295,13 +295,13 @@ executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
 executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
     case tipo of
-        TipoAtomico s ->
-            case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
-                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                Left erro -> fail $ show erro
         TipoVetor dimensoes _ ->
             let (vetorNovo, estadoFinal) = (atualizarVetor expr tipo dimensoes valorAntigo valor tipoExpr posicao estadoIntermediario) in
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
+                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                Left erro -> fail $ show erro
+        otherwise ->
+            case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
     where ((nome, tipo, valorAntigo), estado) = getVariavelFromExpr expr estado0
