@@ -671,8 +671,8 @@ evaluateExpr estado (CRIASLOWOU expr1 op expr2) = do
         ValorLogico a ->
             case res2 of
                 ValorLogico b -> (ValorLogico (a || b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando OU~ : posição " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando OU~ : posição " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando ~OU : posição " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando ~OU : posição " ++ show (getposTokenOp op)
     where
         (res1,_,estado1) = evaluateExpr estado expr1
         (res2,_,estado2) = evaluateExpr estado1 expr2
@@ -694,8 +694,8 @@ evaluateExpr estado (CRIASLOWE expr1 op expr2) = do
         ValorLogico a ->
             case res2 of
                 ValorLogico b -> (ValorLogico (a && b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando E~ : posição " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando E~ : posição " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando ~E : posição " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando ~E : posição " ++ show (getposTokenOp op)
     where
         (res1,_,estado1) = evaluateExpr estado expr1
         (res2,_,estado2) = evaluateExpr estado1 expr2
