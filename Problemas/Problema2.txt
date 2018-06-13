@@ -23,6 +23,6 @@ PRINCIPAL
         ESCREVA("Digite um número: ");
         LEIA(x);
     FIMENQUANTO
-    ESCREVA("Quantidade de números \n de 0 a 25: " + (TEXTO) a + "\n de 26 a 50:  " + (TEXTO) b + "\n de 51 a 75: " + (TEXTO) c + "\n de 76 a 100: " + (TEXTO) d  + "\n" );
+    ESCREVA("Quantidade de números \n de 0 a 25: " + (TEXTO)a + "\n de 26 a 50:  " + (TEXTO) b + "\n de 51 a 75: " + (TEXTO) c + "\n de 76 a 100: " + (TEXTO) d  + "\n" );
 FIMPRINCIPAL
 
