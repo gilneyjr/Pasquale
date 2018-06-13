@@ -5,12 +5,12 @@ import Data.List
 import Data.Maybe
 import Text.Read
 import System.IO
+import Debug.Trace
 import Tipos
 import Estado
 import Lexico
 import Arvore
 import Expressoes
-import Debug.Trace
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [], 1)
@@ -82,9 +82,9 @@ getDecs [] estado = ([], estado)
 getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
     case tipoPrimitivo of
         Right tipoEncontrado -> 
-            let (tipos, estadoIntermediario) = foldl (funcaoFold' tipoEncontrado) ([], estado) tokensVariaveis
+            let (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro ponteiros tipoEncontrado)) ([], estado) tokensVariaveis
                 (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
-            ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
+            (zip variaveis tipos ++ declaracoes', estadoFinal)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
           variaveis = map getNomeVar tokensVariaveis

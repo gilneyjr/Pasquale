@@ -4,6 +4,7 @@ import Data.Fixed
 import Data.List
 import Data.Maybe
 import System.IO
+import Debug.Trace
 import Tipos
 import Estado
 import Lexico
@@ -403,7 +404,7 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
             case (evaluateVet estado valor (TipoVetor faixas etc) faixas ids) of
                 Right result -> result
                 Left err     -> error $ err ++ ": posição " ++ (show posicao)
-        Right _ -> error $ "Variável " ++ nome ++ " não é um vetor: posição " ++ (show posicao)
+        Right a -> error $ "Variável " ++ nome ++ " não é um vetor: posição " ++ (show posicao)
         Left erro -> error $ (show erro) ++ ": posição " ++ (show posicao)
 
 -- variáveis com acesso a campo de estrutura
