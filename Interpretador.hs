@@ -74,7 +74,7 @@ getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariavei
           variaveis = map getNomeVar tokensVariaveis
 
 funcaoFold' :: Tipo -> ([Tipo], Estado) -> VAR_ -> ([Tipo], Estado)
-funcaoFold' tipo (tipos, estadoInicial) token = ((tipo':tipos), estadoFinal)
+funcaoFold' tipo (tipos, estadoInicial) token = ((tipos ++ [tipo']), estadoFinal)
     where (tipo', estadoFinal) = (getTipoVetor tipo token estadoInicial)
 
 getDecs :: [DEC] -> Estado -> ([Declaracao], Estado)
@@ -107,7 +107,7 @@ getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar posicao (OptionalSQBrack exprs)
     where (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
 
 funcaoFold :: ([Maybe Integer], Estado) -> EXPR -> ([Maybe Integer], Estado)
-funcaoFold (valores, estadoInicial) expr = (((getValorInteiro valor):valores), estadoFinal)
+funcaoFold (valores, estadoInicial) expr = ((valores ++ [getValorInteiro valor]), estadoFinal)
     where (valor, _, estadoFinal) = evaluateExpr estadoInicial expr
 
 getNomeVar :: VAR_ -> String
@@ -505,9 +505,7 @@ atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVet
 
 --Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo
 atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> [Valor]
-
 atualizarVetor' valoresVetor _ [] _ valorNovo _ = error "Segmentation fault!!!!!!!!"
-
 atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posicao] valorNovo tipoNovo =
     if (posicao >= 1) && (posicao <= dimensao) then
         if (tipoElem == tipoNovo) && (dimensoes == []) then
@@ -525,8 +523,4 @@ atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) v
         error $ "Segmentation fault!!!!!!!!" ++ (show posicao) ++ " " ++ (show dimensao)
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
           ((ValorVetor valoresAntigos):fim) = meio
-
-
-
-
 

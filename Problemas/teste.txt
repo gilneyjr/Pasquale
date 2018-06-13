@@ -1,6 +1,5 @@
 PRINCIPAL
-    INTEIRO x[3], y;
-	y := x[1];
-	ESCREVA((TEXTO)y + "\n");
+    INTEIRO x[3,2];
+	ESCREVA(x[3,2]);
 FIMPRINCIPAL
 
