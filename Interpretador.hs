@@ -295,6 +295,11 @@ executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
 executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
     case tipo of
+        TipoEstrutura _ _ ->
+            let (estruturaNova, estadoFinal) = (atualizarEstrutura expr valorAntigo valor tipoExpr posicao estadoIntermediario) in
+            case atualizarVariavel (nome, tipo, estruturaNova) estadoFinal  of
+                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                Left erro -> fail $ show erro
         TipoVetor dimensoes _ ->
             let (vetorNovo, estadoFinal) = (atualizarVetor expr tipo dimensoes valorAntigo valor tipoExpr posicao estadoIntermediario) in
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
@@ -523,7 +528,7 @@ atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVet
 
 --Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo, posicao do erro
 atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> (Int,Int) -> [Valor]
-atualizarVetor' valoresVetor _ [] _ valorNovo _ pos =
+atualizarVetor' _ _ [] _ _ _ pos =
     error $ "Muitos subscritos no acesso ao arranjo: posição: " ++ (show pos)
 
 atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posicao] valorNovo tipoNovo pos =
@@ -547,3 +552,56 @@ atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) v
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
           ((ValorVetor valoresAntigos):fim) = meio
 
+{-
+Atualiza uma posição da estrutura:
+expressão nome
+declarações
+valor antigo da estrutura
+valor a ser inserido na posição
+tipo do valor a ser inserido
+posicao do erro
+-}
+atualizarEstrutura :: EXPR -> Valor -> Valor -> Tipo -> (Int,Int) -> Estado -> (Valor, Estado)
+atualizarEstrutura (CRIAVAR (Var (_:elementos))) (ValorEstrutura variaveisAntigas) valorNovo tipoNovo posicao estado =
+    if null elementos then
+        (valorNovo,estado)
+    else
+        ((ValorEstrutura valor),estadoFinal)
+    where (valor, estadoFinal) = atualizarEstrutura' elementos variaveisAntigas valorNovo tipoNovo posicao estado
+
+atualizarEstrutura' :: [SingleVAR] -> [Variavel] -> Valor -> Tipo -> (Int,Int) -> Estado -> ([Variavel],Estado)
+atualizarEstrutura' _ [] _ _ pos _ =
+    error $ "Muitos subscritos no acesso à estrutura: posição: " ++ (show pos)
+
+atualizarEstrutura' [variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr))] variaveisAntigas valorNovo tipoNovo pos estado =
+    case var of
+        Just (nomeVar, tipoVar, valor) -> 
+            if null expr then
+                if tipoVar == tipoNovo then
+                    ((inicio ++ [(nomeVar, tipoVar, valorNovo)] ++ (tail fim)), estado)
+                else error $ "Atribuição inválida!\nTipo esperado: " ++ (show tipoVar) ++ "\nTipo recebido: " ++ (show tipoNovo) ++ "\nposição: " ++ (show pos)
+            else
+                let (TipoVetor dimensoes _) = tipoVar
+                    (valorVetor, estadoFinal) = (atualizarVetor (CRIAVAR (Var [variavel])) tipoVar dimensoes valor valorNovo tipoNovo pos estado) in
+                ((inicio ++ [(nomeVar, tipoVar, valorVetor)] ++ (tail fim)), estadoFinal)
+        Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura: posição: " ++ (show pos)
+    where (var, index)  = getVarFromNome nome variaveisAntigas
+          (inicio, fim) = genericSplitAt index variaveisAntigas
+
+atualizarEstrutura' (variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr)):variaveis) variaveisAntigas valorNovo tipoNovo pos estado =
+    case var of
+        Just (nomeVar, tipoVar, valor@(ValorEstrutura variaveisAntigas')) -> 
+            let (valorEstruturaNovo, estadoFinal) = atualizarEstrutura' variaveis variaveisAntigas' valorNovo tipoNovo pos estado in 
+            if null expr then
+                ((inicio ++ [(nomeVar, tipoVar, (ValorEstrutura valorEstruturaNovo))] ++ (tail fim)), estadoFinal)
+            else
+                let (TipoVetor dimensoes _) = tipoVar 
+                    (valorVetor, estadoIntermediario) = atualizarVetor (CRIAVAR (Var [variavel])) tipoVar dimensoes valor valorNovo tipoNovo pos estado in
+                ((inicio ++ [(nomeVar, tipoVar, valorVetor)] ++ (tail fim)), estadoIntermediario)
+        Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura: posição: " ++ (show pos)
+    where (var, index)  = getVarFromNome nome variaveisAntigas
+          (inicio, fim) = genericSplitAt index variaveisAntigas
+
+getVarFromNome :: String -> [Variavel] -> (Maybe Variavel,Int)
+getVarFromNome _ [] = (Nothing,-1)
+getVarFromNome nome ((var@(nome',_,_)):vars) = if nome == nome' then (Just var,0) else (var',n+1) where (var',n) = getVarFromNome nome vars
