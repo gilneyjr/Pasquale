@@ -492,9 +492,9 @@ dimensões
 valor antigo do vetor
 valor a ser inserido na posição
 tipo do valor a ser inserido
+posicao do erro
 -}
 
---atualizarVetor expr dimensoes valorAntigo valor posicao
 atualizarVetor :: EXPR -> Tipo -> [Integer] -> Valor -> Valor -> Tipo -> (Int,Int) -> Estado -> (Valor, Estado)
 atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVetor dimensoes (ValorVetor valoresAntigos) valorNovo tipoNovo posicao estado =
     if all isJust posicoes then
@@ -503,7 +503,7 @@ atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVet
         error $ "Expressão não é um valor inteiro valido"
     where (posicoes, estadoAtualizado) = foldl funcaoFold ([], estado) exprs
 
---Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo, posicao
+--Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo, posicao do erro
 atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> (Int,Int) -> [Valor]
 atualizarVetor' valoresVetor _ [] _ valorNovo _ pos =
     error $ "Muitos subscritos no acesso ao arranjo: posição: " ++ (show pos)
