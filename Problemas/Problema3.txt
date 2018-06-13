@@ -21,6 +21,7 @@ PRINCIPAL
     ENQUANTO  i <= lA EXECUTE
         j := 1;
         ENQUANTO j <= cA EXECUTE
+            ESCREVA("Digite o elemento A[" + (TEXTO)i + ", " + (TEXTO)j + "]: ");
             LEIA(a[i,j]);
             j++;
         FIMENQUANTO
@@ -33,6 +34,7 @@ PRINCIPAL
     ENQUANTO i <= lB EXECUTE
         j := 1;
         ENQUANTO j <= cB EXECUTE
+            ESCREVA("Digite o elemento B[" + (TEXTO)i + ", " + (TEXTO)j + "]: ");
             LEIA(b[i,j]);
             j++;
         FIMENQUANTO
