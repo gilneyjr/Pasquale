@@ -370,7 +370,7 @@ executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
         Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
             error $ "Função chamada como procedimento\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
-    where estadoEscopoFuncao = criarEscopo (getIdEscopoAtual estado) estado
+    where estadoEscopoFuncao = criarEscopo 1 estado
           (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estadoEscopoFuncao exprs
           subprograma = getSubprograma nome tiposParametros estadoAtualizado
 
@@ -1105,10 +1105,10 @@ evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs)) =
                             (_, _, Nothing) -> error $ "Procedimento usado em expressão\nPosição: " ++ show posicao
                             (True, _, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
                             (_, True, _) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
-                            otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>= 
+                            otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>=
                                 (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) ))
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
-    where estadoEscopoFuncao = criarEscopo (getIdEscopoAtual estado) estado
+    where estadoEscopoFuncao = criarEscopo 1 estado
           (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estadoEscopoFuncao exprs
           subprograma = getSubprograma nome tiposParametros estadoAtualizado
 
