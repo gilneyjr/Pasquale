@@ -5,15 +5,15 @@ PROCEDIMENTO mdc RECEBE (INTEIRO n, INTEIRO m, PONTEIRO INTEIRO r)
         SE m MOD n = 0 ENTAO
             VALOR(r) := n;
         SENAO
-            VALOR(r) := mdc(n, (m MOD n), r);
+            mdc(n, (m MOD n), r);
         FIMSE
     SENAO
         SE n MOD m = 0 ENTAO
             VALOR(r) := m;
         SENAO
-            VALOR(r) := mdc(m, (n MOD m), r);
+            mdc(m, (n MOD m), r);
         FIMSE
-    FIMSE    
+    FIMSE
 FIMPROCEDIMENTO
 
 PRINCIPAL

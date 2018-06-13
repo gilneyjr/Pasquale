@@ -347,7 +347,18 @@ executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):
                     Left erro -> fail $ show erro ++ ": posição " ++ (show p)
         Left erro -> fail $ show erro ++ ": posição " ++ (show p)
 
-executarStmt (NOVOCHAMADA cHAMADA) estado = undefined
+executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
+    case subprograma of
+        Right (Left (nome, declaracoes, stmts)) ->
+            let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in 
+            (rodaStmts stmts estadoFinal) >>= (\(estado1, a, b, c, d, e) -> return (removerEscopo estado1, a, b, c, d, e))
+        Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
+            let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
+            (rodaStmts stmts estadoFinal) >>= (\(estado1, a, b, c, d, e) -> return (removerEscopo estado1, a, b, c, d, e))
+        Left erro -> error $ (show erro) ++ ": posição: " ++ (show posicao)
+    where estadoEscopoFuncao = criarEscopo (getIdEscopoAtual estado) estado
+          (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estadoEscopoFuncao exprs
+          subprograma = getSubprograma nome tiposParametros estadoAtualizado
 
 executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
     case res of
@@ -605,3 +616,15 @@ atualizarEstrutura' (variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr
 getVarFromNome :: String -> [Variavel] -> (Maybe Variavel,Int)
 getVarFromNome _ [] = (Nothing,-1)
 getVarFromNome nome ((var@(nome',_,_)):vars) = if nome == nome' then (Just var,0) else (var',n+1) where (var',n) = getVarFromNome nome vars
+
+funcaoFold'' :: Estado -> Variavel -> Estado
+funcaoFold'' estadoInicial variavel = 
+    case addVariavel variavel estadoInicial of
+        Right estado -> estado
+        Left erro -> error $ "Deu erro"
+
+evaluateExprs :: Estado -> [EXPR] -> ([Valor],[Tipo],Estado)
+evaluateExprs estadoInicial [] = ([], [], estadoInicial)
+evaluateExprs estadoInicial (expr:exprs) = (valor:valores,tipo:tipos,estadoFinal)
+    where (valor, tipo, estadoIntermediario) = evaluateExpr estadoInicial expr
+          (valores, tipos, estadoFinal) =  evaluateExprs estadoIntermediario exprs

@@ -276,10 +276,10 @@ addSubprograma subprograma (pilha, tipos, subprogramasAtuais, cont) =
 -- Adiciona um subprograma na lista de subprogramas
 addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
 addSubprogramaLista subprograma subprogramas = 
-    case getSubprogramaLista assinatura subprogramas of
+    case getSubprogramaLista nome (snd $ unzip declaracoes) subprogramas of
         Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma '" ++ nome ++ "' já foi criado com a mesma assinatura"
         Nothing -> Right $ subprograma:subprogramas
-    where assinatura@(nome, _) = getAssinaturaSubprograma subprograma
+    where (nome, declaracoes) = getAssinaturaSubprograma subprograma
 
 -- Retorna a assinatura de um subprograma
 getAssinaturaSubprograma :: Subprograma -> Assinatura
@@ -287,12 +287,16 @@ getAssinaturaSubprograma (Left (nome, parametros, _)) = (nome, parametros)
 getAssinaturaSubprograma (Right (nome, parametros, _, _)) = (nome, parametros)
 
 -- Busca por um subprograma no estado atraves de sua assinatura
-getSubprograma :: Assinatura -> Estado -> Either ErroEstado Subprograma
-getSubprograma assinatura@(nome, _) (_, _, funcoes, _) = 
-    case getSubprogramaLista assinatura funcoes of
+getSubprograma :: String -> [Tipo] -> Estado -> Either ErroEstado Subprograma
+getSubprograma nome tipos (_, _, funcoes, _) = 
+    case getSubprogramaLista nome tipos funcoes of
         Just subprograma -> Right subprograma
         Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome ++ "' não encontrado"
 
 -- Busca por um subprograma na lista de subprogrmas atraves de sua assinatura
-getSubprogramaLista :: Assinatura -> [Subprograma] -> Maybe Subprograma
-getSubprogramaLista assinatura subprogramas = find (\x -> getAssinaturaSubprograma x == assinatura) subprogramas
+getSubprogramaLista :: String -> [Tipo] -> [Subprograma] -> Maybe Subprograma
+getSubprogramaLista nome tipos = find (isSubprograma nome tipos)
+
+isSubprograma :: String -> [Tipo] -> Subprograma -> Bool
+isSubprograma nome tipos (Left (nome', parametros, _)) = (nome == nome') && (tipos == (snd $ unzip parametros))
+isSubprograma nome tipos (Right (nome', parametros, _, _)) = (nome == nome') && (tipos == (snd $ unzip parametros))
