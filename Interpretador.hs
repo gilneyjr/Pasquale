@@ -15,7 +15,6 @@ import Tipos
 import Estado
 import Lexico
 import Arvore
---import Expressoes
 
 --Estado antes da execucao
 estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [], 1)
@@ -252,13 +251,13 @@ getTipoFromTipoRetorno ponteiros (TIPO posicao nome) estado =
 iniciaBlocoMain :: MAIN -> Estado -> IO EstadoCompleto
 iniciaBlocoMain (Main stmts) estado = do
     (estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) <- rodaStmts stmts (criarEscopo 1 estado)
-    case (temRetorno, temSaia, temContinue) of
-        (_, False, False) -> 
+    case (temSaia, temContinue) of
+        (False, False) -> 
             case maybeExpr of
                 Nothing -> return (removerEscopo estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos)
                 otherwise -> error $ "Erro retorno não vazio\nPosição: " ++ (show $ fromJust maybePos) 
-        otherwise -> case maybePos of
-            Just p -> error $ "Erro com comando na posição: " ++ show p
+        (True, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
+        (_, True) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
 
 --Insere o escopo do Se, executa, e depois remove
 iniciaBlocoSe :: [STMT] -> Estado -> IO EstadoCompleto
@@ -360,11 +359,16 @@ executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):
 executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
     case subprograma of
         Right (Left (nome, declaracoes, stmts)) ->
-            let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in 
-            (rodaStmts stmts estadoFinal) >>= (\(estado1, a, b, c, d, e) -> return (removerEscopo estado1, a, b, c, d, e))
-        Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
             let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
-            (rodaStmts stmts estadoFinal) >>= (\(estado1, a, b, c, d, e) -> return (removerEscopo estado1, a, b, c, d, e))
+                (rodaStmts stmts estadoFinal) >>= 
+                    (\(estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) ->
+                        case (temSaia, temContinue, maybeExpr) of
+                            (_, _, Just _) -> error $ "Expressão retornada, incompatível com procedimento:\nPosição:" ++ (show posicao)
+                            (True, _, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
+                            (_, True, _) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
+                            otherwise -> return (removerEscopo estado1, False, False, False, Nothing, Nothing))
+        Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
+            error $ "Função chamada como procedimento\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where estadoEscopoFuncao = criarEscopo (getIdEscopoAtual estado) estado
           (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estadoEscopoFuncao exprs
@@ -1095,7 +1099,14 @@ evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs)) =
             error $ "Procedimento usado em expressão\nPosição: " ++ show posicao
         Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
             let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
-            unsafePerformIO $ (rodaStmts stmts estadoFinal) >>= (\(estado1, a, b, c, d, e) -> if isJust d then ((return (evaluateExpr estado1 (fromJust d))) >>= (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) else error $ "erro")
+                unsafePerformIO ((rodaStmts stmts estadoFinal) >>= 
+                    (\(estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) ->
+                        case (temSaia, temContinue, maybeExpr) of
+                            (_, _, Nothing) -> error $ "Procedimento usado em expressão\nPosição: " ++ show posicao
+                            (True, _, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
+                            (_, True, _) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
+                            otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>= 
+                                (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) ))
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where estadoEscopoFuncao = criarEscopo (getIdEscopoAtual estado) estado
           (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estadoEscopoFuncao exprs
