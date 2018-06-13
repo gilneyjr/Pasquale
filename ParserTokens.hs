@@ -246,7 +246,7 @@ parseMod = tokenPrim show update_pos get_token where
 
 parseNot :: ParsecT [Token] u Identity Token
 parseNot = tokenPrim show update_pos get_token where
-    get_token ( NOT x ) = Just ( NOT x )
+    get_token ( Not x ) = Just ( Not x )
     get_token _ = Nothing
 
 parseOpenbrack :: ParsecT [Token] u Identity Token

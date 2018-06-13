@@ -147,7 +147,8 @@ parseOp =
     parseNovodiff <|>
     parseNovoequal <|>
     parseNovogreat <|>
-    parseNovoless
+    parseNovoless <|>
+    parseNovonot
 
 parseNovoadd :: ParseArgs OP
 parseNovoadd = do
@@ -197,7 +198,12 @@ parseNovogreat = do
 parseNovoless :: ParseArgs OP
 parseNovoless = do
     a <- parseLess
-    return $ NOVOLess a 
+    return $ NOVOLess a
+    
+parseNovonot :: ParseArgs OP
+parseNovonot = do
+    a <- parseNot
+    return $ NOVONot a 
 
 parseParam :: ParseArgs PARAM
 parseParam = do

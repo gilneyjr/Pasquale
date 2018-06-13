@@ -68,7 +68,8 @@ data OP =
     NOVODiff {-Diff-}Token |
     NOVOEqual {-Equal-}Token |
     NOVOGreat {-Great-}Token |
-    NOVOLess {-Less-}Token 
+    NOVOLess {-Less-}Token |
+    NOVONot {-Not-}Token
     deriving (Eq,Show)
         
 data PARAM = 

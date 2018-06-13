@@ -217,6 +217,7 @@ getPosicaoOper (NOVOOPER (NOVODiff (Diff p)) _ _ _ _) = p
 getPosicaoOper (NOVOOPER (NOVOEqual (Equal p)) _ _ _ _) = p
 getPosicaoOper (NOVOOPER (NOVOGreat (Great p)) _ _ _ _) = p
 getPosicaoOper (NOVOOPER (NOVOLess (Less p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER (NOVONot (Not p)) _ _ _ _) = p
 
 --Retorna a string com o simbolo do operador
 getNomeFromOp :: OP -> String
@@ -230,6 +231,7 @@ getNomeFromOp (NOVODiff _) = "-"
 getNomeFromOp (NOVOEqual _) = "="
 getNomeFromOp (NOVOGreat _) = ">"
 getNomeFromOp (NOVOLess _) = "<"
+getNomeFromOp (NOVONot _) = "!"
 
 --Retorna um vetor com as Declaracoes dos parametros do subprograma
 getDecsFromParams :: [PARAM] -> Estado -> ([Declaracao], Estado)
@@ -656,6 +658,7 @@ getposTokenOp (OU p) = p
 getposTokenOp (SlowOU p) = p
 getposTokenOp (E p) = p
 getposTokenOp (SlowE p) = p
+getposTokenOp (Not p) = p
 
 evaluateExpr :: Estado -> EXPR -> (Valor,Tipo,Estado)
 
@@ -665,8 +668,10 @@ evaluateExpr estado (CRIAOU expr1 op expr2) = do
         ValorLogico False ->
             case res2 of
                 ValorLogico a -> (ValorLogico a, TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando OU:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando OU:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando OU:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando OU:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
@@ -676,8 +681,10 @@ evaluateExpr estado (CRIASLOWOU expr1 op expr2) = do
         ValorLogico a ->
             case res2 of
                 ValorLogico b -> (ValorLogico (a || b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando ~OU:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando ~OU:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando ~OU:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando ~OU:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
@@ -688,8 +695,10 @@ evaluateExpr estado (CRIAE expr1 op expr2) = do
         ValorLogico True ->
             case res2 of
                 ValorLogico a -> (ValorLogico a, TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando E:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando E:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando E:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando E:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
@@ -699,8 +708,10 @@ evaluateExpr estado (CRIASLOWE expr1 op expr2) = do
         ValorLogico a ->
             case res2 of
                 ValorLogico b -> (ValorLogico (a && b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando ~E:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando ~E:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando ~E:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando ~E:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
@@ -711,210 +722,331 @@ evaluateExpr estado (CRIALESS expr1 op expr2) = do
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorLogico (a < b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ 
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorLogico (a < b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando <:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ 
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorLogico (a < b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ 
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a < b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++ 
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador <:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = "<"
 
 evaluateExpr estado (CRIALEQ expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorLogico (a <= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorLogico (a <= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorLogico (a <= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a <= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador <=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = "<="
 
 evaluateExpr estado (CRIAEQUAL expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorLogico (a == b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorLogico (a == b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorLogico (a == b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a == b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = "="
 
 evaluateExpr estado (CRIAGEQ expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorLogico (a >= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorLogico (a >= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorLogico (a >= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a >= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador >=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = ">="
 
 evaluateExpr estado (CRIAGREAT expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorLogico (a > b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorLogico (a > b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorLogico (a > b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a > b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador >:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = ">"
 
 evaluateExpr estado (CRIADIFF expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = "/="
 
 evaluateExpr estado (CRIAADD expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorInteiro (a + b), TipoAtomico "INTEIRO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorReal (a + b), TipoAtomico "REAL", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorTexto a ->
             case res2 of
                 ValorTexto b -> (ValorTexto (a ++ b), TipoAtomico "TEXTO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador +:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2
+        nomeOp = "+"
 
 evaluateExpr estado (CRIASUB expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorInteiro (a - b), TipoAtomico "INTEIRO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador -:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador -:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorReal (a - b), TipoAtomico "REAL", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador -:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador -:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador -:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador -:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2 
+        nomeOp = "-"
 
 evaluateExpr estado (CRIAMULT expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorInteiro (a * b), TipoAtomico "INTEIRO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador *:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador *:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorReal (a * b), TipoAtomico "REAL", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador *:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador *:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador *:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador *:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2 
+        nomeOp = "*"
 
 evaluateExpr estado (CRIADIV expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorInteiro (quot a b), TipoAtomico "INTEIRO", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         ValorReal a ->
             case res2 of
                 ValorReal b -> (ValorReal (a / b), TipoAtomico "REAL", estado2)
-                otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2 
+        nomeOp = "/"
         
 evaluateExpr estado (CRIAMOD expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
                 ValorInteiro b -> (ValorInteiro (mod a b), TipoAtomico "INTEIRO", estado2)
-                otherwise -> error $ "Tipos inválidos para o comando MOD:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
-        otherwise -> error $ "Tipos inválidos para o comando MOD:\nTipo esquerdo: " ++ (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+                otherwise -> error $ "Tipos inválidos para o comando MOD:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> error $ "Tipos inválidos para o comando MOD:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr1
         (res2,tipo2,estado2) = evaluateExpr estado1 expr2 
@@ -923,16 +1055,24 @@ evaluateExpr estado (CRIANEG op expr) = do
     case res1 of
         ValorInteiro a -> (ValorInteiro (-a), TipoAtomico "INTEIRO", estado1)
         ValorReal a -> (ValorReal (-a), TipoAtomico "REAL", estado1)
-        otherwise -> error $ "Tipo inválido para o operador unário -:\nTipo recebido: " ++ (show tipo1) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> case getSubprograma nomeOp [tipo1] estado1 of
+            Right (Right func) -> rodaFuncao func estado1 [tipo1] [res1] (getposTokenOp op)
+            otherwise -> error $ "Tipo inválido para o operador unário -:\nTipo recebido: " ++ 
+                (show tipo1) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr
+        nomeOp = "-"
 
 evaluateExpr estado (CRIANOT op expr) = do
     case res1 of
         ValorLogico a -> (ValorLogico (not a), TipoAtomico "LOGICO", estado1)
-        otherwise -> error $ "Tipo inválido para o comando NOT:\nTipo recebido: " ++ (show tipo1) ++ "\nPosição: " ++ show (getposTokenOp op)
+        otherwise -> case getSubprograma nomeOp [tipo1] estado1 of
+            Right (Right func) -> rodaFuncao func estado1 [tipo1] [res1] (getposTokenOp op)
+            otherwise -> error $ "Tipo inválido para o operador !:\nTipo recebido: " ++ 
+                (show tipo1) ++ "\nPosição: " ++ show (getposTokenOp op)
     where
         (res1,tipo1,estado1) = evaluateExpr estado expr
+        nomeOp = "!"
 
 evaluateExpr estado (CRIACONVERSAO tipo expr) = do
     case tipo of
@@ -1097,16 +1237,8 @@ evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs)) =
     case subprograma of
         Right (Left (nome, declaracoes, stmts)) ->
             error $ "Procedimento usado em expressão\nPosição: " ++ show posicao
-        Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
-            let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
-                unsafePerformIO ((rodaStmts stmts estadoFinal) >>= 
-                    (\(estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) ->
-                        case (temSaia, temContinue, maybeExpr) of
-                            (_, _, Nothing) -> error $ "Procedimento usado em expressão\nPosição: " ++ show posicao
-                            (True, _, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
-                            (_, True, _) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
-                            otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>=
-                                (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) ))
+        Right (Right func@(nome, declaracoes, stmts, tipoRetorno)) ->
+            rodaFuncao func estadoAtualizado tiposParametros valoresParametros posicao
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where estadoEscopoFuncao = criarEscopo 1 estado
           (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estadoEscopoFuncao exprs
@@ -1229,4 +1361,16 @@ getPalavra' = handle handleEOF $ do
     c <- getChar
     if isSpace c then return [] else (c:) <$> getPalavra'
     where handleEOF e = if isEOFError e then return [] else throwIO e
+
+rodaFuncao :: Funcao -> Estado -> [Tipo] -> [Valor] -> (Int,Int) -> (Valor, Tipo, Estado)
+rodaFuncao (nome, declaracoes, stmts, _) estadoAtualizado tiposParametros valoresParametros posicao =
+    let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
+                unsafePerformIO ((rodaStmts stmts estadoFinal) >>= 
+                    (\(estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) ->
+                        case (temSaia, temContinue, maybeExpr) of
+                            (_, _, Nothing) -> error $ "Função/Operador retornou sem valor\nPosição: " ++ show posicao
+                            (True, _, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
+                            (_, True, _) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
+                            otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>=
+                                (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) ))
 

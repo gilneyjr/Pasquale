@@ -66,7 +66,7 @@ tokens :-
   "*"                               { \p s -> Mult (getPosition p) }
   "/"                               { \p s -> Div (getPosition p) }
   "MOD"                             { \p s -> MOD (getPosition p) }
-  "!"                               { \p s -> NOT (getPosition p) }
+  "!"                               { \p s -> Not (getPosition p) }
   "("                               { \p s -> OpenBrack (getPosition p) }
   ")"                               { \p s -> CloseBrack (getPosition p) }
   "["                               { \p s -> OpenSqBrack (getPosition p) }
@@ -132,7 +132,7 @@ data Token =
     Mult (Int,Int)                  |
     Div (Int,Int)                   |
     MOD (Int,Int)                   |
-    NOT (Int,Int)                   |
+    Not (Int,Int)                   |
     OpenBrack (Int,Int)             |
     CloseBrack (Int,Int)            |
     OpenSqBrack (Int,Int)           |
