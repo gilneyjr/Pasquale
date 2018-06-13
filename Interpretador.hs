@@ -647,6 +647,10 @@ getposTokenOp (Diff p) = p
 getposTokenOp (Equal p) = p
 getposTokenOp (Great p) = p
 getposTokenOp (Less p) = p
+getposTokenOp (OU p) = p
+getposTokenOp (SlowOU p) = p
+getposTokenOp (E p) = p
+getposTokenOp (SlowE p) = p
 
 evaluateExpr :: Estado -> EXPR -> (Valor,Tipo,Estado)
 
