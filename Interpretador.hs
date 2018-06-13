@@ -452,7 +452,6 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado0 = do
                 Nothing -> error $ "Valor não permitido como REAL: posição: " ++ (show p)
         TipoAtomico "CARACTERE" -> do
             hFlush stdout
-<<<<<<< HEAD
             s <- getChar
             executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIACARACTERE (CARACTERE p s))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
         TipoAtomico "TEXTO" -> do
@@ -466,25 +465,6 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado0 = do
                 "VERDADEIRO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p True))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 "FALSO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p False))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 otherwise -> error $ "Valor não permitido como LOGICO: posição: " ++ (show p)
-=======
-            s <- getLine
-            case readMaybe ("\'" ++ s ++ "\'") :: Maybe Char of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIACARACTERE (CARACTERE p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como CARACTERE: posição: " ++ (show p)
-        TipoAtomico "TEXTO" -> do
-            hFlush stdout
-            s <- getLine
-            case readMaybe ("\"" ++ s ++ "\"") :: Maybe String of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIATEXTO (TEXTO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como TEXTO: posição: " ++ (show p)
-        TipoAtomico "LOGICO" -> do
-            hFlush stdout
-            s <- getLine
-            case readMaybe ("\"" ++ s ++ "\"") :: Maybe String of
-                Just "VERDADEIRO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p True))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Just "FALSO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p False))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                Nothing -> error $ "Valor não permitido como LOGICO: posição: " ++ (show p)
->>>>>>> 2c3d65e1183a415abab62e0f0cfe23e7a855f698
         otherwise -> error $ "Comando LEIA para tipo não primitivo: posição: " ++ show p
 
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
