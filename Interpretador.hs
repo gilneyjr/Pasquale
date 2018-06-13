@@ -1205,9 +1205,19 @@ traduzTipo (TipoAtomico s) estado =
         Left erro -> error $ show erro
 traduzTipo p estado = p
 
+--Leitura de uma palavra nao vazia
 getPalavra :: IO String
-getPalavra = handle handleEOF $ do
+getPalavra = do
+    s <- getPalavra'
+    if null s then
+        getPalavra
+    else
+        return s
+
+--Leitura de uma palavra possivelmente vazia
+getPalavra' :: IO String
+getPalavra' = handle handleEOF $ do
     c <- getChar
-    if isSpace c then return [] else (c:) <$> getPalavra
+    if isSpace c then return [] else (c:) <$> getPalavra'
     where handleEOF e = if isEOFError e then return [] else throwIO e
 
