@@ -523,7 +523,7 @@ atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posica
 
 atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo pos = 
     if (posicao >= 1) && (posicao <= dimensao) then
-        trace (show tipoVetor) (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
+        (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
     else
         error $ "Segmentation fault!\nposição: " ++ show pos
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
