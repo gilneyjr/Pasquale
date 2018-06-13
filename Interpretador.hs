@@ -296,13 +296,18 @@ executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
 executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
     case tipo of
-        TipoEstrutura _ _ ->
-            let (estruturaNova, estadoFinal) = (atualizarEstrutura expr valorAntigo valor tipoExpr posicao estadoIntermediario) in
-            case atualizarVariavel (nome, tipo, estruturaNova) estadoFinal  of
-                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                Left erro -> fail $ show erro
+        TipoEstrutura _ _ -> case expr of
+            CRIAVALOREXPR _ ->
+                case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
+                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                    Left erro -> fail $ show erro
+            otherwise ->
+                let (estruturaNova, estadoFinal) = (atualizarEstrutura expr valorAntigo valor (traduzTipo tipoExpr estadoIntermediario) posicao estadoIntermediario) in
+                case atualizarVariavel (nome, tipo, estruturaNova) estadoFinal  of
+                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
+                    Left erro -> fail $ show erro
         TipoVetor dimensoes _ ->
-            let (vetorNovo, estadoFinal) = (atualizarVetor expr tipo dimensoes valorAntigo valor tipoExpr posicao estadoIntermediario) in
+            let (vetorNovo, estadoFinal) = (atualizarVetor expr (traduzTipo tipo estado) dimensoes valorAntigo valor (traduzTipo tipoExpr estado) posicao estadoIntermediario) in
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
@@ -311,7 +316,7 @@ executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
     where ((nome, tipo, valorAntigo), estado) = getVariavelFromExpr expr estado0
-          (valor, tipoExpr, estadoIntermediario) = evaluateExpr estado expr'
+          (valor, tipoExpr, estadoIntermediario) = (evaluateExpr estado expr')
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
@@ -594,7 +599,7 @@ atualizarEstrutura' [variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr
                 else error $ "Atribuição inválida!\nTipo esperado: " ++ (show tipoVar) ++ "\nTipo recebido: " ++ (show tipoNovo) ++ "\nposição: " ++ (show pos)
             else
                 let (TipoVetor dimensoes _) = tipoVar
-                    (valorVetor, estadoFinal) = (atualizarVetor (CRIAVAR (Var [variavel])) tipoVar dimensoes valor valorNovo tipoNovo pos estado) in
+                    (valorVetor, estadoFinal) = (atualizarVetor (CRIAVAR (Var [variavel])) (traduzTipo tipoVar estado) dimensoes valor valorNovo (traduzTipo tipoNovo estado) pos estado) in
                 ((inicio ++ [(nomeVar, tipoVar, valorVetor)] ++ (tail fim)), estadoFinal)
         Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura: posição: " ++ (show pos)
     where (var, index)  = getVarFromNome nome variaveisAntigas
@@ -608,7 +613,7 @@ atualizarEstrutura' (variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr
                 ((inicio ++ [(nomeVar, tipoVar, (ValorEstrutura valorEstruturaNovo))] ++ (tail fim)), estadoFinal)
             else
                 let (TipoVetor dimensoes _) = tipoVar 
-                    (valorVetor, estadoIntermediario) = atualizarVetor (CRIAVAR (Var [variavel])) tipoVar dimensoes valor valorNovo tipoNovo pos estado in
+                    (valorVetor, estadoIntermediario) = atualizarVetor (CRIAVAR (Var [variavel])) (traduzTipo tipoVar estado) dimensoes valor valorNovo (traduzTipo tipoNovo estado) pos estado in
                 ((inicio ++ [(nomeVar, tipoVar, valorVetor)] ++ (tail fim)), estadoIntermediario)
         Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura: posição: " ++ (show pos)
     where (var, index)  = getVarFromNome nome variaveisAntigas
@@ -1084,7 +1089,7 @@ evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO ponts tipo
 evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs)) =
     case subprograma of
         Right (Left (nome, declaracoes, stmts)) ->
-            error $ "erro"
+            error $ "Procedimento usado em expressão: posição: " ++ show posicao
         Right (Right (nome, declaracoes, stmts, tipoRetorno)) -> 
             let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
             unsafePerformIO $ (rodaStmts stmts estadoFinal) >>= (\(estado1, a, b, c, d, e) -> if isJust d then ((return (evaluateExpr estado1 (fromJust d))) >>= (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) else error $ "erro")
@@ -1188,9 +1193,9 @@ getIth (a:b) i
     | i == 1    = Right a
     | otherwise = getIth b (i-1)
 
-{-
-
-    CRIAVAR VAR |
-    CRIACHAMADAFUNC CHAMADA |
-    CRIANOVO [PONT] {-TIPO-}Token OptionalSQBRACK |
--}
+traduzTipo :: Tipo -> Estado -> Tipo
+traduzTipo (TipoAtomico s) estado = 
+    case (getTipo s estado) of
+        Right p -> p
+        Left erro -> error $ show erro
+traduzTipo p estado = p
