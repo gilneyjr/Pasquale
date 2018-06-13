@@ -55,7 +55,7 @@ FIMPROCEDIMENTO
 
 PRINCIPAL
     PONTEIRO NODE raiz;
-    ESCREVA("Digite a quantidade de elementos");
+    ESCREVA("Digite a quantidade de elementos:\n");
     INTEIRO n;
     LEIA(n);
     SE n > 0 ENTAO

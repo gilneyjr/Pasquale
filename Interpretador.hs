@@ -449,20 +449,21 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado0 = do
         TipoAtomico "CARACTERE" -> do
             hFlush stdout
             s <- getLine
-            case readMaybe s :: Maybe Char of
+            case readMaybe ("\'" ++ s ++ "\'") :: Maybe Char of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIACARACTERE (CARACTERE p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como CARACTERE: posição: " ++ (show p)
         TipoAtomico "TEXTO" -> do
             hFlush stdout
             s <- getLine
-            case readMaybe s :: Maybe String of
+            case readMaybe ("\"" ++ s ++ "\"") :: Maybe String of
                 Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIATEXTO (TEXTO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como TEXTO: posição: " ++ (show p)
         TipoAtomico "LOGICO" -> do
             hFlush stdout
             s <- getLine
-            case readMaybe s :: Maybe Bool of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+            case readMaybe ("\"" ++ s ++ "\"") :: Maybe String of
+                Just "VERDADEIRO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p True))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just "FALSO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p False))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como LOGICO: posição: " ++ (show p)
         otherwise -> error $ "Comando LEIA para tipo não primitivo: posição: " ++ show p
 
