@@ -293,14 +293,14 @@ rodaStmts ((stmt:stmts)) estado = do
 --Executa um stmt
 executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
-executarStmt (NOVOATRIBSTMT expr expr') estado =
+executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado =
     case tipo of
         TipoAtomico s ->
             case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
         TipoVetor dimensoes _ ->
-            let (vetorNovo, estadoFinal) = (atualizarVetor expr tipo dimensoes valorAntigo valor tipoExpr estadoIntermediario) in
+            let (vetorNovo, estadoFinal) = (atualizarVetor expr tipo dimensoes valorAntigo valor tipoExpr posicao estadoIntermediario) in
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
@@ -416,31 +416,31 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado = do
             hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Integer of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIAINT (INTEIRO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIAINT (INTEIRO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como INTEIRO: posição: " ++ (show p)
         TipoAtomico "REAL" -> do
             hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Double of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIAREAL (REAL p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIAREAL (REAL p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como REAL: posição: " ++ (show p)
         TipoAtomico "CARACTERE" -> do
             hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Char of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIACARACTERE (CARACTERE p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIACARACTERE (CARACTERE p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como CARACTERE: posição: " ++ (show p)
         TipoAtomico "TEXTO" -> do
             hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe String of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIATEXTO (TEXTO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIATEXTO (TEXTO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como TEXTO: posição: " ++ (show p)
         TipoAtomico "LOGICO" -> do
             hFlush stdout
             s <- getLine
             case readMaybe s :: Maybe Bool of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (CRIALOGICO (LOGICO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como LOGICO: posição: " ++ (show p)
         otherwise -> error $ "Comando LEIA para tipo não primitivo: posição: " ++ show p
 
@@ -494,35 +494,39 @@ valor a ser inserido na posição
 tipo do valor a ser inserido
 -}
 
---atualizarVetor expr dimensoes valorAntigo valor
-atualizarVetor :: EXPR -> Tipo -> [Integer] -> Valor -> Valor -> Tipo -> Estado -> (Valor, Estado)
-atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVetor dimensoes (ValorVetor valoresAntigos) valorNovo tipoNovo estado =
+--atualizarVetor expr dimensoes valorAntigo valor posicao
+atualizarVetor :: EXPR -> Tipo -> [Integer] -> Valor -> Valor -> Tipo -> (Int,Int) -> Estado -> (Valor, Estado)
+atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVetor dimensoes (ValorVetor valoresAntigos) valorNovo tipoNovo posicao estado =
     if all isJust posicoes then
-        ((ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes (catMaybes posicoes) valorNovo tipoNovo)), estadoAtualizado)
+        ((ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes (catMaybes posicoes) valorNovo tipoNovo posicao)), estadoAtualizado)
     else
         error $ "Expressão não é um valor inteiro valido"
     where (posicoes, estadoAtualizado) = foldl funcaoFold ([], estado) exprs
 
---Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo
-atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> [Valor]
+--Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo, posicao
+atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> (Int,Int) -> [Valor]
 
-atualizarVetor' valoresVetor _ [] _ valorNovo _ = error "Segmentation fault!!!!!!!!"
+atualizarVetor' valoresVetor _ [] _ valorNovo _ pos =
+    error $ "Muitos subscritos no acesso ao arranjo: posição: " ++ (show pos)
 
-atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posicao] valorNovo tipoNovo =
+atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posicao] valorNovo tipoNovo pos =
     if (posicao >= 1) && (posicao <= dimensao) then
-        if (tipoElem == tipoNovo) && (dimensoes == []) then
-            inicio ++ [valorNovo] ++ (tail fim)
+        if dimensoes == [] then
+            if tipoElem == tipoNovo then
+                   inicio ++ [valorNovo] ++ (tail fim)
+            else
+                error $ "Atribuição inválida!\nTipo esperado: " ++ (show tipoElem) ++ "\nTipo recebido: " ++ (show tipoNovo) ++ "\nposição: " ++ (show pos)
         else
-            error "Atribuição inválida"
+            error $ "Poucos subscritos no acesso ao arranjo: posição: " ++ (show pos)
     else
-        error "Segmentation fault!!!!!!!!"
+        error $ "Segmentation fault!\nposição: " ++ show pos
     where (inicio, fim) = genericSplitAt (posicao - 1) valoresVetor
 
-atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo = 
+atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo pos = 
     if (posicao >= 1) && (posicao <= dimensao) then
-        inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo)] ++ fim
+        trace (show tipoVetor) (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
     else
-        error $ "Segmentation fault!!!!!!!!" ++ (show posicao) ++ " " ++ (show dimensao)
+        error $ "Segmentation fault!\nposição: " ++ show pos
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
           ((ValorVetor valoresAntigos):fim) = meio
 

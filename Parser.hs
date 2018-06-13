@@ -241,10 +241,10 @@ parseNovodec = do
 parseNovoatrib :: ParseArgs STMT
 parseNovoatrib = do
     a <- parseCriavalorexpr <|> parseCriavar
-    parseAttrib
-    b <- parseExpr
+    b <- parseAttrib
+    c <- parseExpr
     parseEndcommand
-    return $ NOVOATRIBSTMT a b
+    return $ NOVOATRIBSTMT a b c
 
 parseNovoinc :: ParseArgs STMT
 parseNovoinc = do
