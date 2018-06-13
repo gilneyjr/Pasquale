@@ -293,7 +293,7 @@ rodaStmts ((stmt:stmts)) estado = do
 --Executa um stmt
 executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
-executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado =
+executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
     case tipo of
         TipoAtomico s ->
             case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
@@ -304,7 +304,7 @@ executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado =
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> fail $ show erro
-    where (nome, tipo, valorAntigo) = getVariavelFromExpr expr estado
+    where ((nome, tipo, valorAntigo), estado) = getVariavelFromExpr expr estado0
           (valor, tipoExpr, estadoIntermediario) = evaluateExpr estado expr'
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
@@ -408,8 +408,8 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
         showLogico False = "FALSO"
 
 executarStmt (NOVOLEIA (CRIALEIA (LEIA p) [])) estado = return (estado, False, False, False, Nothing, Nothing)
-executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado = do
-    let (_, tipo, valor) = getVariavelFromExpr (CRIAVAR expr) estado
+executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado0 = do
+    let ((_, tipo, valor),estado) = getVariavelFromExpr (CRIAVAR expr) estado0
     let tipoAtualizado = case tipo of { TipoAtomico s -> tipo; TipoVetor s tipoPrimitivo -> tipoPrimitivo }
     case tipoAtualizado of
         TipoAtomico "INTEIRO" -> do
@@ -447,14 +447,32 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado = do
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
     iniciaBloco stmts estado
 
-getVariavelFromExpr :: EXPR -> Estado -> Variavel
+getVariavelFromExpr :: EXPR -> Estado -> (Variavel, Estado)
 getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):_))) estado = 
     case var of
-        Right var' -> var'
+        Right var' -> (var', estado)
         Left erro -> error $ (show erro) ++ ": posição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr _ _ = error $ "Não é possível realizar a atribuição: posição: "
+getVariavelFromExpr (CRIAVALOREXPR (CRIAULTVAL (VALOR p) var)) estadoAntigo =
+    case res of
+        ValorPonteiro nome -> case var of
+            Right var' -> (var', estado)
+            Left erro -> error $ "Ponteiro acessado aponta para posicao invalida: posição: " ++ (show p)
+            where var = getVariavel nome estado
+        otherwise -> error $ "Busca por valor em variável que não é um ponteiro: posição: " ++ (show p) ++ ", tipo: " ++ (show tipo)
+    where
+        (res, tipo, estado) = evaluateExpr estadoAntigo (CRIAVAR var)
+
+getVariavelFromExpr (CRIAVALOREXPR (CRIASEQVAL (VALOR p) val)) estadoAntigo =
+    case res of
+        ValorPonteiro nome -> case var of
+            Right var' -> (var', estado)
+            Left erro -> error $ "Ponteiro acessado aponta para posicao invalida: posição: " ++ (show p)
+            where var = getVariavel nome estado
+        otherwise -> error $ "Busca por valor em variável que não é um ponteiro: posição: " ++ (show p) ++ ", tipo: " ++ (show tipo)
+    where
+        (res, tipo, estado) = evaluateExpr estadoAntigo (CRIAVALOREXPR val)
 
 incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
 incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado: posição: " ++ (show p)
@@ -523,7 +541,7 @@ atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posica
 
 atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo pos = 
     if (posicao >= 1) && (posicao <= dimensao) then
-        trace (show tipoVetor) (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
+        (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
     else
         error $ "Segmentation fault!\nposição: " ++ show pos
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
