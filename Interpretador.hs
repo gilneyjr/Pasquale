@@ -16,9 +16,6 @@ import Estado
 import Lexico
 import Arvore
 
---Estado antes da execucao
-estadoinicial = ([], TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], [], 1)
-
 type EstadoCompleto = (Estado, Bool, Bool, Bool, Maybe EXPR, Maybe (Int,Int))
 
 --Funcao para executar a partir da arvore
@@ -36,7 +33,7 @@ executaPrograma (CRIAPROG (INICIOESTRS estrs (INICIODECS decs (INICIOFUNCS subpr
 
 -- Estado inicial do programa
 inicializarPrograma :: Estado
-inicializarPrograma = criarEscopo 0 estadoinicial
+inicializarPrograma = criarEscopo 0 estadoInicial
 
 -- Adiciona as estruturas criadas pelo usuario
 addEstrs :: [ESTR] -> Estado -> IO Estado
@@ -78,8 +75,8 @@ getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariavei
           variaveis = map getNomeVar tokensVariaveis
 
 funcaoFold' :: Tipo -> ([Tipo], Estado) -> VAR_ -> ([Tipo], Estado)
-funcaoFold' tipo (tipos, estadoInicial) token = ((tipos ++ [tipo']), estadoFinal)
-    where (tipo', estadoFinal) = (getTipoVetor tipo token estadoInicial)
+funcaoFold' tipo (tipos, estado0) token = ((tipos ++ [tipo']), estadoFinal)
+    where (tipo', estadoFinal) = (getTipoVetor tipo token estado0)
 
 getDecs :: [DEC] -> Estado -> ([Declaracao], Estado)
 getDecs [] estado = ([], estado)
@@ -111,8 +108,8 @@ getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar posicao (OptionalSQBrack exprs)
     where (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
 
 funcaoFold :: ([Maybe Integer], Estado) -> EXPR -> ([Maybe Integer], Estado)
-funcaoFold (valores, estadoInicial) expr = ((valores ++ [getValorInteiro valor]), estadoFinal)
-    where (valor, _, estadoFinal) = evaluateExpr estadoInicial expr
+funcaoFold (valores, estado0) expr = ((valores ++ [getValorInteiro valor]), estadoFinal)
+    where (valor, _, estadoFinal) = evaluateExpr estado0 expr
 
 getNomeVar :: VAR_ -> String
 getNomeVar (VAR_SEM (SingleVar (ID _ nome) _)) = nome
@@ -230,7 +227,7 @@ getNomeFromOp (NOVOMult _) = "*"
 getNomeFromOp (NOVODiv _) = "/"
 getNomeFromOp (NOVOGeq _) = ">="
 getNomeFromOp (NOVOLeq _) = "<="
-getNomeFromOp (NOVODiff _) = "-"
+getNomeFromOp (NOVODiff _) = "/="
 getNomeFromOp (NOVOEqual _) = "="
 getNomeFromOp (NOVOGreat _) = ">"
 getNomeFromOp (NOVOLess _) = "<"
@@ -642,15 +639,15 @@ getVarFromNome _ [] = (Nothing,-1)
 getVarFromNome nome ((var@(nome',_,_)):vars) = if nome == nome' then (Just var,0) else (var',n+1) where (var',n) = getVarFromNome nome vars
 
 funcaoFold'' :: Estado -> Variavel -> Estado
-funcaoFold'' estadoInicial variavel = 
-    case addVariavel variavel estadoInicial of
+funcaoFold'' estado0 variavel = 
+    case addVariavel variavel estado0 of
         Right estado -> estado
         Left erro -> error $ "Deu erro"
 
 evaluateExprs :: Estado -> [EXPR] -> ([Valor],[Tipo],Estado)
-evaluateExprs estadoInicial [] = ([], [], estadoInicial)
-evaluateExprs estadoInicial (expr:exprs) = (valor:valores,tipo:tipos,estadoFinal)
-    where (valor, tipo, estadoIntermediario) = evaluateExpr estadoInicial expr
+evaluateExprs estado0 [] = ([], [], estado0)
+evaluateExprs estado0 (expr:exprs) = (valor:valores,tipo:tipos,estadoFinal)
+    where (valor, tipo, estadoIntermediario) = evaluateExpr estado0 expr
           (valores, tipos, estadoFinal) =  evaluateExprs estadoIntermediario exprs
 
 
@@ -836,6 +833,13 @@ evaluateExpr estado (CRIAEQUAL expr1 op expr2) = do
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
                         (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        ValorLogico a ->
+            case res2 of
+                ValorLogico b -> (ValorLogico (a == b), TipoAtomico "LOGICO", estado2)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
@@ -949,6 +953,13 @@ evaluateExpr estado (CRIADIFF expr1 op expr2) = do
         ValorCaractere a ->
             case res2 of
                 ValorCaractere b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        ValorLogico a ->
+            case res2 of
+                ValorLogico b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
                 otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++

@@ -20,7 +20,8 @@ module Estado (
     addTipo,
     addSubprograma,
     getSubprograma,
-    getTipo
+    getTipo,
+    estadoInicial
 ) where
 
 import Tipos
@@ -277,7 +278,7 @@ addSubprograma subprograma (pilha, tipos, subprogramasAtuais, cont) =
 addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
 addSubprogramaLista subprograma subprogramas = 
     case getSubprogramaLista nome (snd $ unzip declaracoes) subprogramas of
-        Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma '" ++ nome ++ "' já foi criado com a mesma assinatura"
+        Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma '" ++ nome ++ "' já existe com a mesma assinatura"
         Nothing -> Right $ subprograma:subprogramas
     where (nome, declaracoes) = getAssinaturaSubprograma subprograma
 
@@ -301,3 +302,51 @@ getSubprogramaLista nome tipos = find (isSubprograma nome tipos)
 isSubprograma :: String -> [Tipo] -> Subprograma -> Bool
 isSubprograma nome tipos (Left (nome', parametros, _)) = (nome == nome') && (tipos == (snd $ unzip parametros))
 isSubprograma nome tipos (Right (nome', parametros, _, _)) = (nome == nome') && (tipos == (snd $ unzip parametros))
+
+
+--Estado antes da execucao
+estadoInicial = 
+    (   [], 
+        TipoAtomico "INTEIRO":TipoAtomico "REAL":TipoAtomico "LOGICO":TipoAtomico "TEXTO":TipoAtomico "CARACTERE":[], 
+        [
+            Right ("!",[("a",TipoAtomico "LOGICO")],[],TipoAtomico "LOGICO"),
+            Right ("-",[("a",TipoAtomico "REAL")],[],TipoAtomico "REAL"),
+            Right ("-",[("a",TipoAtomico "INTEIRO")],[],TipoAtomico "INTEIRO"),
+            Right ("/",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "REAL"),
+            Right ("/",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "INTEIRO"),
+            Right ("*",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "REAL"),
+            Right ("*",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "INTEIRO"),
+            Right ("-",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "REAL"),
+            Right ("-",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "INTEIRO"),
+            Right ("+",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "TEXTO"),
+            Right ("+",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "REAL"),
+            Right ("+",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "INTEIRO"),
+            Right ("/=",[("a",TipoAtomico "LOGICO"),("b",TipoAtomico "LOGICO")],[],TipoAtomico "LOGICO"),
+            Right ("/=",[("a",TipoAtomico "CARACTERE"),("b",TipoAtomico "CARACTERE")],[],TipoAtomico "LOGICO"),
+            Right ("/=",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "LOGICO"),
+            Right ("/=",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "LOGICO"),
+            Right ("/=",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "LOGICO"),
+            Right (">",[("a",TipoAtomico "CARACTERE"),("b",TipoAtomico "CARACTERE")],[],TipoAtomico "LOGICO"),
+            Right (">",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "LOGICO"),
+            Right (">",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "LOGICO"),
+            Right (">",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "LOGICO"),
+            Right (">=",[("a",TipoAtomico "CARACTERE"),("b",TipoAtomico "CARACTERE")],[],TipoAtomico "LOGICO"),
+            Right (">=",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "LOGICO"),
+            Right (">=",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "LOGICO"),
+            Right (">=",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "LOGICO"),
+            Right ("=",[("a",TipoAtomico "LOGICO"),("b",TipoAtomico "LOGICO")],[],TipoAtomico "LOGICO"),
+            Right ("=",[("a",TipoAtomico "CARACTERE"),("b",TipoAtomico "CARACTERE")],[],TipoAtomico "LOGICO"),
+            Right ("=",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "LOGICO"),
+            Right ("=",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "LOGICO"),
+            Right ("=",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "LOGICO"),
+            Right ("<=",[("a",TipoAtomico "CARACTERE"),("b",TipoAtomico "CARACTERE")],[],TipoAtomico "LOGICO"),
+            Right ("<=",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "LOGICO"),
+            Right ("<=",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "LOGICO"),
+            Right ("<=",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "LOGICO"),
+            Right ("<",[("a",TipoAtomico "CARACTERE"),("b",TipoAtomico "CARACTERE")],[],TipoAtomico "LOGICO"),
+            Right ("<",[("a",TipoAtomico "TEXTO"),("b",TipoAtomico "TEXTO")],[],TipoAtomico "LOGICO"),
+            Right ("<",[("a",TipoAtomico "REAL"),("b",TipoAtomico "REAL")],[],TipoAtomico "LOGICO"),
+            Right ("<",[("a",TipoAtomico "INTEIRO"),("b",TipoAtomico "INTEIRO")],[],TipoAtomico "LOGICO")
+        ], 1)
+
+
