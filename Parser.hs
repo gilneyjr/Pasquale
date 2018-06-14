@@ -90,9 +90,16 @@ parseEstr :: ParseArgs ESTR
 parseEstr = do
     parseEstrutura
     a <- parseTipo
-    b <- endBy parseDec parseEndcommand
+    b <- endBy parseDecEstr parseEndcommand
     parseFimestrutura
     return $ NOVOESTR a b
+
+parseDecEstr :: ParseArgs DEC
+parseDecEstr = do
+    a <- many parsePont
+    b <- parseTipo
+    c <- sepBy1 parseVar_sem parseComma
+    return $ NOVADEC a b c 
 
 parseFunc :: ParseArgs FUNC
 parseFunc = do
