@@ -144,7 +144,7 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
         case res of
             Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
             Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
-    else error $ "Valor da esxpressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
+    else error $ "Valor da expressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
     where ((nome', tipo'):_, estadoIntermediario) = getDecs [(NOVADEC pont tipo [(VAR_COM (CRIAATRIB id expr))])] estado
           (valor, tipoExpr, estado') = evaluateExpr estadoIntermediario expr
           res = addVariavel (nome', tipo', valor) estado'
@@ -324,7 +324,7 @@ executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                     Left erro -> fail $ show erro
             else
-                error $ "Valor da esxpressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
+                error $ "Valor da expressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
     where ((nome, tipo, valorAntigo), estado) = getVariavelFromExpr expr estado0
           (valor, tipoExpr, estadoIntermediario) = (evaluateExpr estado expr')
 

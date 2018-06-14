@@ -24,7 +24,7 @@ PRINCIPAL
         ESCREVA("Por favor forneça valores estritamente positivos.\n");
     SENAO
         PONTEIRO INTEIRO r;
-        r := NOVO PONTEIRO INTEIRO;
+        r := NOVO INTEIRO;
         mdc(n,m,r);
         ESCREVA(VALOR(r));
         ESCREVA("\n");
