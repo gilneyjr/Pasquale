@@ -47,7 +47,7 @@ addEstrs (a:b) estado =
     -- Caso tenha adicionado com sucesso, chama recursivamente para o resto das estruturas
     case novo of
         Right estadoAtualizado -> addEstrs b estadoAtualizado
-        Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (tipoEstrutura, estadoFinal) = (getTipoFromEstr a estado)
           novo = addTipo tipoEstrutura estadoFinal
           posicao = getPosicaoEstr a
@@ -134,7 +134,7 @@ addDec (NOVADEC _ _ []) estado = do return estado
 addDec declaracao@(NOVADEC pont tipo ((VAR_SEM id):b)) estado =
     case res of
         Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
-        Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where ((nome', tipo'):_, estadoIntermediario) = getDecs [(NOVADEC pont tipo [(VAR_SEM id)])] estado
           res = addVariavel (nome', tipo', getValorInicial tipo') estadoIntermediario
           posicao = getPosicaoSingleVar id
@@ -143,7 +143,7 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
     if tipoExpr == tipo' then
         case res of
             Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
-            Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
+            Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     else error $ "Valor da expressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
     where ((nome', tipo'):_, estadoIntermediario) = getDecs [(NOVADEC pont tipo [(VAR_COM (CRIAATRIB id expr))])] estado
           (valor, tipoExpr, estado') = evaluateExpr estadoIntermediario expr
@@ -160,21 +160,21 @@ addSubprogs []    estado = do return estado
 addSubprogs ((CRIAFUNC func):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
-        Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (subprograma, estadoIntermediario) = getSubprogFromFunc func estado
           novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoFunc func
 addSubprogs ((CRIAPROC proc):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
-        Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (subprograma, estadoIntermediario) = getSubprogFromProc proc estado
           novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoProc proc
 addSubprogs ((CRIAOPER oper):b) estado =
     case novo of
         Right estadoAtualizado -> addSubprogs b estadoAtualizado
-        Left erro -> fail $ (show erro) ++ "\nPosição: " ++ (show posicao)
+        Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (subprograma, estadoIntermediario) = getSubprogFromOper oper estado
           novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoOper oper
@@ -307,22 +307,22 @@ executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
             CRIAVALOREXPR _ ->
                 case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> fail $ show erro
+                    Left erro -> error $ show erro
             otherwise ->
                 let (estruturaNova, estadoFinal) = (atualizarEstrutura expr valorAntigo valor (traduzTipo tipoExpr estadoIntermediario) posicao estadoIntermediario) in
                 case atualizarVariavel (nome, tipo, estruturaNova) estadoFinal  of
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> fail $ show erro
+                    Left erro -> error $ show erro
         TipoVetor dimensoes _ ->
             let (vetorNovo, estadoFinal) = (atualizarVetor expr (traduzTipo tipo estado) dimensoes valorAntigo valor (traduzTipo tipoExpr estado) posicao estadoIntermediario) in
             case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                Left erro -> fail $ show erro
+                Left erro -> error $ show erro
         otherwise ->
             if tipo == tipoExpr then
                 case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> fail $ show erro
+                    Left erro -> error $ show erro
             else
                 error $ "Valor da expressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
     where ((nome, tipo, valorAntigo), estado) = getVariavelFromExpr expr estado0
@@ -337,14 +337,14 @@ executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):ca
                         case atualizarVariavel (nome, tipo, ValorInteiro (succ valor')) estado of
                             Right estado' -> do
                                 return (estado', False, False, False, Nothing, Nothing)
-                            Left erro -> fail $ show erro ++ "\nPosição: " ++ (show p)
+                            Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
                     Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEIRO\nPosição: " ++ (show p)
             else
                 let valorEstrutura = incrementaValorEstrutura campos valor in
                 case atualizarVariavel (nome, tipo, valorEstrutura) estado of
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> fail $ show erro ++ "\nPosição: " ++ (show p)
-        Left erro -> fail $ show erro ++ "\nPosição: " ++ (show p)
+                    Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
+        Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
 
 executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado = 
     case getVariavel nomeCampo estado of
@@ -354,14 +354,14 @@ executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):
                     Just valor' ->
                         case atualizarVariavel (nome, tipo, ValorInteiro (valor' - 1)) estado of
                             Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                            Left erro -> fail $ show erro ++ "\nPosição: " ++ (show p)
+                            Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
                     Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEIRO\nPosição: " ++ (show p)
             else
                 let valorEstrutura = incrementaValorEstrutura campos valor in
                 case atualizarVariavel (nome, tipo, valorEstrutura) estado of
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> fail $ show erro ++ "\nPosição: " ++ (show p)
-        Left erro -> fail $ show erro ++ "\nPosição: " ++ (show p)
+                    Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
+        Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
 
 executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
     case subprograma of
@@ -386,7 +386,7 @@ executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
     case res of
         ValorLogico True -> iniciaBlocoSe stmts1 estado1
         ValorLogico False -> iniciaBlocoSe stmts2 estado1
-        otherwise -> fail $ "Expressão não é do tipo LOGICO\nPosição: " ++ (show getPosSE)
+        otherwise -> error $ "Expressão não é do tipo LOGICO\nPosição: " ++ (show getPosSE)
     where
         (res, _, estado1) = evaluateExpr estado expr
         getPosSE :: Token -> (Int, Int)
