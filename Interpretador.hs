@@ -320,7 +320,7 @@ executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
                 Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                 Left erro -> error $ show erro
         otherwise ->
-            if tipo == tipoExpr then
+            if traduzTipo tipo estado == traduzTipo tipoExpr estado then
                 case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                     Left erro -> error $ show erro
@@ -574,14 +574,16 @@ atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posica
         else
             error $ "Poucos subscritos no acesso ao arranjo\nPosição: " ++ (show pos)
     else
-        error $ "Segmentation fault!\nPosição: " ++ show pos
+        error $ "Segmentation fault!\nValor acessado: " ++ (show posicao) ++ "\nRange: [1, " ++ 
+            (show dimensao) ++ "]\nPosição: " ++ (show pos)
     where (inicio, fim) = genericSplitAt (posicao - 1) valoresVetor
 
 atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo pos = 
     if (posicao >= 1) && (posicao <= dimensao) then
         (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
     else
-        error $ "Segmentation fault!\nPosição: " ++ show pos
+        error $ "Segmentation fault!\nValor acessado: " ++ (show posicao) ++ "\nRange: [1, " ++ 
+            (show dimensao) ++ "]\nPosição: " ++ (show pos)
     where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
           ((ValorVetor valoresAntigos):fim) = meio
 
@@ -610,7 +612,7 @@ atualizarEstrutura' [variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr
     case var of
         Just (nomeVar, tipoVar, valor) -> 
             if null expr then
-                if tipoVar == tipoNovo then
+                if traduzTipo tipoVar estado == traduzTipo tipoNovo estado then
                     ((inicio ++ [(nomeVar, tipoVar, valorNovo)] ++ (tail fim)), estado)
                 else error $ "Atribuição inválida!\nTipo esperado: " ++ (show tipoVar) ++ "\nTipo recebido: " ++ (show tipoNovo) ++ "\nPosição: " ++ (show pos)
             else
