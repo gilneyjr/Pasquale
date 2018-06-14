@@ -1,0 +1,139 @@
+//Problema 4
+
+ESTRUTURA RATIONAL_T
+    INTEIRO numerador;
+    INTEIRO denominador;
+FIMESTRUTURA
+
+FUNCAO racional RECEBE (INTEIRO a, INTEIRO b) RETORNA RATIONAL_T
+    RATIONAL_T r;
+    r.numerador := a;
+    r.denominador := b;
+    RETORNE r;
+FIMFUNCAO
+
+OPERADOR = RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA LOGICO
+    RETORNE (a.numerador * b.denominador  =  b.numerador * a.denominador);
+FIMOPERADOR
+
+OPERADOR - RECEBE (RATIONAL_T a) RETORNA RATIONAL_T
+    a.numerador := -a.numerador;
+    RETORNE a;
+FIMOPERADOR
+
+OPERADOR + RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+    RATIONAL_T res;
+    res.denominador := a.denominador * b.denominador;
+    res.numerador := a.numerador*b.denominador + b.numerador*a.denominador;
+    RETORNE res;
+FIMOPERADOR
+
+OPERADOR - RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+    RATIONAL_T res;
+    res.denominador := a.denominador * b.denominador;
+    res.numerador := a.numerador*b.denominador - b.numerador*a.denominador;
+    RETORNE res;
+FIMOPERADOR
+
+OPERADOR * RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+    RATIONAL_T res;
+    res.denominador := a.denominador * b.denominador;
+    res.numerador := a.numerador * b.numerador;
+    RETORNE res;
+FIMOPERADOR
+
+OPERADOR ! RECEBE (RATIONAL_T a) RETORNA RATIONAL_T
+    RATIONAL_T res;
+    res.denominador := a.numerador;
+    res.numerador :=  a.denominador;
+    RETORNE res;
+FIMOPERADOR
+
+OPERADOR / RECEBE (RATIONAL_T a, RATIONAL_T b) RETORNA RATIONAL_T
+    RATIONAL_T res := a * !b;
+    RETORNE res;
+FIMOPERADOR
+
+PRINCIPAL
+    INTEIRO a, b;
+    RATIONAL_T r1, r2, r3;
+
+    ENQUANTO VERDADEIRO EXECUTE
+
+        ESCREVA("Digite o numerador da primeira fração:\n");
+        LEIA(a);
+        ESCREVA("Digite o denominador da primeira fração:\n");
+        LEIA(b);
+
+        SE b /= 0 ENTAO
+            r1 := racional(a, b);    
+            ESCREVA("Primeira fração: " + (TEXTO)r1.numerador + "/" + (TEXTO)r1.denominador + "\n");
+
+            ESCREVA("Digite o numerador da segunda fração:\n");
+            LEIA(a);
+            ESCREVA("Digite o denominador da segunda fração:\n");
+            LEIA(b);
+
+            SE b /= 0 ENTAO
+                r2 := racional(a, b);
+                ESCREVA("Segunda fração: " + (TEXTO)r2.numerador + "/" + (TEXTO)r2.denominador + "\n");
+                
+                SE r1 = r2 ENTAO
+                    ESCREVA("As frações são iguais\n");
+                SENAO
+                    ESCREVA("As frações são diferentes\n");
+                FIMSE
+                
+                r3 := r1 + r2;
+                ESCREVA("Soma: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                
+                r3 := -r1;
+                ESCREVA("Negação da primeira: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                
+                r3 := -r2;
+                ESCREVA("Negação da segunda: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                
+                r3 := r1 - r2;
+                ESCREVA("Subtração: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                
+                r3 := r1 * r2;
+                ESCREVA("Multiplicação: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                
+                SE r1.numerador /= 0 ENTAO
+                    r3 := !r1;
+                    ESCREVA("Inverso da primeira: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                SENAO
+                    ESCREVA("Operação inválida: inverso de 0\n");
+                FIMSE
+                
+                SE r2.numerador /= 0 ENTAO
+                    r3 := !r2;
+                    ESCREVA("Inverso da segunda: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                SENAO
+                    ESCREVA("Operação inválida: inverso de 0\n");
+                FIMSE
+                
+                SE r2.numerador /= 0 ENTAO
+                    r3 := r1 / r2;
+                    ESCREVA("Divisão: " + (TEXTO)r3.numerador + "/" + (TEXTO)r3.denominador + "\n");
+                SENAO
+                    ESCREVA("Operação inválida: divisão por 0\n");
+                FIMSE
+                
+            SENAO
+                ESCREVA("Segunda fração inválida (b = 0)\n");
+            FIMSE
+        SENAO
+            ESCREVA("Primeira fração inválida (b = 0)\n");
+        FIMSE
+        ESCREVA("Continuar (S/N)?\n");
+        CARACTERE c;
+        LEIA(c);
+        SE c = 's' OU c = 'S' ENTAO
+            CONTINUE;
+        SENAO
+            SAIA;
+        FIMSE
+    FIMENQUANTO
+FIMPRINCIPAL
+

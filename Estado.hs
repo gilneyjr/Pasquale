@@ -291,7 +291,8 @@ getSubprograma :: String -> [Tipo] -> Estado -> Either ErroEstado Subprograma
 getSubprograma nome tipos (_, _, funcoes, _) = 
     case getSubprogramaLista nome tipos funcoes of
         Just subprograma -> Right subprograma
-        Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome ++ "' não encontrado"
+        Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome
+             ++ "' não encontrado com assinatura '" ++ (show tipos) ++ "'"
 
 -- Busca por um subprograma na lista de subprogrmas atraves de sua assinatura
 getSubprogramaLista :: String -> [Tipo] -> [Subprograma] -> Maybe Subprograma

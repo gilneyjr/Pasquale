@@ -321,7 +321,7 @@ executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
         otherwise ->
             if tipo == tipoExpr then
                 case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
-                    Right estado' -> trace (show estado') (return (estado', False, False, False, Nothing, Nothing))
+                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                     Left erro -> fail $ show erro
             else
                 error $ "Valor da esxpressão não é do mesmo tipo que a variável\nPosição: " ++ (show posicao)
@@ -1267,8 +1267,7 @@ evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs)) =
             rodaFuncao func estadoAtualizado tiposParametros valoresParametros nome posicao
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where
-        (valoresParametros, tiposParametros, estadoAntesDaFuncao) = evaluateExprs estado exprs
-        estadoAtualizado = criarEscopo 1 estadoAntesDaFuncao
+        (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estado exprs
         subprograma = getSubprograma nome tiposParametros estadoAtualizado
 
 -- Avalia uma estrutura
@@ -1399,8 +1398,10 @@ getPalavra' = handle handleEOF $ do
     a posição em que a função foi chamada (para erros)
 -}
 rodaFuncao :: Funcao -> Estado -> [Tipo] -> [Valor] -> String -> (Int,Int) -> (Valor, Tipo, Estado)
-rodaFuncao (_, declaracoes, stmts, _) estadoAtualizado tiposParametros valoresParametros nome posicao =
-    let estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
+rodaFuncao (_, declaracoes, stmts, _) estado tiposParametros valoresParametros nome posicao =
+    let
+        estadoAtualizado = criarEscopo 1 estado
+        estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
                 unsafePerformIO ((rodaStmts stmts estadoFinal) >>= 
                     (\(estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) ->
                         case (temSaia, temContinue, maybeExpr) of

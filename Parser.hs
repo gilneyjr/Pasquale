@@ -209,8 +209,8 @@ parseParam :: ParseArgs PARAM
 parseParam = do
     a <- many parsePont
     b <- parseTipo
-    c <- parseSinglevar
-    return $ NOVOPARAM a b c
+    c <- parseId
+    return $ NOVOPARAM a b (SingleVar c (OptionalSQBrack []))
 
 parseMain :: ParseArgs MAIN
 parseMain = do
