@@ -406,13 +406,13 @@ executarStmt (NOVODELETE (CRIADELETE tok expr)) estado =
     case val of
         ValorPonteiro s -> case removerVariavel (justVar (getVariavel s estado1)) estado1 of
             Right estado2 -> return (estado2, False, False, False, Nothing, Nothing)
-            Left erro -> error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
+            Left erro -> error $ "Delete em posição da memória inválida:\nPosição: " ++ (show $ getPosFromDelete tok)
         otherwise -> error $ "Operação de delete para expressão que não retorna Ponteiro\nPosição: " ++ (show $ getPosFromDelete tok)
     where
         (val, _, estado1) = evaluateExpr estado expr
         justVar :: (Either ErroEstado Variavel) -> Variavel
         justVar (Right x) = x
-        justVar (Left _) = error $ "Delete em posição da memória inválida: " ++ (show $ getPosFromDelete tok)
+        justVar (Left _) = error $ "Delete em posição da memória inválida:\nPosição: " ++ (show $ getPosFromDelete tok)
         getPosFromDelete :: Token -> (Int, Int)
         getPosFromDelete (DELETE p) = p
 
