@@ -1443,7 +1443,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                     -- Se for multidimensional
                                     else
                                         -- Chama a recursão
-                                        let (ithAtualizado, estadoAtualizado2) = assignToValue (TipoVetor dims tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var [SingleVar (ID pos nomeVar) (OptionalSQBrack ids)])) posicao estadoAtualizado1 in
+                                        let (ithAtualizado, estadoAtualizado2) = assignToValue (TipoVetor dims tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
                                             -- Substitui o valor atualizado
                                             case setIth ithAtualizado id valorVet of
                                                 Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
