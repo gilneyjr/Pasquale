@@ -1255,7 +1255,7 @@ evaluateVet estado (ValorVetor valores) tipoVetor (dim:dims) (expr:exprs) =
         (ValorTexto _, _, _)     -> Left "Valor TEXTO passado como subscrito de vetor"
         (ValorCaractere _, _, _) -> Left "Valor CARACTERE passado como subscrito de vetor"
         (ValorReal _, _, _)      -> Left "Valor REAL passado como subscrito de vetor"
-        (ValorVetor _, _, _)     -> Left "vetor passado como subscrito de outro vetor"
+        (ValorVetor _, _, _)     -> Left "Vetor passado como subscrito de outro vetor"
         (ValorPonteiro _, p, _)  -> Left $ (show p) ++ " passado como subscrito de outro vetor"
         (ValorEstrutura _, tipo, _) -> Left $ "ESTRUTURA (" ++ (show tipo) ++ ") passada como subscrito de vetor"
     where
@@ -1359,7 +1359,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
                         otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
-                TipoVetor [] tipoEleVet -> error $ "Há mais índices do que a quantidade de dimensões no vetor " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
                 otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
                 
 
