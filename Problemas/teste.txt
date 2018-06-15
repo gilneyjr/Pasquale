@@ -1,14 +1,5 @@
-ESTRUTURA MyStruct
-	INTEIRO x[10,5,2];
-FIMESTRUTURA
-
-ESTRUTURA MyStruct2
-	MyStruct y[2];
-FIMESTRUTURA
-
 PRINCIPAL
-    MyStruct2 stru;
-    stru.y[1].x[7,5,2] := 2;
-
-    ESCREVA("Valor = " + (TEXTO) stru.y.x[7,5,2] + "\n");
+    INTEIRO i := 2;
+    i++;
+    ESCREVA(i);
 FIMPRINCIPAL

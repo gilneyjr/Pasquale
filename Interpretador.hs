@@ -335,6 +335,31 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                     
         otherwise -> error $ "Expressão inválida do lado esquerdo da atribuição\nPosição: " ++ (show posicao)
 
+executarStmt (NOVOINC (CRIAINC (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) estado0 =
+    -- Busca variável
+    case getVariavel nomeVar estado0 of
+        Right (_, tipoVar, valorVar) ->
+            -- Calcula incremento
+            let (novoValor, estado1) = incrDecr (+ 1) (tipoVar, valorVar) var estado0 in
+                -- Atualiza variável
+                case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
+                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                    Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
+        Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+
+executarStmt (NOVODECR (CRIADECR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) estado0 =
+    -- Busca variável
+    case getVariavel nomeVar estado0 of
+        Right (_, tipoVar, valorVar) ->
+            -- Calcula incremento
+            let (novoValor, estado1) = incrDecr ((-) 1) (tipoVar, valorVar) var estado0 in
+                -- Atualiza variável
+                case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
+                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                    Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
+        Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)  
+    
+{-
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
         Right (nome, tipo, valor) ->
@@ -369,7 +394,7 @@ executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):
                     Right estado' -> return (estado', False, False, False, Nothing, Nothing)
                     Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
         Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
-
+-}
 executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
     case subprograma of
         Right (Left (nome, declaracoes, stmts)) ->
@@ -1518,3 +1543,66 @@ setIth val id (head:tail)
             Right res -> Right (head:res)
             Left err -> Left err
 -- Fim de funções auxiliares para a atribução -------------------------------------------------------------
+
+-- Início das funções auxilires para Incremento/Decremento -------------------------------------------------------------
+incrDecr :: (Integer -> Integer) -> (Tipo,Valor) -> [SingleVAR] -> Estado -> (Valor,Estado)
+-- Variável comum
+incrDecr func (tipo, valor) [SingleVar (ID pos nome) (OptionalSQBrack [])] estado =
+    case (tipo, valor) of
+        -- Testa o tipo
+        (TipoAtomico "INTEIRO", ValorInteiro x) -> (ValorInteiro (func x), estado) 
+        otherwise -> error $ "Tentado incrementar/decrementar tipo não inteiro\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show pos)
+
+-- Vetor
+incrDecr func (tipo, valor) ((SingleVar (ID pos nome) (OptionalSQBrack (id_expr:ids))):campos) estado =
+    case (tipo, valor) of
+        ( TipoVetor (dim:dims) tipoEleVetor, ValorVetor valorVet ) ->
+            -- pego o ith elemento do vetor
+            case getIth valorVet id of
+                Right ith ->
+                    -- Se for unidimensional
+                    if null ids then
+                        if null dims then
+                            -- Chama a recursão
+                            let (ithAtualizado, estadoAtualizado2) = incrDecr func (tipoEleVetor, ith) ((SingleVar (ID pos nome) (OptionalSQBrack ids)):campos) estadoAtualizado1 in
+                                -- Substitui o valor atualizado
+                                case setIth ithAtualizado id valorVet of
+                                    Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
+                                    Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                        else
+                            error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nome ++ "\nPosição: " ++ (show pos)
+                    -- Se for multidimensional
+                    else
+                        -- Chama a recursão
+                            let (ithAtualizado, estadoAtualizado2) = incrDecr func (TipoVetor dims tipoEleVetor, ith) ((SingleVar (ID pos nome) (OptionalSQBrack ids)):campos) estadoAtualizado1 in
+                                -- Substitui o valor atualizado
+                                case setIth ithAtualizado id valorVet of
+                                    Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
+                                    Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+            where
+                (id, estadoAtualizado1) = 
+                    case evaluateExpr estado id_expr of
+                        (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
+                        otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
+        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ nome ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show pos)
+
+-- Estrutura
+incrDecr func (tipo, valor) ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQBrack [])):campos@((SingleVar (ID posCampo nomeCampo) _):_) ) estado =
+    -- Verifica se a cabeça da lista é uma estrutura
+    case (tipo,valor) of
+        -- Se for uma estrutura
+        (TipoEstrutura nomeEstr decs, ValorEstrutura varsEstr) ->
+            -- Pega o tipo e valor correspondentes ao primeiro campo
+            case getCampo nomeCampo varsEstr of
+                Right valorCampo -> 
+                    -- Chama recursivamente paro o valorCampo
+                    let (valorAtualizado, estadoAtualizado) = incrDecr func valorCampo campos estado in
+                        -- Substitui o valor atualizado do campo no campo correspondente da estrutura
+                        case setCampo nomeCampo valorAtualizado varsEstr of
+                            Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
+                            Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipo) ++ "\nPosição: " ++ (show posCampo)
+                Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipo) ++ "\nPosição: " ++ (show posCampo)
+        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipo) ++ "\nPosição: " ++ (show posVarEstr)
+
+-- Fim das funções auxilires para Incremento/Decremento ----------------------------------------------------------------
