@@ -1139,11 +1139,13 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
 -- variáveis com acesso a campo de estrutura
 evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack [])):snglVars))) =
     case (getVariavel nome estado) of
-        Right (_, TipoEstrutura nome_estr _, valor_estr) ->
-            case evaluateEstr estado valor_estr snglVars of
-                Right result -> result
-                Left erro -> error $ nome_estr ++ " " ++ (show erro) ++ "\nPosição: " ++ (show posicao)
-        Right _ -> error $ "Variável " ++ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
+        Right (_, tt, valor_estr) -> 
+            case traduzTipo tt estado of
+                TipoEstrutura nome_estr _ ->
+                    case evaluateEstr estado valor_estr snglVars of
+                        Right result -> result
+                        Left erro -> error $ nome_estr ++ " " ++ (show erro) ++ "\nPosição: " ++ (show posicao)
+                _ -> error $ "Variável " ++ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- variáveis vetores de estruturas com acesso aos campos
@@ -1227,8 +1229,9 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
     -- procura o primeiro campo 'nome' na lista de campos da estrutura
     case (getVariavelTabela nome vars_estr) of
         -- Se for outra esrtrutura, procura para o resto dos campos
-        Just (_, TipoEstrutura _ _, valor_estr) ->  evaluateEstr estado valor_estr snglVars
-        Just _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
+        Just (_, tt, valor_estr) -> case traduzTipo tt estado of
+            TipoEstrutura _ _ -> evaluateEstr estado valor_estr snglVars
+            _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ nome
 
 -- Avalia um vetor de estruturas com vários acessos a campo. Ex.: vet[10].a.b.c
@@ -1245,7 +1248,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
         Just _ -> error $ nome ++ " não é uma vetor\nPosição: " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ nome
-{-
+{- 
     estado
     vetor
     limites
@@ -1287,23 +1290,6 @@ evaluateVet estado (ValorVetor valores) tipoVetor (dim:dims) (expr:exprs) =
         (ValorEstrutura _, tipo, _) -> Left $ "ESTRUTURA (" ++ (show tipo) ++ ") passada como subscrito de vetor"
     where
         res_expr = evaluateExpr estado expr
-
-traduzTipo :: Tipo -> Estado -> Tipo
-traduzTipo (TipoAtomico s) estado = 
-    case (getTipo s estado) of
-        Right p -> p
-        Left erro -> error $ show erro
-traduzTipo p estado = p
-
-mesmoTipo :: Tipo -> Tipo -> Estado -> Bool
-mesmoTipo tipo1 tipo2 estado =
-    if traduzTipo tipo1 estado == traduzTipo tipo2 estado then True
-    else case (tipo1, tipo2) of
-        (TipoPonteiroFim "nulo", TipoPonteiroFim _) -> True
-        (TipoPonteiroFim _, TipoPonteiroFim "nulo") -> True
-        (TipoPonteiroFim "nulo", TipoPonteiroRecursivo _) -> True
-        (TipoPonteiroRecursivo _, TipoPonteiroFim "nulo") -> True
-        otherwise -> False
 
 --Leitura de uma palavra nao vazia
 getPalavra :: IO String
@@ -1398,7 +1384,7 @@ assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
         -- Estrutura
         CRIAVAR ( Var ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQBrack [])):campos@((SingleVar (ID posCampo nomeCampo) _):_) ) ) ->
             -- Verifica se a cabeça da lista é uma estrutura
-            case tipoEsq of
+            case traduzTipo tipoEsq estadoAtual of
                 -- Se for uma estrutura
                 TipoEstrutura nomeEstr decs ->
                     -- Se o valor esquerdo casa com ValorEstrutura
@@ -1509,7 +1495,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
         -- Estrutura
         CRIAVAR ( Var ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQBrack [])):campos@((SingleVar (ID posCampo nomeCampo) _):_) ) ) ->
             -- Verifica se a cabeça da lista é uma estrutura
-            case tipoEsq of
+            case traduzTipo tipoEsq estadoAtual of
                 -- Se for uma estrutura
                 TipoEstrutura nomeEstr decs ->
                     -- Se o valor esquerdo casa com ValorEstrutura
@@ -1612,7 +1598,7 @@ incrDecr func (tipo, valor) ((SingleVar (ID pos nome) (OptionalSQBrack (id_expr:
 -- Estrutura
 incrDecr func (tipo, valor) ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQBrack [])):campos@((SingleVar (ID posCampo nomeCampo) _):_) ) estado =
     -- Verifica se a cabeça da lista é uma estrutura
-    case (tipo,valor) of
+    case (traduzTipo tipo estado,valor) of
         -- Se for uma estrutura
         (TipoEstrutura nomeEstr decs, ValorEstrutura varsEstr) ->
             -- Pega o tipo e valor correspondentes ao primeiro campo

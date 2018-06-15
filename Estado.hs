@@ -21,7 +21,9 @@ module Estado (
     addSubprograma,
     getSubprograma,
     getTipo,
-    estadoInicial
+    estadoInicial,
+    traduzTipo,
+    mesmoTipo
 ) where
 
 import Tipos
@@ -289,12 +291,17 @@ getAssinaturaSubprograma (Right (nome, parametros, _, _)) = (nome, parametros)
 
 -- Busca por um subprograma no estado atraves de sua assinatura
 getSubprograma :: String -> [Tipo] -> Estado -> Either ErroEstado Subprograma
-getSubprograma nome tipos (_, _, funcoes, _) = 
+getSubprograma nome tipos' estado@(_, _, funcoes, _) = 
     case getSubprogramaLista nome tipos funcoes of
         Just subprograma -> Right subprograma
         Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome
              ++ "' não encontrado com assinatura '" ++ (show tipos) ++ "'"
-
+    where
+        tipos = traduz tipos'
+        traduz :: [Tipo] -> [Tipo]
+        traduz [] = []
+        traduz (a:b) = (traduzTipo a estado):(traduz b)
+    
 -- Busca por um subprograma na lista de subprogrmas atraves de sua assinatura
 getSubprogramaLista :: String -> [Tipo] -> [Subprograma] -> Maybe Subprograma
 getSubprogramaLista nome tipos = find (isSubprograma nome tipos)
@@ -303,6 +310,22 @@ isSubprograma :: String -> [Tipo] -> Subprograma -> Bool
 isSubprograma nome tipos (Left (nome', parametros, _)) = (nome == nome') && (tipos == (snd $ unzip parametros))
 isSubprograma nome tipos (Right (nome', parametros, _, _)) = (nome == nome') && (tipos == (snd $ unzip parametros))
 
+traduzTipo :: Tipo -> Estado -> Tipo
+traduzTipo (TipoAtomico s) estado = 
+    case (getTipo s estado) of
+        Right p -> p
+        Left erro -> error $ show erro
+traduzTipo p estado = p
+
+mesmoTipo :: Tipo -> Tipo -> Estado -> Bool
+mesmoTipo tipo1 tipo2 estado =
+    if traduzTipo tipo1 estado == traduzTipo tipo2 estado then True
+    else case (tipo1, tipo2) of
+        (TipoPonteiroFim "nulo", TipoPonteiroFim _) -> True
+        (TipoPonteiroFim _, TipoPonteiroFim "nulo") -> True
+        (TipoPonteiroFim "nulo", TipoPonteiroRecursivo _) -> True
+        (TipoPonteiroRecursivo _, TipoPonteiroFim "nulo") -> True
+        otherwise -> False
 
 --Estado antes da execucao
 estadoInicial = 

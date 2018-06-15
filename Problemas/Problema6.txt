@@ -54,9 +54,13 @@ FIMPROCEDIMENTO
 
 PRINCIPAL
     PONTEIRO NODE raiz;
-    ESCREVA("Digite a quantidade de elementos:\n");
+    ESCREVA("Digite a quantidade de elementos: ");
     INTEIRO n;
     LEIA(n);
+    SE n <= 0 ENTAO
+        ESCREVA("O número deve ser positivo.\n");
+        RETORNE;
+    FIMSE
     INTEIRO i := 1;
     
     ENQUANTO i <= n EXECUTE
@@ -84,13 +88,12 @@ PRINCIPAL
     NODE fila[n];
     INTEIRO j := 1, ult_nvl := 0;
     
-    i := 1;
     fila[j] := VALOR(raiz);
     j++;
     
+    i := 1;
     ENQUANTO i <= n EXECUTE
         NODE cur := fila[i];
-        i++;
         SE cur.nivel > ult_nvl ENTAO
             ult_nvl := cur.nivel;
             SE ult_nvl > 1 ENTAO
@@ -108,6 +111,7 @@ PRINCIPAL
             fila[j] := VALOR(cur.dir);
             j++;
         FIMSE
+        i++;
     FIMENQUANTO
     ESCREVA("\n");
     
