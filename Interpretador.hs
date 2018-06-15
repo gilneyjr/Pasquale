@@ -316,7 +316,7 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                                     Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                         Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR a ->
+        CRIAVALOREXPR _ _ ->
              let
                 --Avalia o lado direito primeiro
                 (valorDir,tipoDir,estado1) = evaluateExpr estado0 exprDir
@@ -494,25 +494,15 @@ getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):_))) 
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr (CRIAVALOREXPR (CRIAULTVAL (VALOR p) var)) estadoAntigo =
+getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr) estadoAntigo =
     case res of
         ValorPonteiro nome -> case var of
             Right var' -> (var', estado)
-            Left erro -> error $ "Ponteiro acessado aponta para posicao invalida\nPosição: " ++ (show p)
+            Left erro -> error $ "Ponteiro acessado aponta para posição inválida\nPosição: " ++ (show p)
             where var = getVariavel nome estado
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro\nPosição: " ++ (show p) ++ ", tipo: " ++ (show tipo)
     where
-        (res, tipo, estado) = evaluateExpr estadoAntigo (CRIAVAR var)
-
-getVariavelFromExpr (CRIAVALOREXPR (CRIASEQVAL (VALOR p) val)) estadoAntigo =
-    case res of
-        ValorPonteiro nome -> case var of
-            Right var' -> (var', estado)
-            Left erro -> error $ "Ponteiro acessado aponta para posicao invalida\nPosição: " ++ (show p)
-            where var = getVariavel nome estado
-        otherwise -> error $ "Busca por valor em variável que não é um ponteiro\nPosição: " ++ (show p) ++ ", tipo: " ++ (show tipo)
-    where
-        (res, tipo, estado) = evaluateExpr estadoAntigo (CRIAVALOREXPR val)
+        (res, tipo, estado) = evaluateExpr estadoAntigo expr
 
 incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
 incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado\nPosição: " ++ (show p)
@@ -1183,26 +1173,12 @@ evaluateExpr estado (CRIALOGICO (LOGICO _ l)) = (ValorLogico l, TipoAtomico "LOG
 evaluateExpr estado (CRIAREAL (REAL _ r)) = (ValorReal r, TipoAtomico "REAL", estado)
 evaluateExpr estado (CRIAPARENTESES a) = evaluateExpr estado a
 
-evaluateExpr estado (CRIAVALOREXPR (CRIAULTVAL (VALOR p) var)) = 
+evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr) = 
     case val of
         ValorPonteiro s -> (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
     where 
-        (val, tipo, estado1) = evaluateExpr estado (CRIAVAR var)
-        getValor :: (Either ErroEstado Variavel) -> Valor
-        getValor (Left _) = error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-        getValor (Right (_,_,val)) = val
-        getTipoApontado :: Tipo -> Tipo
-        getTipoApontado (TipoPonteiroFim s) = TipoAtomico s
-        getTipoApontado (TipoPonteiroRecursivo s) = s
-        getTipoApontado _ = error $ "Erro impossível de ocorrer"
-
-evaluateExpr estado (CRIAVALOREXPR (CRIASEQVAL (VALOR p) seqval)) = 
-    case val of
-        ValorPonteiro s -> (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
-        otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-    where 
-        (val, tipo, estado1) = evaluateExpr estado (CRIAVALOREXPR seqval)
+        (val, tipo, estado1) = evaluateExpr estado expr
         getValor :: (Either ErroEstado Variavel) -> Valor
         getValor (Left _) = error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
         getValor (Right (_,_,val)) = val

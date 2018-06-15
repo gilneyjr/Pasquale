@@ -160,18 +160,13 @@ data EXPR =
     CRIAVAR VAR |
     CRIACHAMADAFUNC CHAMADA |
     CRIANOVO [PONT] {-TIPO-}Token OptionalSQBRACK |
-    CRIAVALOREXPR VAL |
+    CRIAVALOREXPR {-VALOR-}Token EXPR |
     CRIAPARENTESES EXPR |
     CRIACONVERSAO {-TIPO-}Token EXPR
     deriving (Eq,Show)
 
 data VAR =
     Var [SingleVAR]
-    deriving (Eq,Show)
-
-data VAL =
-    CRIAULTVAL {-VALOR-}Token VAR |
-    CRIASEQVAL {-VALOR-}Token VAL
     deriving (Eq,Show)
 
 data SingleVAR =
