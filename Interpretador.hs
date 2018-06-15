@@ -205,22 +205,61 @@ getPosicaoProc (NOVOPROC (ID p _) _ _) = p
 --Retorna o subprograma a ser salvo na memoria
 getSubprogFromOper :: OPER -> Estado -> (Subprograma, Estado)
 getSubprogFromOper (NOVOOPER op params ponts tipo stmts) estado =
-    (Right (getNomeFromOp op, decs, stmts, getTipoFromTipoRetorno ponts tipo estadoFinal), estadoFinal)
-    where (decs, estadoFinal) = getDecsFromParams params estado
-    
+    if genericLength params > 2 then 
+        error $ "Muitos parâmetros para o operador: " ++ getNomeFromOp op ++ "\nPosição: " ++ (show (getPosicaoOp op))
+    else if genericLength params == 2 && apenasUnario op then
+        error $ "Muitos parâmetros para o operador: " ++ getNomeFromOp op ++ "\nPosição: " ++ (show (getPosicaoOp op))
+    else if genericLength params == 1 && apenasBinario op then
+        error $ "Poucos parâmetros para o operador: " ++ getNomeFromOp op ++ "\nPosição: " ++ (show (getPosicaoOp op))
+    else if genericLength params < 1 then
+        error $ "Poucos parâmetros para o operador: " ++ getNomeFromOp op ++ "\nPosição: " ++ (show (getPosicaoOp op))
+    else if (getNomeFromOp op == "=" || getNomeFromOp op == "/=") && isonlyPonts decs then
+        error $ "Subprograma '" ++ getNomeFromOp op ++ "' já existe com a mesma assinatura\nPosição: " ++ (show (getPosicaoOp op))
+    else (Right (getNomeFromOp op, decs, stmts, getTipoFromTipoRetorno ponts tipo estadoFinal), estadoFinal)
+    where
+        (decs, estadoFinal) = getDecsFromParams params estado
+        isonlyPonts :: [Declaracao] -> Bool
+        isonlyPonts (a:b:[]) = isPont a && isPont b
+        isPont :: Declaracao -> Bool
+        isPont (_, TipoPonteiroFim _) = True
+        isPont (_, TipoPonteiroRecursivo _) = True
+        isPont _ = False
+
+--Retorna True sse o operador pode ser apenas unário
+apenasUnario :: OP -> Bool
+apenasUnario (NOVONot _) = True
+apenasUnario _ = False
+
+--Retorna True sse o operador pode ser apenas binário
+apenasBinario :: OP -> Bool
+apenasBinario (NOVOAdd _) = True
+apenasBinario (NOVOMult _) = True
+apenasBinario (NOVODiv _) = True
+apenasBinario (NOVOGeq _) = True
+apenasBinario (NOVOLeq _) = True
+apenasBinario (NOVODiff _) = True
+apenasBinario (NOVOEqual _) = True
+apenasBinario (NOVOGreat _) = True
+apenasBinario (NOVOLess _) = True
+apenasBinario _ = False
+
 --retorna a posicao da declaracao de um operador
 getPosicaoOper :: OPER -> (Int,Int)
-getPosicaoOper (NOVOOPER (NOVOAdd (Add p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOSub (Sub p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOMult (Mult p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVODiv (Div p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOGeq (Geq p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOLeq (Leq p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVODiff (Diff p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOEqual (Equal p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOGreat (Great p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVOLess (Less p)) _ _ _ _) = p
-getPosicaoOper (NOVOOPER (NOVONot (Not p)) _ _ _ _) = p
+getPosicaoOper (NOVOOPER op _ _ _ _) = getPosicaoOp op
+
+--retorna a posicao da declaracao de um operador
+getPosicaoOp :: OP -> (Int,Int)
+getPosicaoOp (NOVOAdd (Add p)) = p
+getPosicaoOp (NOVOSub (Sub p)) = p
+getPosicaoOp (NOVOMult (Mult p)) = p
+getPosicaoOp (NOVODiv (Div p)) = p
+getPosicaoOp (NOVOGeq (Geq p)) = p
+getPosicaoOp (NOVOLeq (Leq p)) = p
+getPosicaoOp (NOVODiff (Diff p)) = p
+getPosicaoOp (NOVOEqual (Equal p)) = p
+getPosicaoOp (NOVOGreat (Great p)) = p
+getPosicaoOp (NOVOLess (Less p)) = p
+getPosicaoOp (NOVONot (Not p)) = p
 
 --Retorna a string com o simbolo do operador
 getNomeFromOp :: OP -> String
@@ -710,6 +749,13 @@ evaluateExpr estado (CRIAEQUAL expr1 op expr2) = do
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
                         (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        ValorPonteiro a ->
+            case res2 of
+                ValorPonteiro b -> (ValorLogico (a == b), TipoAtomico "LOGICO", estado2)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador =:\nTipo esquerdo: " ++
@@ -830,6 +876,13 @@ evaluateExpr estado (CRIADIFF expr1 op expr2) = do
         ValorLogico a ->
             case res2 of
                 ValorLogico b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
+                otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
+                    Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
+                    otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
+                        (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
+        ValorPonteiro a ->
+            case res2 of
+                ValorPonteiro b -> (ValorLogico (a /= b), TipoAtomico "LOGICO", estado2)
                 otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador /=:\nTipo esquerdo: " ++
