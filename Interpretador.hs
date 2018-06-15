@@ -534,104 +534,7 @@ decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (Valo
     else
         ValorEstrutura (campo:camposAtualizado)
     where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
-{-
-{-
-Atualiza uma posição do vetor:
-expressão nome
-tipo da expressão nome
-dimensões
-valor antigo do vetor
-valor a ser inserido na posição
-tipo do valor a ser inserido
-posicao do erro
--}
 
-atualizarVetor :: EXPR -> Tipo -> [Integer] -> Valor -> Valor -> Tipo -> (Int,Int) -> Estado -> (Valor, Estado)
-atualizarVetor (CRIAVAR (Var ((SingleVar _ (OptionalSQBrack exprs)):_))) tipoVetor dimensoes (ValorVetor valoresAntigos) valorNovo tipoNovo posicao estado =
-    if all isJust posicoes then
-        ((ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes (catMaybes posicoes) valorNovo tipoNovo posicao)), estadoAtualizado)
-    else
-        error $ "Expressão não é um valor inteiro valido"
-    where (posicoes, estadoAtualizado) = foldl funcaoFold ([], estado) exprs
-
---Recebe um vetor, o tipo dele, as dimensoes, as posições, o valor novo, o tipo novo, posicao do erro
-atualizarVetor' :: [Valor] -> Tipo -> [Integer] -> [Integer] -> Valor -> Tipo -> (Int,Int) -> [Valor]
-atualizarVetor' _ _ [] _ _ _ pos =
-    error $ "Muitos subscritos no acesso ao arranjo\nPosição: " ++ (show pos)
-
-atualizarVetor' valoresVetor (TipoVetor _ tipoElem) (dimensao:dimensoes) [posicao] valorNovo tipoNovo pos =
-    if (posicao >= 1) && (posicao <= dimensao) then
-        if dimensoes == [] then
-            if tipoElem == tipoNovo then
-                   inicio ++ [valorNovo] ++ (tail fim)
-            else
-                error $ "Atribuição inválida!\nTipo esperado: " ++ (show tipoElem) ++ "\nTipo recebido: " ++ (show tipoNovo) ++ "\nPosição: " ++ (show pos)
-        else
-            error $ "Poucos subscritos no acesso ao arranjo\nPosição: " ++ (show pos)
-    else
-        error $ "Segmentation fault!\nValor acessado: " ++ (show posicao) ++ "\nRange: [1, " ++ 
-            (show dimensao) ++ "]\nPosição: " ++ (show pos)
-    where (inicio, fim) = genericSplitAt (posicao - 1) valoresVetor
-
-atualizarVetor' valoresVetor tipoVetor (dimensao:dimensoes) (posicao:posicoes) valorNovo tipoNovo pos = 
-    if (posicao >= 1) && (posicao <= dimensao) then
-        (inicio ++ [ValorVetor (atualizarVetor' valoresAntigos tipoVetor dimensoes posicoes valorNovo tipoNovo pos)] ++ fim)
-    else
-        error $ "Segmentation fault!\nValor acessado: " ++ (show posicao) ++ "\nRange: [1, " ++ 
-            (show dimensao) ++ "]\nPosição: " ++ (show pos)
-    where (inicio, meio) = genericSplitAt (posicao - 1) valoresVetor
-          ((ValorVetor valoresAntigos):fim) = meio
-
-{-
-Atualiza uma posição da estrutura:
-expressão nome
-declarações
-valor antigo da estrutura
-valor a ser inserido na posição
-tipo do valor a ser inserido
-posicao do erro
--}
-atualizarEstrutura :: EXPR -> Valor -> Valor -> Tipo -> (Int,Int) -> Estado -> (Valor, Estado)
-atualizarEstrutura (CRIAVAR (Var (_:elementos))) (ValorEstrutura variaveisAntigas) valorNovo tipoNovo posicao estado =
-    if null elementos then
-        (valorNovo,estado)
-    else
-        ((ValorEstrutura valor),estadoFinal)
-    where (valor, estadoFinal) = atualizarEstrutura' elementos variaveisAntigas valorNovo tipoNovo posicao estado
-
-atualizarEstrutura' :: [SingleVAR] -> [Variavel] -> Valor -> Tipo -> (Int,Int) -> Estado -> ([Variavel],Estado)
-atualizarEstrutura' _ [] _ _ pos _ =
-    error $ "Muitos subscritos no acesso à estrutura\nPosição: " ++ (show pos)
-
-atualizarEstrutura' [variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr))] variaveisAntigas valorNovo tipoNovo pos estado =
-    case var of
-        Just (nomeVar, tipoVar, valor) -> 
-            if null expr then
-                if traduzTipo tipoVar estado == traduzTipo tipoNovo estado then
-                    ((inicio ++ [(nomeVar, tipoVar, valorNovo)] ++ (tail fim)), estado)
-                else error $ "Atribuição inválida!\nTipo esperado: " ++ (show tipoVar) ++ "\nTipo recebido: " ++ (show tipoNovo) ++ "\nPosição: " ++ (show pos)
-            else
-                let (TipoVetor dimensoes _) = tipoVar
-                    (valorVetor, estadoFinal) = (atualizarVetor (CRIAVAR (Var [variavel])) (traduzTipo tipoVar estado) dimensoes valor valorNovo (traduzTipo tipoNovo estado) pos estado) in
-                ((inicio ++ [(nomeVar, tipoVar, valorVetor)] ++ (tail fim)), estadoFinal)
-        Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura\nPosição: " ++ (show pos)
-    where (var, index)  = getVarFromNome nome variaveisAntigas
-          (inicio, fim) = genericSplitAt index variaveisAntigas
-
-atualizarEstrutura' (variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr)):variaveis) variaveisAntigas valorNovo tipoNovo pos estado =
-    case var of
-        Just (nomeVar, tipoVar, valor@(ValorEstrutura variaveisAntigas')) -> 
-            let (valorEstruturaNovo, estadoFinal) = atualizarEstrutura' variaveis variaveisAntigas' valorNovo tipoNovo pos estado in 
-            if null expr then
-                ((inicio ++ [(nomeVar, tipoVar, (ValorEstrutura valorEstruturaNovo))] ++ (tail fim)), estadoFinal)
-            else
-                let (TipoVetor dimensoes _) = tipoVar 
-                    (valorVetor, estadoIntermediario) = atualizarVetor (CRIAVAR (Var [variavel])) (traduzTipo tipoVar estado) dimensoes valor valorNovo (traduzTipo tipoNovo estado) pos estado in
-                ((inicio ++ [(nomeVar, tipoVar, valorVetor)] ++ (tail fim)), estadoIntermediario)
-        Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura\nPosição: " ++ (show pos)
-    where (var, index)  = getVarFromNome nome variaveisAntigas
-          (inicio, fim) = genericSplitAt index variaveisAntigas
--}
 getVarFromNome :: String -> [Variavel] -> (Maybe Variavel,Int)
 getVarFromNome _ [] = (Nothing,-1)
 getVarFromNome nome ((var@(nome',_,_)):vars) = if nome == nome' then (Just var,0) else (var',n+1) where (var',n) = getVarFromNome nome vars
@@ -1456,6 +1359,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
                         otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                TipoVetor [] tipoEleVet -> error $ "Há mais índices do que a quantidade de dimensões no vetor " ++ nomeVar ++ "\nPosição: " ++ (show pos)
                 otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
                 
 
