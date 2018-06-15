@@ -3,32 +3,31 @@
 ESTRUTURA NODE
     INTEIRO valor, nivel;
     PONTEIRO NODE esq, dir;
-    LOGICO alocou_esq, alocou_dir;
 FIMESTRUTURA
 
 PROCEDIMENTO insere RECEBE (PONTEIRO NODE ptr, INTEIRO val, INTEIRO nivel)
     nivel++;
     NODE node := VALOR(ptr);
     SE val <= node.valor ENTAO
-        SE node.alocou_esq ENTAO
+        SE node.esq /= NULO ENTAO
             insere(node.esq, val, nivel);
         SENAO
             NODE temp;
             temp.valor := val;
             temp.nivel := nivel;
             node.esq := NOVO NODE;
-            node.alocou_esq := VERDADEIRO;
+            //ESCREVA("Filho esquerdo do: " + (TEXTO)node.valor + "\n");
             VALOR(node.esq) := temp;
         FIMSE
     SENAO
-        SE node.alocou_dir ENTAO
+        SE node.dir /= NULO ENTAO
             insere(node.dir, val, nivel);
         SENAO
             NODE temp;
             temp.valor := val;
             temp.nivel := nivel;
             node.dir := NOVO NODE;
-            node.alocou_dir := VERDADEIRO;
+            //ESCREVA("Filho direito do: " + (TEXTO)node.valor + "\n");
             VALOR(node.dir) := temp;
         FIMSE
     FIMSE
@@ -37,7 +36,7 @@ FIMPROCEDIMENTO
 
 PROCEDIMENTO get_min RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
     NODE cur := VALOR(ptr);
-    SE cur.alocou_esq ENTAO
+    SE cur.esq /= NULO ENTAO
         get_min(cur.esq, nivel + 1);
     SENAO
         ESCREVA((TEXTO)cur.valor + " (nivel: " + (TEXTO)cur.nivel + ")\n");
@@ -46,8 +45,8 @@ FIMPROCEDIMENTO
 
 PROCEDIMENTO get_max RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
     NODE cur := VALOR(ptr);
-    SE cur.alocou_dir ENTAO
-        get_min(cur.dir, nivel + 1);
+    SE cur.dir /= NULO ENTAO
+        get_max(cur.dir, nivel + 1);
     SENAO
         ESCREVA((TEXTO)cur.valor + " (nivel: " + (TEXTO)cur.nivel + ")\n");
     FIMSE
@@ -58,62 +57,60 @@ PRINCIPAL
     ESCREVA("Digite a quantidade de elementos:\n");
     INTEIRO n;
     LEIA(n);
-    SE n > 0 ENTAO
-        INTEIRO i := 0;
-        
-        ENQUANTO i < n EXECUTE
-            INTEIRO v;
-            ESCREVA("Digite o elemento " + (TEXTO)(i+1) + ": \n");
-            LEIA(v);
-            SE i = 0 ENTAO
-                NODE temp;
-                temp.valor := v;
-                temp.nivel := 1;
-                raiz := NOVO NODE;
-                VALOR(raiz) := temp;
-            SENAO
-                insere(raiz, v, 1);
+    INTEIRO i := 1;
+    
+    ENQUANTO i <= n EXECUTE
+        INTEIRO v;
+        ESCREVA("Digite o elemento " + (TEXTO)i + ": \n");
+        LEIA(v);
+        SE raiz = NULO ENTAO
+            NODE temp;
+            temp.valor := v;
+            temp.nivel := 1;
+            raiz := NOVO NODE;
+            VALOR(raiz) := temp;
+        SENAO
+            insere(raiz, v, 1);
+        FIMSE
+        i++;
+    FIMENQUANTO
+    
+    ESCREVA("Mínimo: ");
+    get_min(raiz, 1);
+    
+    ESCREVA("Máximo: ");
+    get_max(raiz, 1);
+    
+    NODE fila[n];
+    INTEIRO j := 1, ult_nvl := 0;
+    
+    i := 1;
+    fila[j] := VALOR(raiz);
+    j++;
+    
+    ENQUANTO i <= n EXECUTE
+        NODE cur := fila[i];
+        i++;
+        SE cur.nivel > ult_nvl ENTAO
+            ult_nvl := cur.nivel;
+            SE ult_nvl > 1 ENTAO
+                ESCREVA("\n");
             FIMSE
-            i++;
-        FIMENQUANTO
+            ESCREVA("Nivel " + (TEXTO)ult_nvl + ":");
+        FIMSE
+        ESCREVA(" " + (TEXTO)cur.valor);
+        SE cur.esq /= NULO ENTAO
+            fila[j] := VALOR(cur.esq);
+            j++;
+        FIMSE
         
-        ESCREVA("Mínimo: ");
-        get_min(raiz, 1);
-        
-        ESCREVA("Máximo: ");
-        get_max(raiz, 1);
-        
-        NODE fila[n];
-        INTEIRO j := 1, ult_nvl := 0;
-        
-        i := 1;
-        fila[j] := VALOR(raiz);
-        j++;
-        
-        ENQUANTO i <= n EXECUTE
-            NODE cur := fila[i];
-            i++;
-            SE cur.nivel > ult_nvl ENTAO
-                ult_nvl := cur.nivel;
-                SE ult_nvl > 1 ENTAO
-                    ESCREVA("\n");
-                FIMSE
-                ESCREVA("Nivel " + (TEXTO)ult_nvl + ":");
-            FIMSE
-            ESCREVA(" " + (TEXTO)cur.valor);
-            SE cur.alocou_esq ENTAO
-                fila[j] := VALOR(cur.esq);
-                j++;
-            FIMSE
-            
-            SE cur.alocou_dir ENTAO
-                fila[j] := VALOR(cur.dir);
-                j++;
-            FIMSE
-        FIMENQUANTO
-        
-        ESCREVA("\n");
-    FIMSE
+        SE cur.dir /= NULO ENTAO
+            fila[j] := VALOR(cur.dir);
+            j++;
+        FIMSE
+    FIMENQUANTO
+    ESCREVA("\n");
+    
     ESCREVA("Fim\n");
 FIMPRINCIPAL
 
