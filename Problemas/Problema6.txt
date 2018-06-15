@@ -63,13 +63,13 @@ PRINCIPAL
         
         ENQUANTO i < n EXECUTE
             INTEIRO v;
-            ESCREVA("Digite um número:\n");
+            ESCREVA("Digite o elemento " + (TEXTO)(i+1) + ": \n");
             LEIA(v);
             SE i = 0 ENTAO
-                raiz := NOVO NODE;
                 NODE temp;
                 temp.valor := v;
                 temp.nivel := 1;
+                raiz := NOVO NODE;
                 VALOR(raiz) := temp;
             SENAO
                 insere(raiz, v, 1);
