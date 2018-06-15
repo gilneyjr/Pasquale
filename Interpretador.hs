@@ -352,49 +352,13 @@ executarStmt (NOVODECR (CRIADECR (Var var@((SingleVar (ID pos nomeVar) _):campos
     case getVariavel nomeVar estado0 of
         Right (_, tipoVar, valorVar) ->
             -- Calcula incremento
-            let (novoValor, estado1) = incrDecr ((-) 1) (tipoVar, valorVar) var estado0 in
+            let (novoValor, estado1) = incrDecr (\x -> (x-1)) (tipoVar, valorVar) var estado0 in
                 -- Atualiza variável
                 case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                     Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
         Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)  
-    
-{-
-executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
-    case getVariavel nomeCampo estado of
-        Right (nome, tipo, valor) ->
-            if null campos then
-                case getValorInteiro valor of
-                    Just valor' ->
-                        case atualizarVariavel (nome, tipo, ValorInteiro (succ valor')) estado of
-                            Right estado' -> do
-                                return (estado', False, False, False, Nothing, Nothing)
-                            Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
-                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEIRO\nPosição: " ++ (show p)
-            else
-                let valorEstrutura = incrementaValorEstrutura campos valor in
-                case atualizarVariavel (nome, tipo, valorEstrutura) estado of
-                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
-        Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
 
-executarStmt (NOVODECR (CRIADECR (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado = 
-    case getVariavel nomeCampo estado of
-        Right (nome, tipo, valor) ->
-            if null campos then
-                case getValorInteiro valor of
-                    Just valor' ->
-                        case atualizarVariavel (nome, tipo, ValorInteiro (valor' - 1)) estado of
-                            Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                            Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
-                    Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é INTEIRO\nPosição: " ++ (show p)
-            else
-                let valorEstrutura = incrementaValorEstrutura campos valor in
-                case atualizarVariavel (nome, tipo, valorEstrutura) estado of
-                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
-        Left erro -> error $ show erro ++ "\nPosição: " ++ (show p)
--}
 executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
     case subprograma of
         Right (Left (nome, declaracoes, stmts)) ->
@@ -521,34 +485,6 @@ getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr) estadoAntigo =
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro\nPosição: " ++ (show p) ++ ", tipo: " ++ (show tipo)
     where
         (res, tipo, estado) = evaluateExpr estadoAntigo expr
-
-incrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
-incrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado\nPosição: " ++ (show p)
-incrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (ValorEstrutura (campo@(nome, tipo, valor):campos)) =
-    if nomeCampo == nome then
-        if null nomeCampos then
-            case getValorInteiro valor of
-                Just valor' -> ValorEstrutura ((nome, tipo, ValorInteiro (succ valor')):campos)
-                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é do tipo INTEIRO\nPosição: " ++ (show p)
-        else
-            ValorEstrutura ((nome, tipo, (incrementaValorEstrutura nomeCampos valor)):campos)
-    else
-        ValorEstrutura (campo:camposAtualizado)
-    where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
-
-decrementaValorEstrutura :: [SingleVAR] -> Valor -> Valor
-decrementaValorEstrutura ((SingleVar (ID p nomeCampo) _):_) (ValorEstrutura []) = error $ "Campo '" ++ nomeCampo ++ "'' não encontrado posição: " ++ (show p)
-decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (ValorEstrutura (campo@(nome, tipo, valor):campos)) =
-    if nomeCampo == nome then
-        if null nomeCampos then
-            case getValorInteiro valor of
-                Just valor' -> ValorEstrutura ((nome, tipo, ValorInteiro (valor' - 1)):campos)
-                Nothing -> error $ "Tipo da variável '" ++ nome ++ "' não é do tipo INTEIRO\nPosição: " ++ (show p)
-        else
-            ValorEstrutura ((nome, tipo, (incrementaValorEstrutura nomeCampos valor)):campos)
-    else
-        ValorEstrutura (campo:camposAtualizado)
-    where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
 
 getVarFromNome :: String -> [Variavel] -> (Maybe Variavel,Int)
 getVarFromNome _ [] = (Nothing,-1)
