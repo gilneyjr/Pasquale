@@ -461,20 +461,20 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (expr:exprs))) estado0 = do
             case getVariavel nome estado0 of
                 Right (_,tipoEsq,valorEsq) ->
                     -- Calcula o valor novo
-                    let (valorFinal, estado1) = assignToValueLeia (tipoEsq,valorEsq) expr posicao estado0 in
+                    let (valorFinal, estado1) = assignToValueLeia (tipoEsq,valorEsq) expr estado0 in
                         -- Atualiza variável
                         case atualizarVariavel (nome,tipoEsq,valorFinal) estado1 of
                             Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                             Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                 Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR _ _ ->
+        CRIAVALOREXPR pos _ ->
                 -- Pega a variavel do lado esquerdo
                 let
                     ((nome,tipoEsq,valorEsq), estado1) = getVariavelFromExpr expr estado0
                     valor = unsafePerformIO (getValorLeia tipoEsq posicao) in
                     case atualizarVariavel (nome,tipoEsq,valor) estado1 of
                         Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                        Left erro -> error $ show erro ++ "\nPosição: " ++ show posicao
+                        Left erro -> error $ show erro ++ "\nPosição: " ++ show pos
         otherwise -> error $ "Expressão inválida no LEIA\nPosição: " ++ (show posicao)
 
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
@@ -1300,17 +1300,17 @@ rodaFuncao (_, declaracoes, stmts, _) estado tiposParametros valoresParametros n
 
 -- Inicio das funções auxiliares para leitura
 
-assignToValueLeia :: (Tipo, Valor) -> EXPR -> (Int,Int) -> Estado -> (Valor, Estado)
-assignToValueLeia (tipoEsq, valorEsq) expr posicao estadoAtual =
+assignToValueLeia :: (Tipo, Valor) -> EXPR -> Estado -> (Valor, Estado)
+assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
     case expr of
         -- Variável comum
-        CRIAVAR (Var [SingleVar (ID pos _) (OptionalSQBrack [])]) ->
+        CRIAVAR (Var [SingleVar (ID posicao _) (OptionalSQBrack [])]) ->
             -- Caso o tipo esquerdo seja passivo de leitura
             let valor = unsafePerformIO (getValorLeia tipoEsq posicao) in
                 (valor, estadoAtual)
         
         -- Vetor
-        CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack (id_expr:ids))):campos)) ->
+        CRIAVAR (Var ((SingleVar (ID posicao nomeVar) (OptionalSQBrack (id_expr:ids))):campos)) ->
             case tipoEsq of
                 -- Se o lado esquerdo for do tipo vetor
                 TipoVetor (dim:dims) tipoEleVet ->
@@ -1322,30 +1322,30 @@ assignToValueLeia (tipoEsq, valorEsq) expr posicao estadoAtual =
                                 Right ith ->
                                     -- Se for unidimensional
                                     if null ids then
-                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show posicao)
                                         -- Chama a recursão
-                                        else let (ithAtualizado, estadoAtualizado2) = assignToValueLeia (tipoEleVet, ith) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
+                                        else let (ithAtualizado, estadoAtualizado2) = assignToValueLeia (tipoEleVet, ith) (CRIAVAR (Var ((SingleVar (ID posicao nomeVar) (OptionalSQBrack ids)):campos))) estadoAtualizado1 in
                                             -- Substitui o valor atualizado
                                             case setIth ithAtualizado id valorVet of
                                                 Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
-                                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show posicao)
                                     -- Se for multidimensional
                                     else
                                         -- Chama a recursão
-                                        let (ithAtualizado, estadoAtualizado2) = assignToValueLeia (TipoVetor dims tipoEleVet, ith) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
+                                        let (ithAtualizado, estadoAtualizado2) = assignToValueLeia (TipoVetor dims tipoEleVet, ith) (CRIAVAR (Var ((SingleVar (ID posicao nomeVar) (OptionalSQBrack ids)):campos))) estadoAtualizado1 in
                                             -- Substitui o valor atualizado
                                             case setIth ithAtualizado id valorVet of
                                                 Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
-                                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
-                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show posicao)
+                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show posicao)
                             where
                                 (id, estadoAtualizado1) = 
                                     case evaluateExpr estadoAtual id_expr of
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
-                                        otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
-                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
-                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
-                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                                        otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show posicao)
+                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show posicao)
+                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
                 
 
         -- Estrutura
@@ -1361,7 +1361,7 @@ assignToValueLeia (tipoEsq, valorEsq) expr posicao estadoAtual =
                             case getCampo nomeCampo varsEstr of
                                 Right valorCampo -> 
                                     -- Chama recursivamente paro o valorCampo
-                                    let (valorAtualizado, estadoAtualizado) = assignToValueLeia valorCampo (CRIAVAR (Var campos)) posicao estadoAtual in
+                                    let (valorAtualizado, estadoAtualizado) = assignToValueLeia valorCampo (CRIAVAR (Var campos)) estadoAtual in
                                         -- Substitui o valor atualizado do campo no campo correspondente da estrutura
                                         case setCampo nomeCampo valorAtualizado varsEstr of
                                             Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
