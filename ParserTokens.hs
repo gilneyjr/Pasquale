@@ -184,6 +184,11 @@ parseValor = tokenPrim show update_pos get_token where
     get_token ( VALOR x ) = Just ( VALOR x )
     get_token _ = Nothing
 
+parseNulo :: ParsecT [Token] u Identity Token
+parseNulo = tokenPrim show update_pos get_token where
+    get_token ( NULO x ) = Just ( NULO x )
+    get_token _ = Nothing
+
 parseAttrib :: ParsecT [Token] u Identity Token
 parseAttrib = tokenPrim show update_pos get_token where
     get_token ( Attrib x ) = Just ( Attrib x )

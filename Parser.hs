@@ -3,6 +3,7 @@ module Parser where
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Combinator
 import Data.Functor.Identity
+import Debug.Trace
 import Control.Monad
 import Arvore
 import ParserTokens
@@ -631,6 +632,7 @@ parseAtomico =
     parseCriaint <|> 
     parseCrialogico <|> 
     parseCriareal <|> 
+    parseCrianulo <|> 
     parseCrianovo <|> 
     parseCriavalorexpr <|> 
     (try parseCriachamadafunc) <|> 
@@ -674,6 +676,11 @@ parseCriareal :: ParseArgs EXPR
 parseCriareal = do
     a <- parseReal
     return $ CRIAREAL a 
+
+parseCrianulo :: ParseArgs EXPR
+parseCrianulo = do
+    a <- parseNulo
+    return $ CRIANULO a 
 
 parseCriavar :: ParseArgs EXPR
 parseCriavar = do

@@ -8,7 +8,9 @@ module Tipos(
     getValorFromToken,
     getValorInteiro,
     getTipoFromValor,
-    getTipoPonteiro
+    getTipoPonteiro,
+    tipoNulo,
+    valorNulo
 ) where
 
 import Arvore
@@ -22,6 +24,8 @@ data Tipo = TipoAtomico String
           | TipoPonteiroRecursivo Tipo
           | TipoEstrutura String [Declaracao]
           deriving (Eq)
+
+tipoNulo = TipoPonteiroFim "nulo"
 
 instance Show Tipo where
     show (TipoAtomico s)     = s
@@ -49,6 +53,8 @@ instance Show Valor where
     show (ValorVetor v)     = show v
     show (ValorPonteiro p)  = show p
     show (ValorEstrutura e) = show e
+
+valorNulo = ValorPonteiro ""
 
 type Declaracao = (String, Tipo)
 

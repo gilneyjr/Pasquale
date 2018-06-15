@@ -54,6 +54,7 @@ tokens :-
   ESCREVA                           { \p s -> ESCREVA (getPosition p) }
   LEIA                              { \p s -> LEIA (getPosition p) }
   VALOR                             { \p s -> VALOR (getPosition p) }
+  NULO                              { \p s -> NULO (getPosition p) }
   ":="                              { \p s -> Attrib (getPosition p) }
   ">="                              { \p s -> Geq (getPosition p) }
   "<="                              { \p s -> Leq (getPosition p) }
@@ -120,6 +121,7 @@ data Token =
     LEIA (Int,Int)                  |
     ESCREVA (Int,Int)               |
     VALOR (Int,Int)                 |
+    NULO (Int,Int)                  |
     Attrib (Int,Int)                |
     Geq (Int,Int)                   |
     Leq (Int,Int)                   |

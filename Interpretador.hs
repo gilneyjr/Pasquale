@@ -140,7 +140,7 @@ addDec declaracao@(NOVADEC pont tipo ((VAR_SEM id):b)) estado =
           posicao = getPosicaoSingleVar id
 
 addDec declaracao@(NOVADEC pont tipo ((VAR_COM (CRIAATRIB id expr)):b)) estado =
-    if (traduzTipo tipoExpr estado') == (traduzTipo tipo' estado') then
+    if mesmoTipo tipo' tipoExpr estado' then
         case res of
             Right estadoAtualizado -> addDec (NOVADEC pont tipo b) estadoAtualizado
             Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
@@ -325,7 +325,7 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                 (valorDir,tipoDir,estado1) = evaluateExpr estado0 exprDir
                 -- Pega a variavel do lado esquerdo
                 ((nome,tipoEsq,valorEsq), estado2) = getVariavelFromExpr exprEsq estado1 in
-                if traduzTipo tipoDir estado2 == traduzTipo tipoEsq estado2 then
+                if mesmoTipo tipoEsq tipoDir estado2 then
                     case atualizarVariavel (nome,tipoEsq,valorDir) estado2 of
                         Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                         Left erro -> error $ show erro ++ "\nPosição: " ++ show posicao
@@ -1046,6 +1046,7 @@ evaluateExpr estado (CRIAINT (INTEIRO _ i)) = (ValorInteiro i, TipoAtomico "INTE
 evaluateExpr estado (CRIACARACTERE (CARACTERE _ c)) = (ValorCaractere c, TipoAtomico "CARACTERE", estado)
 evaluateExpr estado (CRIALOGICO (LOGICO _ l)) = (ValorLogico l, TipoAtomico "LOGICO", estado)
 evaluateExpr estado (CRIAREAL (REAL _ r)) = (ValorReal r, TipoAtomico "REAL", estado)
+evaluateExpr estado (CRIANULO (NULO _)) = (valorNulo, tipoNulo, estado)
 evaluateExpr estado (CRIAPARENTESES a) = evaluateExpr estado a
 
 evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr) = 
@@ -1237,6 +1238,16 @@ traduzTipo (TipoAtomico s) estado =
         Left erro -> error $ show erro
 traduzTipo p estado = p
 
+mesmoTipo :: Tipo -> Tipo -> Estado -> Bool
+mesmoTipo tipo1 tipo2 estado =
+    if traduzTipo tipo1 estado == traduzTipo tipo2 estado then True
+    else case (tipo1, tipo2) of
+        (TipoPonteiroFim "nulo", TipoPonteiroFim _) -> True
+        (TipoPonteiroFim _, TipoPonteiroFim "nulo") -> True
+        (TipoPonteiroFim "nulo", TipoPonteiroRecursivo _) -> True
+        (TipoPonteiroRecursivo _, TipoPonteiroFim "nulo") -> True
+        otherwise -> False
+
 --Leitura de uma palavra nao vazia
 getPalavra :: IO String
 getPalavra = do
@@ -1394,7 +1405,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
             case tipoEsq of
                 TipoVetor _ _ -> error $ "Não é possível atribuir valores ao tipo " ++ (show tipoEsq) ++ "\nVetores não podem receber atribuições\nPosição: " ++ (show pos)
                 otherwise ->
-                    if traduzTipo tipoEsq estadoAtual == traduzTipo tipoDir estadoAtual then
+                    if mesmoTipo tipoEsq tipoDir estadoAtual then
                         (valorDir, estadoAtual)
                     else
                         error $ "Tipos incompatíveis na atribuição.\nTipo esperado: " ++ (show tipoEsq) ++ "\nTipo recebido: " ++ (show tipoDir) ++ "\nPosição: " ++ (show posicao)
