@@ -335,7 +335,7 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                     
         otherwise -> error $ "Expressão inválida do lado esquerdo da atribuição\nPosição: " ++ (show posicao)
 
-executarStmt (NOVOINC (CRIAINC (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) estado0 =
+executarStmt (NOVOINC (CRIAINC (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) ) estado0 =
     -- Busca variável
     case getVariavel nomeVar estado0 of
         Right (_, tipoVar, valorVar) ->
@@ -346,8 +346,17 @@ executarStmt (NOVOINC (CRIAINC (Var var@((SingleVar (ID pos nomeVar) _):campos )
                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                     Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
         Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+        
+executarStmt (NOVOINC (CRIAINC (CRIAVALOREXPR (VALOR pos) expr ) ) ) estado0 =
+    -- Busca variável
+    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr) estado0 in
+    case valor of
+        ValorInteiro v -> case atualizarVariavel (nome, tipo, ValorInteiro (v+1)) estado1 of
+            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+            Left _ -> error $ "Acesso em posição da memória inválida:\nPosição: " ++ (show pos)
+        otherwise -> error $ "Tentado incrementar/decrementar tipo não inteiro\nTipo: " ++ show tipo ++ "\nPosição: " ++ show pos
 
-executarStmt (NOVODECR (CRIADECR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) estado0 =
+executarStmt (NOVODECR (CRIADECR (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) ) estado0 =
     -- Busca variável
     case getVariavel nomeVar estado0 of
         Right (_, tipoVar, valorVar) ->
@@ -358,6 +367,15 @@ executarStmt (NOVODECR (CRIADECR (Var var@((SingleVar (ID pos nomeVar) _):campos
                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                     Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
         Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)  
+
+executarStmt (NOVODECR (CRIADECR (CRIAVALOREXPR (VALOR pos) expr ) ) ) estado0 =
+    -- Busca variável
+    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr) estado0 in
+    case valor of
+        ValorInteiro v -> case atualizarVariavel (nome, tipo, ValorInteiro (v-1)) estado1 of
+            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+            Left _ -> error $ "Acesso em posição da memória inválida:\nPosição: " ++ (show pos)
+        otherwise -> error $ "Tentado incrementar/decrementar tipo não inteiro\nTipo: " ++ show tipo ++ "\nPosição: " ++ show pos
 
 executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
     case subprograma of
@@ -456,7 +474,7 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (expr:exprs))) estado0 = do
                             Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                             Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                 Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR pos _ ->
+        CRIAVALOREXPR (VALOR pos) _ ->
                 -- Pega a variavel do lado esquerdo
                 let
                     ((nome,tipoEsq,valorEsq), estado1) = getVariavelFromExpr expr estado0

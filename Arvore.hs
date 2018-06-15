@@ -111,11 +111,11 @@ data ATRIB =
     deriving (Eq,Show)
     
 data INC =
-    CRIAINC VAR
+    CRIAINC EXPR
     deriving (Eq,Show)
 
 data DECR = 
-    CRIADECR VAR
+    CRIADECR EXPR
     deriving (Eq,Show)
 
 data CHAMADA =

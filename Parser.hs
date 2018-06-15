@@ -342,14 +342,14 @@ parseAtrib = do
 
 parseInc :: ParseArgs INC
 parseInc = do
-    a <- parseVar
+    a <- parseCriavalorexpr <|> parseCriavar
     parseAdd
     parseAdd
     return $ CRIAINC a 
 
 parseDecr :: ParseArgs DECR
 parseDecr = do
-    a <- parseVar
+    a <- parseCriavalorexpr <|> parseCriavar
     parseSub
     parseSub
     return $ CRIADECR a 
