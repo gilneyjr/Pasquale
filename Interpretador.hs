@@ -61,17 +61,17 @@ getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariavei
     case tipoPrimitivo of
         Right tipoEncontrado -> 
             let (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro ponteiros tipoEncontrado)) ([], estado) tokensVariaveis
-                (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
-            (zip variaveis tipos ++ declaracoes', estadoFinal)
+                (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
+                    (zip variaveis tipos ++ declaracoes', estadoFinal)
         Left erro -> 
             if nomeEstrutura == nome then
             case ponteiros of
                 a:b ->
                     let tipoEncontrado = TipoPonteiroFim nomeEstrutura
                         (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro b tipoEncontrado)) ([], estado) tokensVariaveis
-                        (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
+                        (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
                             (zip variaveis tipos ++ declaracoes', estadoFinal)
-                otherwise -> error $ "Estrutura " ++ nomeEstrutura ++ " contém ela mesma"
+                otherwise -> error $ "Estrutura " ++ nomeEstrutura ++ " contém ela mesma\nPosição: " ++ show posicao
             else
                 error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
@@ -333,7 +333,7 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                             "\nTipo do lado direito: " ++ show tipoDir ++ "\nPosição: " ++ show posicao
                         
                     
-        otherwise -> error $ "Pasquale: Expressão inválida do lado esquerdo da atribuição\nPosição: " ++ (show posicao)
+        otherwise -> error $ "Expressão inválida do lado esquerdo da atribuição\nPosição: " ++ (show posicao)
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
@@ -1414,12 +1414,12 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
         CRIAVAR (Var [SingleVar (ID pos _) (OptionalSQBrack [])]) ->
             -- Caso o tipo esquerdo seja passivo de atribuição
             case tipoEsq of
-                TipoVetor _ _ -> error $ "Pasquale: Não é possível atribuir valores ao tipo " ++ (show tipoEsq) ++ "\nVetores não podem receber atribuições\nPosição: " ++ (show pos)
+                TipoVetor _ _ -> error $ "Não é possível atribuir valores ao tipo " ++ (show tipoEsq) ++ "\nVetores não podem receber atribuições\nPosição: " ++ (show pos)
                 otherwise ->
                     if traduzTipo tipoEsq estadoAtual == traduzTipo tipoDir estadoAtual then
                         (valorDir, estadoAtual)
                     else
-                        error $ "Pasquale: Tipos incompatíveis na atribuição.\nTipo esperado: " ++ (show tipoEsq) ++ "\nTipo recebido: " ++ (show tipoDir) ++ "\nPosição: " ++ (show posicao)
+                        error $ "Tipos incompatíveis na atribuição.\nTipo esperado: " ++ (show tipoEsq) ++ "\nTipo recebido: " ++ (show tipoDir) ++ "\nPosição: " ++ (show posicao)
         
         -- Vetor
         CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack (id_expr:ids))):campos)) ->
@@ -1453,9 +1453,9 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                 (id, estadoAtualizado1) = 
                                     case evaluateExpr estadoAtual id_expr of
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
-                                        otherwise -> error $ "Pasquale: Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
-                        otherwise -> error $ "Pasquale: Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
-                otherwise -> error $ "Pasquale: Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                                        otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
+                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
                 
 
         -- Estrutura
@@ -1477,20 +1477,20 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                             Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
                                             Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
                                 Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
-                        otherwise -> error $ "Pasquale: Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
-                otherwise -> error $ "Pasquale: Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
 
 
 -- Fornece o nome da variável e uma lista de variáveis, e retorna o valor e o tipo da variável com o nome fornecido
 getCampo :: String -> [Variavel] -> Either String (Tipo,Valor)
-getCampo nome [] = Left $ "Pasquale: Campo " ++ nome ++ " não encontrado"
+getCampo nome [] = Left $ "Campo " ++ nome ++ " não encontrado"
 getCampo nome ((nomeCampo,tipo,valor):campos)
     | nome == nomeCampo = Right (tipo, valor)
     | otherwise         = getCampo nome campos
 
 -- Recebe nome do campo, o novo valor e a lista de variáveis, e retorna a lista de variáveis atualizada
 setCampo :: String -> Valor -> [Variavel] -> Either String [Variavel]
-setCampo nome _ [] = Left $ "Pasquale: Campo " ++ nome ++ " não encontrado"
+setCampo nome _ [] = Left $ "Campo " ++ nome ++ " não encontrado"
 setCampo nome novo ((nomeCampo,tipo,valor):campos)
     | nome == nomeCampo = Right ((nomeCampo,tipo,novo):campos)
     | otherwise =
@@ -1500,17 +1500,17 @@ setCampo nome novo ((nomeCampo,tipo,valor):campos)
 
 -- Retorna o i-ésimo elemento de uma lista
 getIth :: [t] -> Integer -> Either String t
-getIth [] _ = Left "Pasquale: Índices fora de faixa"
+getIth [] _ = Left "Índices fora de faixa"
 getIth (a:b) i
-    | i < 1     = Left "Pasquale: Índices fora de faixa" 
+    | i < 1     = Left "Índices fora de faixa" 
     | i == 1    = Right a
     | otherwise = getIth b (i-1)
 
 -- Substitui o primeiro parâmetro na posição dada pelo segundo parâmetro na lista de valores
 setIth :: t -> Integer -> [t] -> Either String [t]
-setIth val id [] = Left "Pasquale: Índices fora de faixa"
+setIth val id [] = Left "Índices fora de faixa"
 setIth val id (head:tail)
-    | id < 1 = Left "Pasquale: Índices fora de faixa"
+    | id < 1 = Left "Índices fora de faixa"
     | id == 1 = Right $ val:tail
     | id > 1 = 
         case setIth val (id-1) tail of
