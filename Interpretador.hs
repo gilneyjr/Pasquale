@@ -299,33 +299,38 @@ rodaStmts ((stmt:stmts)) estado = do
 --Executa um stmt
 executarStmt :: STMT -> Estado -> IO EstadoCompleto
 executarStmt (NOVODEC dec) estado = (addDec dec estado) >>= (\estado' -> return (estado', False, False, False, Nothing, Nothing))
-executarStmt (NOVOATRIBSTMT expr (Attrib posicao) expr') estado0 =
-    case tipo of
-        TipoEstrutura _ _ -> case expr of
-            CRIAVALOREXPR _ ->
-                case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
-                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> error $ show erro
-            otherwise ->
-                let (estruturaNova, estadoFinal) = (atualizarEstrutura expr valorAntigo valor (traduzTipo tipoExpr estadoIntermediario) posicao estadoIntermediario) in
-                case atualizarVariavel (nome, tipo, estruturaNova) estadoFinal  of
-                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> error $ show erro
-        TipoVetor dimensoes _ ->
-            let (vetorNovo, estadoFinal) = (atualizarVetor expr (traduzTipo tipo estado) dimensoes valorAntigo valor (traduzTipo tipoExpr estado) posicao estadoIntermediario) in
-            case atualizarVariavel (nome, tipo, vetorNovo) estadoFinal  of
-                Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                Left erro -> error $ show erro
-        otherwise ->
-            if traduzTipo tipo estado == traduzTipo tipoExpr estado then
-                case atualizarVariavel (nome, tipo, valor) estadoIntermediario  of
-                    Right estado' -> return (estado', False, False, False, Nothing, Nothing)
-                    Left erro -> error $ show erro
-            else
-                error $ "Valor da expressão não é do mesmo tipo que a variável\nTipo esquerdo: " ++ 
-                        (show tipo) ++ "\nTipo direito: " ++ (show tipoExpr) ++ "\nPosição: " ++ (show posicao)
-    where ((nome, tipo, valorAntigo), estado) = getVariavelFromExpr expr estado0
-          (valor, tipoExpr, estadoIntermediario) = (evaluateExpr estado expr')
+
+executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 = 
+    case exprEsq of
+        CRIAVAR (Var ((SingleVar (ID pos nome) _):_)) -> do
+            -- Avalia o lado direito primeiro
+            case evaluateExpr estado0 exprDir of
+                (valorDir,tipoDir,estado1) ->
+                    -- Pega a variável do lado esquerdo
+                    case getVariavel nome estado1 of
+                        Right (_,tipoEsq,valorEsq) ->
+                            -- Calcula o valor novo
+                            let (valorFinal, estado2) = assignToValue (tipoEsq,valorEsq) (tipoDir,valorDir) exprEsq posicao estado1 in
+                                -- Atualiza variável
+                                case atualizarVariavel (nome,tipoEsq,valorFinal) estado2 of
+                                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                                    Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
+                        Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
+        CRIAVALOREXPR a ->
+             let
+                --Avalia o lado direito primeiro
+                (valorDir,tipoDir,estado1) = evaluateExpr estado0 exprDir
+                -- Pega a variavel do lado esquerdo
+                ((nome,tipoEsq,valorEsq), estado2) = getVariavelFromExpr exprEsq estado1 in
+                if traduzTipo tipoDir estado2 == traduzTipo tipoEsq estado2 then
+                    case atualizarVariavel (nome,tipoEsq,valorDir) estado2 of
+                        Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                        Left erro -> error $ show erro ++ "\nPosição: " ++ show posicao
+                else error $ "Atribuição inválida.\nTipo do lado esquerdo: " ++ show tipoEsq ++
+                            "\nTipo do lado direito: " ++ show tipoDir ++ "\nPosição: " ++ show posicao
+                        
+                    
+        otherwise -> error $ "Pasquale: Expressão inválida do lado esquerdo da atribuição\nPosição: " ++ (show posicao)
 
 executarStmt (NOVOINC (CRIAINC (Var (tokenNome@(SingleVar (ID p nomeCampo) _):campos)))) estado =
     case getVariavel nomeCampo estado of
@@ -438,9 +443,9 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
         ValorCaractere val -> do
             putStr $ show val
             return (estado1, False, False, False, Nothing, Nothing)
-        otherwise -> error $ "Comando ESCREVA para tipo não primitivo\nPosição: " ++ show p
+        otherwise -> error $ "Comando ESCREVA para tipo não primitivo\nTipo: " ++ (show tipo1) ++ "\nPosição: " ++ show p
     where
-        (valor1, _, estado1) = evaluateExpr estado expr
+        (valor1, tipo1, estado1) = evaluateExpr estado expr
         showLogico :: Bool -> String
         showLogico True = "VERDADEIRO"
         showLogico False = "FALSO"
@@ -477,7 +482,7 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado0 = do
                 "VERDADEIRO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p True))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 "FALSO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p False))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 otherwise -> error $ "Valor não permitido como LOGICO\nPosição: " ++ (show p)
-        otherwise -> error $ "Comando LEIA para tipo não primitivo\nPosição: " ++ show p
+        otherwise -> error $ "Comando LEIA para tipo não primitivo\nTipo: " ++ (show tipoAtualizado) ++ "\nPosição: " ++ show p
 
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
     iniciaBloco stmts estado
@@ -536,7 +541,7 @@ decrementaValorEstrutura nomes@((SingleVar (ID p nomeCampo) _):nomeCampos) (Valo
     else
         ValorEstrutura (campo:camposAtualizado)
     where (ValorEstrutura camposAtualizado) = incrementaValorEstrutura nomes (ValorEstrutura campos)
-
+{-
 {-
 Atualiza uma posição do vetor:
 expressão nome
@@ -633,7 +638,7 @@ atualizarEstrutura' (variavel@(SingleVar (ID posicao nome) (OptionalSQBrack expr
         Nothing -> error $ "Campo '" ++ nome ++ "' não definido na estrutura\nPosição: " ++ (show pos)
     where (var, index)  = getVarFromNome nome variaveisAntigas
           (inicio, fim) = genericSplitAt index variaveisAntigas
-
+-}
 getVarFromNome :: String -> [Variavel] -> (Maybe Variavel,Int)
 getVarFromNome _ [] = (Nothing,-1)
 getVarFromNome nome ((var@(nome',_,_)):vars) = if nome == nome' then (Just var,0) else (var',n+1) where (var',n) = getVarFromNome nome vars
@@ -1374,13 +1379,6 @@ evaluateVet estado (ValorVetor valores) tipoVetor (dim:dims) (expr:exprs) =
     where
         res_expr = evaluateExpr estado expr
 
-getIth :: [t] -> Integer -> Either String t
-getIth [] _ = Left "Indice fora de faixa"
-getIth (a:b) i
-    | i < 1     = Left "Indice fora de faixa" 
-    | i == 1    = Right a
-    | otherwise = getIth b (i-1)
-
 traduzTipo :: Tipo -> Estado -> Tipo
 traduzTipo (TipoAtomico s) estado = 
     case (getTipo s estado) of
@@ -1428,3 +1426,115 @@ rodaFuncao (_, declaracoes, stmts, _) estado tiposParametros valoresParametros n
                             otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>=
                                 (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) ))
 
+-- Início de funções auxiliares para a atribução ----------------------------------------------------------
+
+assignToValue :: (Tipo, Valor) -> (Tipo, Valor) -> EXPR -> (Int,Int) -> Estado -> (Valor, Estado)
+assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
+    case expr of
+        -- Variável comum
+        CRIAVAR (Var [SingleVar (ID pos _) (OptionalSQBrack [])]) ->
+            -- Caso o tipo esquerdo seja passivo de atribuição
+            case tipoEsq of
+                TipoVetor _ _ -> error $ "Pasquale: Não é possível atribuir valores ao tipo " ++ (show tipoEsq) ++ "\nVetores não podem receber atribuições\nPosição: " ++ (show pos)
+                otherwise ->
+                    if traduzTipo tipoEsq estadoAtual == traduzTipo tipoDir estadoAtual then
+                        (valorDir, estadoAtual)
+                    else
+                        error $ "Pasquale: Tipos incompatíveis na atribuição.\nTipo esperado: " ++ (show tipoEsq) ++ "\nTipo recebido: " ++ (show tipoDir) ++ "\nPosição: " ++ (show posicao)
+        
+        -- Vetor
+        CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack (id_expr:ids))):campos)) ->
+            case tipoEsq of
+                -- Se o lado esquerdo for do tipo vetor
+                TipoVetor (dim:dims) tipoEleVet ->
+                    case valorEsq of
+                        -- Se o valor esquerdo casa com ValorVetor
+                        ValorVetor valorVet ->
+                            case getIth valorVet id of
+                                -- Pega o Ith
+                                Right ith ->
+                                    -- Se for unidimensional
+                                    if null ids then
+                                        -- Chama a recursão
+                                        let (ithAtualizado, estadoAtualizado2) = assignToValue (tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
+                                            -- Substitui o valor atualizado
+                                            case setIth ithAtualizado id valorVet of
+                                                Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
+                                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                                    -- Se for multidimensional
+                                    else
+                                        -- Chama a recursão
+                                        let (ithAtualizado, estadoAtualizado2) = assignToValue (TipoVetor dims tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var [SingleVar (ID pos nomeVar) (OptionalSQBrack ids)])) posicao estadoAtualizado1 in
+                                            -- Substitui o valor atualizado
+                                            case setIth ithAtualizado id valorVet of
+                                                Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
+                                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                                Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
+                            where
+                                (id, estadoAtualizado1) = 
+                                    case evaluateExpr estadoAtual id_expr of
+                                        (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
+                                        otherwise -> error $ "Pasquale: Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
+                        otherwise -> error $ "Pasquale: Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                otherwise -> error $ "Pasquale: Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                
+
+        -- Estrutura
+        CRIAVAR ( Var ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQBrack [])):campos@((SingleVar (ID posCampo nomeCampo) _):_) ) ) ->
+            -- Verifica se a cabeça da lista é uma estrutura
+            case tipoEsq of
+                -- Se for uma estrutura
+                TipoEstrutura nomeEstr decs ->
+                    -- Se o valor esquerdo casa com ValorEstrutura
+                    case valorEsq of
+                        ValorEstrutura varsEstr ->
+                            -- Pega o tipo e valor correspondentes ao primeiro campo
+                            case getCampo nomeCampo varsEstr of
+                                Right valorCampo -> 
+                                    -- Chama recursivamente paro o valorCampo
+                                    let (valorAtualizado, estadoAtualizado) = assignToValue valorCampo (tipoDir,valorDir) (CRIAVAR (Var campos)) posicao estadoAtual in
+                                        -- Substitui o valor atualizado do campo no campo correspondente da estrutura
+                                        case setCampo nomeCampo valorAtualizado varsEstr of
+                                            Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
+                                            Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
+                                Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
+                        otherwise -> error $ "Pasquale: Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                otherwise -> error $ "Pasquale: Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+
+
+-- Fornece o nome da variável e uma lista de variáveis, e retorna o valor e o tipo da variável com o nome fornecido
+getCampo :: String -> [Variavel] -> Either String (Tipo,Valor)
+getCampo nome [] = Left $ "Pasquale: Campo " ++ nome ++ " não encontrado"
+getCampo nome ((nomeCampo,tipo,valor):campos)
+    | nome == nomeCampo = Right (tipo, valor)
+    | otherwise         = getCampo nome campos
+
+-- Recebe nome do campo, o novo valor e a lista de variáveis, e retorna a lista de variáveis atualizada
+setCampo :: String -> Valor -> [Variavel] -> Either String [Variavel]
+setCampo nome _ [] = Left $ "Pasquale: Campo " ++ nome ++ " não encontrado"
+setCampo nome novo ((nomeCampo,tipo,valor):campos)
+    | nome == nomeCampo = Right ((nomeCampo,tipo,novo):campos)
+    | otherwise =
+        case setCampo nome novo campos of
+            Right result -> Right ((nomeCampo,tipo,valor):result)
+            Left err -> Left err
+
+-- Retorna o i-ésimo elemento de uma lista
+getIth :: [t] -> Integer -> Either String t
+getIth [] _ = Left "Pasquale: Índices fora de faixa"
+getIth (a:b) i
+    | i < 1     = Left "Pasquale: Índices fora de faixa" 
+    | i == 1    = Right a
+    | otherwise = getIth b (i-1)
+
+-- Substitui o primeiro parâmetro na posição dada pelo segundo parâmetro na lista de valores
+setIth :: t -> Integer -> [t] -> Either String [t]
+setIth val id [] = Left "Pasquale: Índices fora de faixa"
+setIth val id (head:tail)
+    | id < 1 = Left "Pasquale: Índices fora de faixa"
+    | id == 1 = Right $ val:tail
+    | id > 1 = 
+        case setIth val (id-1) tail of
+            Right res -> Right (head:res)
+            Left err -> Left err
+-- Fim de funções auxiliares para a atribução -------------------------------------------------------------
