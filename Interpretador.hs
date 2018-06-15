@@ -1359,7 +1359,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
                         otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
-                TipoVetor [] tipoEleVet -> error $ "Há mais índices do que a quantidade de dimensões no vetor " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
                 otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
                 
 
