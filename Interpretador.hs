@@ -60,18 +60,21 @@ getDecsEstr _ [] estado = ([], estado)
 getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) estado =
     case tipoPrimitivo of
         Right tipoEncontrado -> 
-            let (tipos, estadoIntermediario) = f tipoEncontrado
-                (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
-            ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
+            let (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro ponteiros tipoEncontrado)) ([], estado) tokensVariaveis
+                (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
+            (zip variaveis tipos ++ declaracoes', estadoFinal)
         Left erro -> 
             if nomeEstrutura == nome then
-                let (tipos, estadoIntermediario) = f (TipoEstrutura nome [])
-                    (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
-                ((zip variaveis (map (getTipoPonteiro ponteiros) tipos)) ++ declaracoes', estadoFinal)
+            case ponteiros of
+                a:b ->
+                    let tipoEncontrado = TipoPonteiroFim nomeEstrutura
+                        (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro b tipoEncontrado)) ([], estado) tokensVariaveis
+                        (declaracoes', estadoFinal) = getDecs declaracoes estadoIntermediario in
+                            (zip variaveis tipos ++ declaracoes', estadoFinal)
+                otherwise -> error $ "Estrutura " ++ nomeEstrutura ++ " contém ela mesma"
             else
                 error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
-          f tipo = foldl (funcaoFold' tipo) ([], estado) tokensVariaveis
           variaveis = map getNomeVar tokensVariaveis
 
 funcaoFold' :: Tipo -> ([Tipo], Estado) -> VAR_ -> ([Tipo], Estado)
