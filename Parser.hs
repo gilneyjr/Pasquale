@@ -378,7 +378,7 @@ parseNodeleia :: ParseArgs NodeLEIA
 parseNodeleia = do
     a <- parseLeia
     parseOpenbrack
-    b <- sepBy1 parseVar parseComma
+    b <- sepBy1 (parseCriavalorexpr <|> parseCriavar) parseComma
     parseClosebrack
     return $ CRIALEIA a b
 

@@ -452,35 +452,35 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
 
 executarStmt (NOVOLEIA (CRIALEIA (LEIA p) [])) estado = return (estado, False, False, False, Nothing, Nothing)
 executarStmt (NOVOLEIA (CRIALEIA (LEIA p) (expr:exprs))) estado0 = do
-    let ((_, tipo, valor),estado) = getVariavelFromExpr (CRIAVAR expr) estado0
+    let ((_, tipo, valor),estado) = getVariavelFromExpr expr estado0
     let tipoAtualizado = case tipo of { TipoAtomico s -> tipo; TipoVetor s tipoPrimitivo -> tipoPrimitivo }
     case tipoAtualizado of
         TipoAtomico "INTEIRO" -> do
             hFlush stdout
             s <- getPalavra
             case readMaybe s :: Maybe Integer of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIAINT (INTEIRO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT expr (Attrib p) (CRIAINT (INTEIRO p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como INTEIRO\nPosição: " ++ (show p)
         TipoAtomico "REAL" -> do
             hFlush stdout
             s <- getPalavra
             case readMaybe s :: Maybe Double of
-                Just i -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIAREAL (REAL p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                Just i -> executarStmt (NOVOATRIBSTMT expr (Attrib p) (CRIAREAL (REAL p i))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 Nothing -> error $ "Valor não permitido como REAL\nPosição: " ++ (show p)
         TipoAtomico "CARACTERE" -> do
             hFlush stdout
             s <- getChar
-            executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIACARACTERE (CARACTERE p s))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+            executarStmt (NOVOATRIBSTMT expr (Attrib p) (CRIACARACTERE (CARACTERE p s))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
         TipoAtomico "TEXTO" -> do
             hFlush stdout
             s <- getPalavra
-            executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIATEXTO (TEXTO p s))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+            executarStmt (NOVOATRIBSTMT expr (Attrib p) (CRIATEXTO (TEXTO p s))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
         TipoAtomico "LOGICO" -> do
             hFlush stdout
             s <- getPalavra
             case s of
-                "VERDADEIRO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p True))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
-                "FALSO" -> executarStmt (NOVOATRIBSTMT (CRIAVAR expr) (Attrib p) (CRIALOGICO (LOGICO p False))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                "VERDADEIRO" -> executarStmt (NOVOATRIBSTMT expr (Attrib p) (CRIALOGICO (LOGICO p True))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
+                "FALSO" -> executarStmt (NOVOATRIBSTMT expr (Attrib p) (CRIALOGICO (LOGICO p False))) estado >>= (\(estado1,_,_,_,_,_) -> executarStmt (NOVOLEIA (CRIALEIA (LEIA p) exprs)) estado1)
                 otherwise -> error $ "Valor não permitido como LOGICO\nPosição: " ++ (show p)
         otherwise -> error $ "Comando LEIA para tipo não primitivo\nTipo: " ++ (show tipoAtualizado) ++ "\nPosição: " ++ show p
 

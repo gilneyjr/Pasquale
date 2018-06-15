@@ -123,7 +123,7 @@ data CHAMADA =
     deriving (Eq,Show)
 
 data NodeLEIA = 
-    CRIALEIA {-LEIA-}Token [VAR]
+    CRIALEIA {-LEIA-}Token [EXPR]
     deriving (Eq,Show)
     
 data NodeESCREVA = 
