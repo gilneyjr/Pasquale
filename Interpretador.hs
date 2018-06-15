@@ -1434,8 +1434,9 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                 Right ith ->
                                     -- Se for unidimensional
                                     if null ids then
+                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
                                         -- Chama a recursão
-                                        let (ithAtualizado, estadoAtualizado2) = assignToValue (tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
+                                        else let (ithAtualizado, estadoAtualizado2) = assignToValue (tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
                                             -- Substitui o valor atualizado
                                             case setIth ithAtualizado id valorVet of
                                                 Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
