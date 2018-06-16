@@ -1324,19 +1324,25 @@ getPalavra' = handle handleEOF $ do
     a posição em que a função foi chamada (para erros)
 -}
 rodaFuncao :: Funcao -> Estado -> [Tipo] -> [Valor] -> String -> (Int,Int) -> (Valor, Tipo, Estado)
-rodaFuncao (_, declaracoes, stmts, _) estado tiposParametros valoresParametros nome posicao =
+rodaFuncao (_, declaracoes, stmts, tipoRetorno) estado tiposParametros valoresParametros nome posicao =
     let
         estadoAtualizado = criarEscopo 1 estado
         estadoFinal = foldl funcaoFold'' estadoAtualizado (zip3 (fst $ unzip declaracoes) tiposParametros valoresParametros) in
                 unsafePerformIO ((rodaStmts stmts estadoFinal) >>= 
                     (\(estado1, temRetorno, temSaia, temContinue, maybeExpr, maybePos) ->
                         case (temSaia, temContinue, maybeExpr) of
-                            (_, _, Nothing) -> error $ "Função/Operador retornou sem valor\nNome: " ++ (show nome) ++
+                            (_, _, Nothing) -> error $ (funcOuOper nome) ++ " retornou sem valor\nNome: " ++ (show nome) ++
                                 "\nPosição: " ++ show posicao
                             (True, _, _) -> error $ "Comando SAIA fora de laço\nPosição: " ++ (show (fromJust maybePos))
                             (_, True, _) -> error $ "Comando CONTINUE fora de laço\nPosição: " ++ (show (fromJust maybePos))
                             otherwise -> ((return (evaluateExpr estado1 (fromJust maybeExpr))) >>=
-                                (\(valor, tipo, estado2) -> return (valor, tipo, removerEscopo estado2))) ))
+                                (\(valor, tipo, estado2) -> 
+                                    if mesmoTipo tipo tipoRetorno estado2 then
+                                    return (valor, tipo, removerEscopo estado2)
+                                    else error $ (funcOuOper nome) ++ " retornou tipo incompatível com seu retorno\nNome: " ++
+                                        (show nome) ++ "\nTipo esperado: " ++ show tipoRetorno ++ "\nTipo retornado: " ++ show tipo ++
+                                         "\nPosição: " ++ show (fromJust maybePos))) ))
+        where funcOuOper (a:b) = if isAlpha a then "Função" else "Operador"
 
 -- Inicio das funções auxiliares para leitura
 
