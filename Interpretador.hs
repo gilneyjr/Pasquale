@@ -358,21 +358,28 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                                     Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                         Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR _ _ mudarDepois ->
-             let
-                --Avalia o lado direito primeiro
-                (valorDir,tipoDir,estado1) = evaluateExpr estado0 exprDir
-                -- Pega a variavel do lado esquerdo
-                ((nome,tipoEsq,valorEsq), estado2) = getVariavelFromExpr exprEsq estado1 in
-                if mesmoTipo tipoEsq tipoDir estado2 then
-                    case atualizarVariavel (nome,tipoEsq,valorDir) estado2 of
-                        Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                        Left erro -> error $ show erro ++ "\nPosição: " ++ show posicao
-                else error $ "Atribuição inválida.\nTipo do lado esquerdo: " ++ show tipoEsq ++
-                            "\nTipo do lado direito: " ++ show tipoDir ++ "\nPosição: " ++ show posicao
-                        
-                    
-        otherwise -> error $ "Expressão inválida do lado esquerdo da atribuição\nPosição: " ++ (show posicao)
+        CRIAVALOREXPR (VALOR posValor) expr campos ->
+            -- Avalia o lado direito primeiro
+            case evaluateExpr estado0 exprDir of
+                (valorDir,tipoDir,estado1) ->
+                    -- Avalia expr
+                    case evaluateExpr estado1 expr of
+                        -- Caso seja um ponteiro
+                        (ValorPonteiro varApontada, tipoPont, estado2) ->
+                            if tipoPont == tipoNulo then
+                                error $ "Tentando acessar valor de um ponteiro nulo\nPosição: " ++ (show posValor)
+                            else
+                                -- Busca variável apontada
+                                case getVariavel varApontada estado2 of
+                                    Right (_, tipoVar, valorVar) ->
+                                        -- Calcula novo valor para a variável apontada
+                                        let (novoValor, estado3) = assignToValue (tipoVar, valorVar) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID posValor "VALOR( <expr> )") (OptionalSQBrack [])):campos))) posicao estado2 in
+                                            -- Atualiza variável apontada e finaliza stmt
+                                           case atualizarVariavel (varApontada, tipoVar, novoValor) estado3 of
+                                                Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                                                Left _ -> error $ "Tentando por valor de variavel não existente\nPosição: " ++ (show posValor)
+                                    Left _ -> error $ "Tentando por valor de variavel não existente\nPosição: " ++ (show posValor)
+                        (_,tipoPont,_) -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipoPont) ++ "\nPosição: " ++ (show posValor)
 
 executarStmt (NOVOINC (CRIAINC (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) ) estado0 =
     -- Busca variável
@@ -1132,29 +1139,6 @@ evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr campos) =
         getTipoApontado (TipoPonteiroFim s) = TipoAtomico s
         getTipoApontado (TipoPonteiroRecursivo s) = s
         getTipoApontado _ = error $ "Erro impossível de ocorrer"
-
-{-
-evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr campos) = 
-    case val of
-        ValorPonteiro s -> 
-            if null campos then
-                (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
-            else
-                case evaluateEstr estado1 (getValor (getVariavel s estado1)) campos of
-                    Right result -> result
-                    Left err -> error $ "Valor apontado " ++ (show err) ++ "\nPosição: " ++ (show p)
-        otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-    where 
-        (val, tipo, estado1) = evaluateExpr estado expr
-        getValor :: (Either ErroEstado Variavel) -> Valor
-        getValor (Left _) = error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-        getValor (Right (_,_,val)) = val
-        getTipoApontado :: Tipo -> Tipo
-        getTipoApontado (TipoPonteiroFim s) = TipoAtomico s
-        getTipoApontado (TipoPonteiroRecursivo s) = s
-        getTipoApontado _ = error $ "Erro impossível de ocorrer"
-
--}
 
 -- variável simples
 evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack [])])) = 
