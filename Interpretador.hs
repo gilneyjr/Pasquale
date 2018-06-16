@@ -327,7 +327,7 @@ rodaEnquanto (ENQUANTO p) expr stmts estado = do
             case (temRetorno, temSaia) of
                 (False, False) -> rodaEnquanto (ENQUANTO p) expr stmts estado3
                 otherwise -> return (estado3, temRetorno, False, False, maybeExpr, maybePos)
-        otherwise -> error $ "Tipo da expressão não LOGICO na condição do ENQUANTO\nPosição: " ++ show p
+        otherwise -> error $ "Expressão com valor não LOGICO na condição do ENQUANTO\nPosição: " ++ show p
 
 --Executa lista de stmts
 rodaStmts :: [STMT] -> Estado -> IO EstadoCompleto
@@ -439,7 +439,7 @@ executarStmt (NOVOSE (CRIASE token expr stmts1 (OptionalSenao stmts2))) estado =
     case res of
         ValorLogico True -> iniciaBlocoSe stmts1 estado1
         ValorLogico False -> iniciaBlocoSe stmts2 estado1
-        otherwise -> error $ "Expressão não é do tipo LOGICO\nPosição: " ++ (show getPosSE)
+        otherwise -> error $ "Expressão com valor não LOGICO na condição do SE\nPosição: " ++ (show (getPosSE token))
     where
         (res, _, estado1) = evaluateExpr estado expr
         getPosSE :: Token -> (Int, Int)
@@ -484,7 +484,13 @@ executarStmt (NOVOESCREVA (CRIAESCREVA (ESCREVA p) expr)) estado =
             putStr $ show val
             return (estado1, False, False, False, Nothing, Nothing)
         ValorReal val -> do
-            putStr $ show val
+            if isInfinite val then
+                if val > 0 then
+                    putStr "inf"
+                else
+                    putStr "-inf"
+            else
+                putStr $ show val
             return (estado1, False, False, False, Nothing, Nothing)
         ValorLogico val -> do
             putStr $ showLogico val
@@ -580,6 +586,7 @@ getposTokenOp (SlowOU p) = p
 getposTokenOp (E p) = p
 getposTokenOp (SlowE p) = p
 getposTokenOp (Not p) = p
+getposTokenOp (MOD p) = p
 
 evaluateExpr :: Estado -> EXPR -> (Valor,Tipo,Estado)
 
@@ -986,7 +993,7 @@ evaluateExpr estado (CRIADIV expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
-                ValorInteiro b -> (ValorInteiro (quot a b), TipoAtomico "INTEIRO", estado2)
+                ValorInteiro b -> (if b /= 0 then ValorInteiro (quot a b) else error $ "Divisão por zero.\nPosição: " ++ show (getposTokenOp op), TipoAtomico "INTEIRO", estado2)
                 otherwise -> case getSubprograma nomeOp [tipo1, tipo2] estado2 of
                     Right (Right func) -> rodaFuncao func estado2 [tipo1, tipo2] [res1, res2] nomeOp (getposTokenOp op)
                     otherwise -> error $ "Tipos inválidos para o operador /:\nTipo esquerdo: " ++
@@ -1011,7 +1018,7 @@ evaluateExpr estado (CRIAMOD expr1 op expr2) = do
     case res1 of
         ValorInteiro a ->
             case res2 of
-                ValorInteiro b -> (ValorInteiro (mod a b), TipoAtomico "INTEIRO", estado2)
+                ValorInteiro b -> (if b /= 0 then ValorInteiro (mod a b) else error $ "Divisão por zero.\nPosição: " ++ show (getposTokenOp op), TipoAtomico "INTEIRO", estado2)
                 otherwise -> error $ "Tipos inválidos para o comando MOD:\nTipo esquerdo: " ++
                         (show tipo1) ++ "\nTipo direito: " ++ (show tipo2) ++ "\nPosição: " ++ show (getposTokenOp op)
         otherwise -> error $ "Tipos inválidos para o comando MOD:\nTipo esquerdo: " ++

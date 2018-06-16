@@ -28,9 +28,10 @@ getErros (a:b) l =
         Expect a -> getErros b (add1 l a)
         otherwise -> getErros b l
     where
-        add0 ["",b] a = ["Não esperado: " ++ a,b]
+        add0 ["",b] "" = ["Não esperado: Fim de arquivo (EOF)",b]
+        add0 ["",b] a@(_:_) = ["Não esperado: " ++ a,b]
         add0 [a@(_:_),b] _ = [a,b]
-        add1 [a,""] b = [a,"Esperado: " ++ b]
+        add1 [a,""] b = [a,b]
         add1 [a,b@(_:_)] _ = [a,b]
 
 parsePrograma :: ParseArgs PROGRAMA
@@ -46,7 +47,7 @@ parseEstrs = do
 
 parseDecs :: ParseArgs DECS
 parseDecs = do
-    a <- endBy parseDec parseEndcommand
+    a <- endBy parseDec (parseEndcommand <?> "Esperado: ';'")
     b <- parseFuncs
     return $ INICIODECS a b 
 
@@ -81,7 +82,7 @@ parseDec :: ParseArgs DEC
 parseDec = do
     a <- many parsePont
     b <- parseTipo
-    c <- sepBy1 parseVar_ parseComma
+    c <- sepBy1 (parseVar_ <?> "Esperado: identificador da variável a ser declarada") parseComma
     return $ NOVADEC a b c 
 
 parsePont :: ParseArgs PONT
@@ -107,58 +108,58 @@ parseVar_com a = do
 parseEstr :: ParseArgs ESTR
 parseEstr = do
     parseEstrutura
-    a <- parseTipo <?> "Tipo a ser definido"
-    b <- endBy parseDecEstr parseEndcommand
-    parseFimestrutura <?> "FIMESTRUTURA"
+    a <- parseTipo <?> "Esperado: Tipo a ser definido"
+    b <- endBy parseDecEstr (parseEndcommand <?> "Esperado: ';'")
+    parseFimestrutura <?> "Esperado: FIMESTRUTURA"
     return $ NOVOESTR a b
 
 parseDecEstr :: ParseArgs DEC
 parseDecEstr = do
     a <- many parsePont
     b <- parseTipo
-    c <- sepBy1 parseVar_sem parseComma
+    c <- sepBy1 (parseVar_sem <?> "Esperado: identificador da variável a ser declarada") parseComma
     return $ NOVADEC a b c 
 
 parseFunc :: ParseArgs FUNC
 parseFunc = do
     parseFuncao
-    a <- parseId <?> "Identificador da função"
-    parseRecebe <?> "RECEBE"
-    parseOpenbrack <?> "'('"
+    a <- parseId <?> "Esperado: Identificador da função"
+    parseRecebe <?> "Esperado: RECEBE"
+    parseOpenbrack <?> "Esperado: '('"
     b <- sepBy parseParam parseComma
-    parseClosebrack <?> "')'"
-    parseRetorna <?> "RETORNA"
+    parseClosebrack <?> "Esperado: ')'"
+    parseRetorna <?> "Esperado: RETORNA"
     c <- many parsePont
-    d <- parseTipo <?> "Tipo a ser retornado"
+    d <- parseTipo <?> "Esperado: Tipo a ser retornado"
     e <- many parseStmt
-    parseFimfuncao <?> "FIMFUNCAO"
+    parseFimfuncao <?> "Esperado: FIMFUNCAO"
     return $ NOVOFUNC a b c d e
 
 parseProc :: ParseArgs PROC
 parseProc = do
     parseProcedimento
-    a <- parseId <?> "Identificador do procedimento"
-    parseRecebe <?> "RECEBE"
-    parseOpenbrack <?> "'('"
+    a <- parseId <?> "Esperado: Identificador do procedimento"
+    parseRecebe <?> "Esperado: RECEBE"
+    parseOpenbrack <?> "Esperado: '('"
     b <- sepBy parseParam parseComma
-    parseClosebrack <?> "')'"
+    parseClosebrack <?> "Esperado: ')'"
     c <- many parseStmt
-    parseFimprocedimento <?> "FIMPROCEDIMENTO"
+    parseFimprocedimento <?> "Esperado: FIMPROCEDIMENTO"
     return $ NOVOPROC a b c 
 
 parseOper :: ParseArgs OPER
 parseOper = do
     parseOperador
-    a <- parseOp <?> "Identificador do operador a ser sobrecarregado"
-    parseRecebe <?> "RECEBE"
-    parseOpenbrack <?> "'('"
+    a <- parseOp <?> "Esperado: Identificador do operador a ser sobrecarregado"
+    parseRecebe <?> "Esperado: RECEBE"
+    parseOpenbrack <?> "Esperado: '('"
     b <- sepBy parseParam parseComma
-    parseClosebrack <?> "')'"
-    parseRetorna <?> "RETORNA"
+    parseClosebrack <?> "Esperado: ')'"
+    parseRetorna <?> "Esperado: RETORNA"
     c <- many parsePont
-    d <- parseTipo <?> "Tipo a ser retornado"
+    d <- parseTipo <?> "Esperado: Tipo a ser retornado"
     e <- many parseStmt
-    parseFimoperador <?> "FIMOPERADOR"
+    parseFimoperador <?> "Esperado: FIMOPERADOR"
     return $ NOVOOPER a b c d e
 
 parseOp :: ParseArgs OP
@@ -234,15 +235,15 @@ parseParam :: ParseArgs PARAM
 parseParam = do
     a <- many parsePont
     b <- parseTipo
-    c <- parseId <?> "Identificador do parâmetro"
+    c <- parseId <?> "Esperado: Identificador do parâmetro"
     return $ NOVOPARAM a b (SingleVar c (OptionalSQBrack []))
 
 parseMain :: ParseArgs MAIN
 parseMain = do
-    parsePrincipal <?> "PRINCIPAL"
+    parsePrincipal <?> "Esperado: PRINCIPAL"
     a <- many parseStmt
-    parseFimprincipal <?> "FIMPRINCIPAL"
-    eof
+    parseFimprincipal <?> "Esperado: FIMPRINCIPAL"
+    eof <?> "Esperado: Fim de arquivo (EOF)"
     return $ Main a 
 
 parseStmt :: ParseArgs STMT
@@ -264,44 +265,44 @@ parseStmtscomID = do
     a <- parseCriavalorexpr <|> parseCriavar
     case a of
         CRIAVAR (Var [SingleVar t (OptionalSQBrack [])]) ->
-            (parseNovoinc a) <|>
+            ( (parseNovoinc a) <|>
             (parseNovodecr a) <|>
             (parseNovoatrib a) <|>
-            (parseNovochamada t)
+            (parseNovochamada t) ) <?> "Sugestão: \"++\", \"--\", \"(\", \":=\""
         otherwise ->
-            (parseNovoinc a) <|>
+            ( (parseNovoinc a) <|>
             (parseNovodecr a) <|>
-            (parseNovoatrib a)
+            (parseNovoatrib a) ) <?> "Sugestão: \"++\", \"--\", \":=\""
 
 parseNovodec :: ParseArgs STMT
 parseNovodec = do
     a <- parseDec
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVODEC a 
 
 parseNovoatrib :: EXPR -> ParseArgs STMT
 parseNovoatrib a = do
     b <- parseAttrib
-    c <- parseExpr <?> "Expressão a ser atribuída"
-    parseEndcommand <?> "';'"
+    c <- parseExpr <?> "Esperado: Expressão a ser atribuída"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOATRIBSTMT a b c
 
 parseNovoinc :: EXPR -> ParseArgs STMT
 parseNovoinc a = do
     b <- parseInc a
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOINC b
 
 parseNovodecr :: EXPR -> ParseArgs STMT
 parseNovodecr a = do
     b <- parseDecr a
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVODECR b
 
 parseNovochamada :: Token -> ParseArgs STMT
 parseNovochamada a = do
     b <- parseChamada a
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOCHAMADA b
 
 parseNovose :: ParseArgs STMT
@@ -322,13 +323,13 @@ parseNovoretorne = do
 parseNovoretornefunc :: Token -> ParseArgs STMT
 parseNovoretornefunc a = do
     b <- parseRetornefunc a
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVORETORNEFUNC b
 
 parseNovoretorneproc :: Token -> ParseArgs STMT
 parseNovoretorneproc a = do
     b <- parseRetorneproc a
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVORETORNEPROC b
 
 parseRetornefunc :: Token -> ParseArgs RETORNEFUNC
@@ -343,19 +344,19 @@ parseRetorneproc a = do
 parseNovosaia :: ParseArgs STMT
 parseNovosaia = do
     a <- parseNodesaia
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOSAIA a 
 
 parseNovocontinue :: ParseArgs STMT
 parseNovocontinue = do
     a <- parseNodecontinue
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOCONTINUE a 
 
 parseNovodelete :: ParseArgs STMT
 parseNovodelete = do
     a <- parseNodedelete
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVODELETE a 
 
 parseNovobloco :: ParseArgs STMT
@@ -366,61 +367,61 @@ parseNovobloco = do
 parseAtrib :: SingleVAR -> ParseArgs ATRIB
 parseAtrib a = do
     parseAttrib
-    b <- parseExpr <?> "Expressão a ser atribuída"
+    b <- parseExpr <?> "Esperado: Expressão a ser atribuída"
     return $ CRIAATRIB a b 
 
 parseInc :: EXPR -> ParseArgs INC
 parseInc a = do
     parseAdd
-    parseAdd
+    parseAdd <?> "Esperado: '+'"
     return $ CRIAINC a 
 
 parseDecr :: EXPR -> ParseArgs DECR
 parseDecr a = do
     parseSub
-    parseSub
+    parseSub <?> "Esperado: '-'"
     return $ CRIADECR a 
 
 parseChamada :: Token -> ParseArgs CHAMADA
 parseChamada a = do
     parseOpenbrack
     b <- sepBy parseExpr parseComma
-    parseClosebrack <?> "')'"
+    parseClosebrack <?> "Esperado: ')'"
     return $ CRIACHAMADA a b 
 
 parseNovoescreva :: ParseArgs STMT
 parseNovoescreva = do
     a <- parseNodeescreva
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOESCREVA a 
 
 parseNovoleia :: ParseArgs STMT
 parseNovoleia = do
     a <- parseNodeleia
-    parseEndcommand <?> "';'"
+    parseEndcommand <?> "Esperado: ';'"
     return $ NOVOLEIA a
 
 parseNodeleia :: ParseArgs NodeLEIA
 parseNodeleia = do
     a <- parseLeia
-    parseOpenbrack <?> "'('"
-    b <- sepBy1 (parseCriavalorexpr <|> parseCriavar) parseComma
-    parseClosebrack <?> "')'"
+    parseOpenbrack <?> "Esperado: '('"
+    b <- sepBy1 ((parseCriavalorexpr <|> parseCriavar) <?> "Esperado: variável a ser lida") parseComma
+    parseClosebrack <?> "Esperado: ')'"
     return $ CRIALEIA a b
 
 parseNodeescreva :: ParseArgs NodeESCREVA
 parseNodeescreva = do
     a <- parseEscreva
-    parseOpenbrack <?> "'('"
+    parseOpenbrack <?> "Esperado: '('"
     b <- parseExpr
-    parseClosebrack <?> "')'"
+    parseClosebrack <?> "Esperado: ')'"
     return $ CRIAESCREVA a b
 
 parseNodebloco :: ParseArgs NodeBLOCO
 parseNodebloco = do
     parseBloco
     a <- many parseStmt
-    parseFimbloco <?> "FIMBLOCO"
+    parseFimbloco <?> "Esperado: FIMBLOCO"
     return $ CRIABLOCO a 
 
 parseVar :: ParseArgs VAR
@@ -442,8 +443,8 @@ parseOptionalsqbrack =
 parseUsesqbrack :: ParseArgs OptionalSQBRACK
 parseUsesqbrack = do
     parseOpensqbrack
-    a <- sepBy1 parseExpr parseComma
-    parseClosesqbrack <?> "']'"
+    a <- sepBy1 (parseExpr <?> "Esperado: Índice do elemento do arranjo a ser acessado") parseComma
+    parseClosesqbrack <?> "Esperado: ']'"
     return $ OptionalSQBrack a
 
 parseEmptysqbrack :: ParseArgs OptionalSQBRACK
@@ -453,11 +454,11 @@ parseEmptysqbrack = do
 parseNodese :: ParseArgs NodeSE
 parseNodese = do
     token <- parseSe
-    a <- parseExpr <?> "Condição do SE"
-    parseEntao <?> "ENTAO"
+    a <- parseExpr <?> "Esperado: Condição do SE"
+    parseEntao <?> "Esperado: ENTAO"
     b <- many parseStmt
     c <- parseOptionalsenao
-    parseFimse <?> "FIMSE"
+    parseFimse <?> "Esperado: FIMSE"
     return $ CRIASE token a b c 
 
 parseOptionalsenao :: ParseArgs OptionalSENAO
@@ -478,10 +479,10 @@ parseEmptysenao = do
 parseNodeenquanto :: ParseArgs NodeENQUANTO
 parseNodeenquanto = do
     a <- parseEnquanto
-    b <- parseExpr <?> "Condição do ENQUANTO"
-    parseExecute <?> "EXECUTE"
+    b <- parseExpr <?> "Esperado: Condição do ENQUANTO"
+    parseExecute <?> "Esperado: EXECUTE"
     c <- many parseStmt
-    parseFimenquanto <?> "FIMENQUANTO"
+    parseFimenquanto <?> "Esperado: FIMENQUANTO"
     return $ CRIAENQUANTO a b c
 
 parseNodecontinue :: ParseArgs NodeCONTINUE
@@ -497,7 +498,7 @@ parseNodesaia = do
 parseNodedelete :: ParseArgs NodeDELETE
 parseNodedelete = do
     a <- parseDelete
-    b <- parseExpr <?> "Ponteiro a ser desalocado"
+    b <- parseExpr <?> "Esperado: Ponteiro a ser desalocado"
     return $ CRIADELETE a b
 
 parseExpr :: ParseArgs EXPR
@@ -519,11 +520,11 @@ parseContinuaou :: EXPR -> ParseArgs EXPR
 parseContinuaou a = do
     op <- parseOu <|> parseSlowou
     if isOu op then do
-        b <- parseCriae <?> "Valor direito a ser operado com o comando \"OU\""
+        b <- parseCriae <?> "Esperado: Valor direito a ser operado com o comando \"OU\""
         c <- parseTentaou $ CRIAOU a op b 
         return c
     else do
-        b <- parseCriae <?> "Valor direito a ser operado com o comando \"~OU\""
+        b <- parseCriae <?> "Esperado: Valor direito a ser operado com o comando \"~OU\""
         c <- parseTentaou $ CRIASLOWOU a op b
         return c
     where
@@ -543,11 +544,11 @@ parseContinuae :: EXPR -> ParseArgs EXPR
 parseContinuae a = do
     op <- parseE <|> parseSlowe
     if isE op then do
-        b <- parseComp <?> "Valor direito a ser operado com o comando \"E\""
+        b <- parseComp <?> "Esperado: Valor direito a ser operado com o comando \"E\""
         c <- parseTentae $ CRIAE a op b
         return c 
     else do
-        b <- parseComp <?> "Valor direito a ser operado com o comando \"~E\""
+        b <- parseComp <?> "Esperado: Valor direito a ser operado com o comando \"~E\""
         c <- parseTentae $ CRIASLOWE a op b
         return c
     where
@@ -568,27 +569,27 @@ parseContinuacomp a = do
     op <- parseLess <|> parseLeq <|> parseEqual <|> parseGeq <|> parseGreat <|> parseDiff
     
     if isLess op then do
-        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"<\""
+        b <- parseCriaadd <?> "Esperado: Valor direito a ser operado com o operador \"<\""
         return $ CRIALESS a op b
     
     else if isLeq op then do
-        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"<=\""
+        b <- parseCriaadd <?> "Esperado: Valor direito a ser operado com o operador \"<=\""
         return $ CRIALEQ a op b
     
     else if isEqual op then do
-        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"=\""
+        b <- parseCriaadd <?> "Esperado: Valor direito a ser operado com o operador \"=\""
         return $ CRIAEQUAL a op b
     
     else if isGeq op then do
-        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \">=\""
+        b <- parseCriaadd <?> "Esperado: Valor direito a ser operado com o operador \">=\""
         return $ CRIAGEQ a op b
     
     else if isGreat op then do
-        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \">\""
+        b <- parseCriaadd <?> "Esperado: Valor direito a ser operado com o operador \">\""
         return $ CRIAGREAT a op b
     
     else do
-        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"/=\""
+        b <- parseCriaadd <?> "Esperado: Valor direito a ser operado com o operador \"/=\""
         return $ CRIADIFF a op b
     
     where
@@ -616,11 +617,11 @@ parseContinuaadd :: EXPR -> ParseArgs EXPR
 parseContinuaadd a = do
     op <- parseAdd <|> parseSub
     if isAdd op then do
-        b <- parseCriamult <?> "Valor direito a ser operado com o operador \"+\""
+        b <- parseCriamult <?> "Esperado: Valor direito a ser operado com o operador \"+\""
         c <- parseTentaadd $ CRIAADD a op b
         return c
     else do
-        b <- parseCriamult <?> "Valor direito a ser operado com o operador \"-\""
+        b <- parseCriamult <?> "Esperado: Valor direito a ser operado com o operador \"-\""
         c <- parseTentaadd $ CRIASUB a op b
         return c
     where
@@ -640,15 +641,15 @@ parseContinuamult :: EXPR -> ParseArgs EXPR
 parseContinuamult a = do
     op <- parseMult <|> parseDiv <|> parseMod
     if isMult op then do
-        b <- parseAtomico <?> "Valor direito a ser operador com o operador \"*\""
+        b <- parseAtomico <?> "Esperado: Valor direito a ser operador com o operador \"*\""
         c <- parseTentamult $ CRIAMULT a op b 
         return c
     else if isDiv op then do
-        b <- parseAtomico <?> "Valor direito a ser operador com o operador \"/\""
+        b <- parseAtomico <?> "Esperado: Valor direito a ser operador com o operador \"/\""
         c <- parseTentamult $ CRIADIV a op b
         return c
     else do
-        b <- parseAtomico <?> "Valor direito a ser operador com o comando \"MOD\""
+        b <- parseAtomico <?> "Esperado: Valor direito a ser operador com o comando \"MOD\""
         c <- parseTentamult $ CRIAMOD a op b
         return c
     where
@@ -676,13 +677,13 @@ parseAtomico =
 parseCrianeg :: ParseArgs EXPR
 parseCrianeg = do
     op <- parseSub
-    a <- parseAtomico <?> "Expressão a ser operada pelo operador \"-\""
+    a <- parseAtomico <?> "Esperado: Expressão a ser operada pelo operador \"-\""
     return $ CRIANEG op a 
 
 parseCrianot :: ParseArgs EXPR
 parseCrianot = do
     op <- parseNot
-    a <- parseAtomico <?> "Expressão a ser operada pelo operador \"!\""
+    a <- parseAtomico <?> "Esperado: Expressão a ser operada pelo operador \"!\""
     return $ CRIANOT op a 
 
 parseCriatexto :: ParseArgs EXPR
@@ -724,15 +725,15 @@ parseCrianovo :: ParseArgs EXPR
 parseCrianovo = do
     parseNovo
     a <- many parsePont
-    b <- parseTipo <?> "Tipo a ser alocado"
+    b <- parseTipo <?> "Esperado: Tipo a ser alocado"
     return $ CRIANOVO a b
 
 parseCriavalorexpr :: ParseArgs EXPR
 parseCriavalorexpr = do
     a <- parseValor
-    parseOpenbrack <?> "'('"
-    b <- parseExpr <?> "Expressão interna de VALOR"
-    parseClosebrack <?> "')'"
+    parseOpenbrack <?> "Esperado: '('"
+    b <- parseExpr <?> "Esperado: Expressão interna de VALOR"
+    parseClosebrack <?> "Esperado: ')'"
     return $ CRIAVALOREXPR a b
 
 parseCriaExprID :: ParseArgs EXPR
@@ -750,19 +751,19 @@ parseCriachamadafunc a = do
 parseIniciabrack :: ParseArgs EXPR
 parseIniciabrack = do
     parseOpenbrack
-    (parseCriaconversao <|> parseCriaparenteses) <?> "Tipo a ser convertido ou expressão entre parênteses"
+    (parseCriaconversao <|> parseCriaparenteses) <?> "Esperado: Tipo a ser convertido ou expressão entre parênteses"
 
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
     a <- parseExpr
-    parseClosebrack <?> "')'"
+    parseClosebrack <?> "Esperado: ')'"
     return $ CRIAPARENTESES a
 
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do
     a <- parseTipo
-    parseClosebrack <?> "')'"
-    b <- parseAtomico <?> "Valor a ser convertido"
+    parseClosebrack <?> "Esperado: ')'"
+    b <- parseAtomico <?> "Esperado: Valor a ser convertido"
     return $ CRIACONVERSAO a b 
     
     
