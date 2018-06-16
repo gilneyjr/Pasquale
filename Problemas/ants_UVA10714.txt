@@ -1,0 +1,69 @@
+// UVA 10714 - Ants
+
+INTEIRO maxAnts := 1000000;
+
+INTEIRO ants[maxAnts];
+INTEIRO t, l, n;
+
+INTEIRO min, max;
+
+// Retorna a distância da formiga i até a borda mais próxima
+FUNCAO minEnd RECEBE (INTEIRO i) RETORNA INTEIRO
+	SE ants[i] > l/2 ENTAO
+		RETORNE l - ants[i];
+	SENAO
+		RETORNE ants[i];
+	FIMSE
+FIMFUNCAO
+
+// Retorna a distância da formiga i até a borda mais distante
+FUNCAO maxEnd RECEBE (INTEIRO i) RETORNA INTEIRO
+	SE ants[i] > l/2 ENTAO
+		RETORNE ants[i];
+	SENAO
+		RETORNE l - ants[i];
+	FIMSE
+FIMFUNCAO
+
+PROCEDIMENTO solve RECEBE ()
+	min := minEnd(1);
+	max := maxEnd(1);
+
+	INTEIRO i := 2;
+	ENQUANTO i <= n EXECUTE
+		INTEIRO temp := minEnd(i);
+
+		SE temp > min ENTAO
+			min := temp;
+		FIMSE
+
+		temp := maxEnd(i);
+		
+		SE temp > max ENTAO
+			max := temp;
+		FIMSE
+
+		i++;
+	FIMENQUANTO
+FIMPROCEDIMENTO
+
+PRINCIPAL
+	LEIA(t);
+	ENQUANTO t > 0 EXECUTE
+		t--;
+
+		LEIA(l,n);
+
+		INTEIRO i := 1;
+
+		ENQUANTO i <= n EXECUTE
+			LEIA(ants[i]);
+			i++;
+		FIMENQUANTO
+
+		solve();
+
+		ESCREVA((TEXTO) min + " " + (TEXTO) max + "\n");
+	FIMENQUANTO
+FIMPRINCIPAL
+
