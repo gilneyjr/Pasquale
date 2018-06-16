@@ -734,7 +734,14 @@ parseCriavalorexpr = do
     parseOpenbrack <?> "Esperado: '('"
     b <- parseExpr <?> "Esperado: Expressão interna de VALOR"
     parseClosebrack <?> "Esperado: ')'"
-    return $ CRIAVALOREXPR a b
+    c <- many parseCampo
+    return $ CRIAVALOREXPR a b c
+
+parseCampo :: ParseArgs SingleVAR
+parseCampo = do
+    parseDot
+    a <- parseSinglevar
+    return a
 
 parseCriaExprID :: ParseArgs EXPR
 parseCriaExprID = do

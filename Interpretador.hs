@@ -358,7 +358,7 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                                     Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                         Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR _ _ ->
+        CRIAVALOREXPR _ _ mudarDepois ->
              let
                 --Avalia o lado direito primeiro
                 (valorDir,tipoDir,estado1) = evaluateExpr estado0 exprDir
@@ -386,9 +386,9 @@ executarStmt (NOVOINC (CRIAINC (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _)
                     Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
         Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
         
-executarStmt (NOVOINC (CRIAINC (CRIAVALOREXPR (VALOR pos) expr ) ) ) estado0 =
+executarStmt (NOVOINC (CRIAINC (CRIAVALOREXPR (VALOR pos) expr mudarDepois) ) ) estado0 =
     -- Busca variável
-    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr) estado0 in
+    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr mudarDepois) estado0 in
     case valor of
         ValorInteiro v -> case atualizarVariavel (nome, tipo, ValorInteiro (v+1)) estado1 of
             Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
@@ -407,9 +407,9 @@ executarStmt (NOVODECR (CRIADECR (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) 
                     Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
         Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)  
 
-executarStmt (NOVODECR (CRIADECR (CRIAVALOREXPR (VALOR pos) expr ) ) ) estado0 =
+executarStmt (NOVODECR (CRIADECR (CRIAVALOREXPR (VALOR pos) expr mudarDepois) ) ) estado0 =
     -- Busca variável
-    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr) estado0 in
+    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr mudarDepois) estado0 in
     case valor of
         ValorInteiro v -> case atualizarVariavel (nome, tipo, ValorInteiro (v-1)) estado1 of
             Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
@@ -521,7 +521,7 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (expr:exprs))) estado0 = do
                                 else error $ "Impossível"
                             Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                 Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR (VALOR pos) _ ->
+        CRIAVALOREXPR (VALOR pos) _ mudarDepois ->
                 -- Pega a variavel do lado esquerdo
                 let
                     ((nome,tipoEsq,valorEsq), estado1) = getVariavelFromExpr expr estado0
@@ -543,7 +543,7 @@ getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):_))) 
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr) estadoAntigo =
+getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr mudarDepois) estadoAntigo =
     case res of
         ValorPonteiro nome -> case var of
             Right var' -> (var', estado)
@@ -1113,9 +1113,15 @@ evaluateExpr estado (CRIAREAL (REAL _ r)) = (ValorReal r, TipoAtomico "REAL", es
 evaluateExpr estado (CRIANULO (NULO _)) = (valorNulo, tipoNulo, estado)
 evaluateExpr estado (CRIAPARENTESES a) = evaluateExpr estado a
 
-evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr) = 
+evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr campos) = 
     case val of
-        ValorPonteiro s -> (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
+        ValorPonteiro s -> 
+            if null campos then
+                (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
+            else
+                case evaluateEstr estado1 (getValor (getVariavel s estado1)) campos of
+                    Right result -> result
+                    Left err -> error $ "Valor apontado " ++ (show err) ++ "\nPosição: " ++ (show p)
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
     where 
         (val, tipo, estado1) = evaluateExpr estado expr
@@ -1126,6 +1132,29 @@ evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr) =
         getTipoApontado (TipoPonteiroFim s) = TipoAtomico s
         getTipoApontado (TipoPonteiroRecursivo s) = s
         getTipoApontado _ = error $ "Erro impossível de ocorrer"
+
+{-
+evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr campos) = 
+    case val of
+        ValorPonteiro s -> 
+            if null campos then
+                (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
+            else
+                case evaluateEstr estado1 (getValor (getVariavel s estado1)) campos of
+                    Right result -> result
+                    Left err -> error $ "Valor apontado " ++ (show err) ++ "\nPosição: " ++ (show p)
+        otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
+    where 
+        (val, tipo, estado1) = evaluateExpr estado expr
+        getValor :: (Either ErroEstado Variavel) -> Valor
+        getValor (Left _) = error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
+        getValor (Right (_,_,val)) = val
+        getTipoApontado :: Tipo -> Tipo
+        getTipoApontado (TipoPonteiroFim s) = TipoAtomico s
+        getTipoApontado (TipoPonteiroRecursivo s) = s
+        getTipoApontado _ = error $ "Erro impossível de ocorrer"
+
+-}
 
 -- variável simples
 evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack [])])) = 

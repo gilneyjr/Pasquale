@@ -12,11 +12,13 @@ $alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
 @string = \" [^\"]* \"
+@comments = "/*" (.*'\n')* "*/"
 
 -- Regular expressions that define the language tokens.
 tokens :-
   $white+                           ;
   "//".*                            ;
+  @comments                         ;
   ESTRUTURA                         { \p s -> ESTRUTURA (getPosition p) }
   FIMESTRUTURA                      { \p s -> FIMESTRUTURA (getPosition p) }
   FUNCAO                            { \p s -> FUNCAO (getPosition p) }
