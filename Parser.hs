@@ -1,6 +1,7 @@
 module Parser where
 
 import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Error
 import Text.Parsec.Combinator
 import Data.Functor.Identity
 import Debug.Trace
@@ -14,7 +15,23 @@ parsePasquale input =
     getRight (runParser parsePrograma () "" (getTokens input))
     where
         getRight (Right x) = x
-        getRight (Left x) = error $ show x
+        getRight (Left x) = error $ mostra $ getErros (errorMessages x) ["",""]
+        mostra [a,""] = ("\n"++a)
+        mostra [a,b] = ("\n"++a++"\n"++b)
+
+getErros :: [Message] -> [String] -> [String]
+getErros [] x = x
+getErros (a:b) l = 
+    case a of
+        SysUnExpect a -> getErros b (add0 l a)
+        UnExpect a -> getErros b (add0 l a)
+        Expect a -> getErros b (add1 l a)
+        otherwise -> getErros b l
+    where
+        add0 ["",b] a = ["Não esperado: " ++ a,b]
+        add0 [a@(_:_),b] _ = [a,b]
+        add1 [a,""] b = [a,"Esperado: " ++ b]
+        add1 [a,b@(_:_)] _ = [a,b]
 
 parsePrograma :: ParseArgs PROGRAMA
 parsePrograma = do
@@ -73,26 +90,26 @@ parsePont = do
     return $ NOVOPONT a 
 
 parseVar_ :: ParseArgs VAR_
-parseVar_ = 
-    (try parseVar_com) <|>
-    parseVar_sem
+parseVar_ = do
+    a <- parseSinglevar
+    (parseVar_com a) <|> (return (VAR_SEM a))
 
 parseVar_sem :: ParseArgs VAR_
 parseVar_sem = do
     a <- parseSinglevar
     return $ VAR_SEM a 
 
-parseVar_com :: ParseArgs VAR_
-parseVar_com = do
-    a <- parseAtrib
-    return $ VAR_COM a 
+parseVar_com :: SingleVAR -> ParseArgs VAR_
+parseVar_com a = do
+    b <- parseAtrib a
+    return $ VAR_COM b
 
 parseEstr :: ParseArgs ESTR
 parseEstr = do
     parseEstrutura
-    a <- parseTipo
+    a <- parseTipo <?> "Tipo a ser definido"
     b <- endBy parseDecEstr parseEndcommand
-    parseFimestrutura
+    parseFimestrutura <?> "FIMESTRUTURA"
     return $ NOVOESTR a b
 
 parseDecEstr :: ParseArgs DEC
@@ -105,43 +122,43 @@ parseDecEstr = do
 parseFunc :: ParseArgs FUNC
 parseFunc = do
     parseFuncao
-    a <- parseId
-    parseRecebe
-    parseOpenbrack
+    a <- parseId <?> "Identificador da função"
+    parseRecebe <?> "RECEBE"
+    parseOpenbrack <?> "'('"
     b <- sepBy parseParam parseComma
-    parseClosebrack
-    parseRetorna
+    parseClosebrack <?> "')'"
+    parseRetorna <?> "RETORNA"
     c <- many parsePont
-    d <- parseTipo
+    d <- parseTipo <?> "Tipo a ser retornado"
     e <- many parseStmt
-    parseFimfuncao
+    parseFimfuncao <?> "FIMFUNCAO"
     return $ NOVOFUNC a b c d e
 
 parseProc :: ParseArgs PROC
 parseProc = do
     parseProcedimento
-    a <- parseId
-    parseRecebe
-    parseOpenbrack
+    a <- parseId <?> "Identificador do procedimento"
+    parseRecebe <?> "RECEBE"
+    parseOpenbrack <?> "'('"
     b <- sepBy parseParam parseComma
-    parseClosebrack
+    parseClosebrack <?> "')'"
     c <- many parseStmt
-    parseFimprocedimento
+    parseFimprocedimento <?> "FIMPROCEDIMENTO"
     return $ NOVOPROC a b c 
 
 parseOper :: ParseArgs OPER
 parseOper = do
     parseOperador
-    a <- parseOp
-    parseRecebe
-    parseOpenbrack
+    a <- parseOp <?> "Identificador do operador a ser sobrecarregado"
+    parseRecebe <?> "RECEBE"
+    parseOpenbrack <?> "'('"
     b <- sepBy parseParam parseComma
-    parseClosebrack
-    parseRetorna
+    parseClosebrack <?> "')'"
+    parseRetorna <?> "RETORNA"
     c <- many parsePont
-    d <- parseTipo
+    d <- parseTipo <?> "Tipo a ser retornado"
     e <- many parseStmt
-    parseFimoperador
+    parseFimoperador <?> "FIMOPERADOR"
     return $ NOVOOPER a b c d e
 
 parseOp :: ParseArgs OP
@@ -217,14 +234,14 @@ parseParam :: ParseArgs PARAM
 parseParam = do
     a <- many parsePont
     b <- parseTipo
-    c <- parseId
+    c <- parseId <?> "Identificador do parâmetro"
     return $ NOVOPARAM a b (SingleVar c (OptionalSQBrack []))
 
 parseMain :: ParseArgs MAIN
 parseMain = do
-    parsePrincipal
+    parsePrincipal <?> "PRINCIPAL"
     a <- many parseStmt
-    parseFimprincipal
+    parseFimprincipal <?> "FIMPRINCIPAL"
     eof
     return $ Main a 
 
@@ -238,45 +255,54 @@ parseStmt =
     parseNovodelete <|>
     parseNovoescreva <|>
     parseNovoleia <|>
-    (try parseNovoretorneproc) <|>
-    parseNovoretornefunc <|>
-    (try parseNovodec) <|>
-    (try parseNovoinc) <|>
-    (try parseNovodecr) <|>
-    (try parseNovoatrib) <|>
-    parseNovochamada
+    parseNovoretorne <|>
+    parseNovodec <|>
+    parseStmtscomID
+    
+parseStmtscomID :: ParseArgs STMT
+parseStmtscomID = do
+    a <- parseCriavalorexpr <|> parseCriavar
+    case a of
+        CRIAVAR (Var [SingleVar t (OptionalSQBrack [])]) ->
+            (parseNovoinc a) <|>
+            (parseNovodecr a) <|>
+            (parseNovoatrib a) <|>
+            (parseNovochamada t)
+        otherwise ->
+            (parseNovoinc a) <|>
+            (parseNovodecr a) <|>
+            (parseNovoatrib a)
 
 parseNovodec :: ParseArgs STMT
 parseNovodec = do
     a <- parseDec
-    parseEndcommand
+    parseEndcommand <?> "';'"
     return $ NOVODEC a 
 
-parseNovoatrib :: ParseArgs STMT
-parseNovoatrib = do
-    a <- parseCriavalorexpr <|> parseCriavar
+parseNovoatrib :: EXPR -> ParseArgs STMT
+parseNovoatrib a = do
     b <- parseAttrib
-    c <- parseExpr
-    parseEndcommand
+    c <- parseExpr <?> "Expressão a ser atribuída"
+    parseEndcommand <?> "';'"
     return $ NOVOATRIBSTMT a b c
 
-parseNovoinc :: ParseArgs STMT
-parseNovoinc = do
-    a <- parseInc
-    parseEndcommand
-    return $ NOVOINC a 
+parseNovoinc :: EXPR -> ParseArgs STMT
+parseNovoinc a = do
+    b <- parseInc a
+    parseEndcommand <?> "';'"
+    return $ NOVOINC b
 
-parseNovodecr :: ParseArgs STMT
-parseNovodecr = do
-    a <- parseDecr
-    parseEndcommand
-    return $ NOVODECR a 
+parseNovodecr :: EXPR -> ParseArgs STMT
+parseNovodecr a = do
+    b <- parseDecr a
+    parseEndcommand <?> "';'"
+    return $ NOVODECR b
 
-parseNovochamada :: ParseArgs STMT
-parseNovochamada = do
-    a <- parseChamada
-    parseEndcommand
-    return $ NOVOCHAMADA a 
+parseNovochamada :: Token -> ParseArgs STMT
+parseNovochamada a = do
+    b <- parseChamada a
+    parseEndcommand <?> "';'"
+    return $ NOVOCHAMADA b
 
 parseNovose :: ParseArgs STMT
 parseNovose = do
@@ -288,34 +314,48 @@ parseNovoenquanto = do
     a <- parseNodeenquanto
     return $ NOVOENQUANTO a 
 
-parseNovoretornefunc :: ParseArgs STMT
-parseNovoretornefunc = do
-    a <- parseRetornefunc
-    parseEndcommand
-    return $ NOVORETORNEFUNC a 
+parseNovoretorne :: ParseArgs STMT
+parseNovoretorne = do
+    a <- parseRetorne
+    (parseNovoretornefunc a) <|> (parseNovoretorneproc a)
+    
+parseNovoretornefunc :: Token -> ParseArgs STMT
+parseNovoretornefunc a = do
+    b <- parseRetornefunc a
+    parseEndcommand <?> "';'"
+    return $ NOVORETORNEFUNC b
 
-parseNovoretorneproc :: ParseArgs STMT
-parseNovoretorneproc = do
-    a <- parseRetorneproc
-    parseEndcommand
-    return $ NOVORETORNEPROC a 
+parseNovoretorneproc :: Token -> ParseArgs STMT
+parseNovoretorneproc a = do
+    b <- parseRetorneproc a
+    parseEndcommand <?> "';'"
+    return $ NOVORETORNEPROC b
+
+parseRetornefunc :: Token -> ParseArgs RETORNEFUNC
+parseRetornefunc a = do
+    b <- parseExpr
+    return $ CRIARETORNEF a b
+
+parseRetorneproc :: Token -> ParseArgs RETORNEPROC
+parseRetorneproc a = do
+    return $ CRIARETORNEP a
 
 parseNovosaia :: ParseArgs STMT
 parseNovosaia = do
     a <- parseNodesaia
-    parseEndcommand
+    parseEndcommand <?> "';'"
     return $ NOVOSAIA a 
 
 parseNovocontinue :: ParseArgs STMT
 parseNovocontinue = do
     a <- parseNodecontinue
-    parseEndcommand
+    parseEndcommand <?> "';'"
     return $ NOVOCONTINUE a 
 
 parseNovodelete :: ParseArgs STMT
 parseNovodelete = do
     a <- parseNodedelete
-    parseEndcommand
+    parseEndcommand <?> "';'"
     return $ NOVODELETE a 
 
 parseNovobloco :: ParseArgs STMT
@@ -323,79 +363,64 @@ parseNovobloco = do
     a <- parseNodebloco
     return $ NOVOBLOCO a 
 
-parseRetornefunc :: ParseArgs RETORNEFUNC
-parseRetornefunc = do
-    a <- parseRetorne
-    b <- parseExpr
-    return $ CRIARETORNEF a b
-
-parseRetorneproc :: ParseArgs RETORNEPROC
-parseRetorneproc = do
-    a <- parseRetorne
-    return $ CRIARETORNEP a
-
-parseAtrib :: ParseArgs ATRIB
-parseAtrib = do
-    a <- parseSinglevar
+parseAtrib :: SingleVAR -> ParseArgs ATRIB
+parseAtrib a = do
     parseAttrib
-    b <- parseExpr
+    b <- parseExpr <?> "Expressão a ser atribuída"
     return $ CRIAATRIB a b 
 
-parseInc :: ParseArgs INC
-parseInc = do
-    a <- parseCriavalorexpr <|> parseCriavar
+parseInc :: EXPR -> ParseArgs INC
+parseInc a = do
     parseAdd
     parseAdd
     return $ CRIAINC a 
 
-parseDecr :: ParseArgs DECR
-parseDecr = do
-    a <- parseCriavalorexpr <|> parseCriavar
+parseDecr :: EXPR -> ParseArgs DECR
+parseDecr a = do
     parseSub
     parseSub
     return $ CRIADECR a 
 
-parseChamada :: ParseArgs CHAMADA
-parseChamada = do
-    a <- parseId
+parseChamada :: Token -> ParseArgs CHAMADA
+parseChamada a = do
     parseOpenbrack
     b <- sepBy parseExpr parseComma
-    parseClosebrack
+    parseClosebrack <?> "')'"
     return $ CRIACHAMADA a b 
 
 parseNovoescreva :: ParseArgs STMT
 parseNovoescreva = do
     a <- parseNodeescreva
-    parseEndcommand
+    parseEndcommand <?> "';'"
     return $ NOVOESCREVA a 
 
 parseNovoleia :: ParseArgs STMT
 parseNovoleia = do
     a <- parseNodeleia
-    parseEndcommand
+    parseEndcommand <?> "';'"
     return $ NOVOLEIA a
 
 parseNodeleia :: ParseArgs NodeLEIA
 parseNodeleia = do
     a <- parseLeia
-    parseOpenbrack
+    parseOpenbrack <?> "'('"
     b <- sepBy1 (parseCriavalorexpr <|> parseCriavar) parseComma
-    parseClosebrack
+    parseClosebrack <?> "')'"
     return $ CRIALEIA a b
 
 parseNodeescreva :: ParseArgs NodeESCREVA
 parseNodeescreva = do
     a <- parseEscreva
-    parseOpenbrack
+    parseOpenbrack <?> "'('"
     b <- parseExpr
-    parseClosebrack
+    parseClosebrack <?> "')'"
     return $ CRIAESCREVA a b
 
 parseNodebloco :: ParseArgs NodeBLOCO
 parseNodebloco = do
     parseBloco
     a <- many parseStmt
-    parseFimbloco
+    parseFimbloco <?> "FIMBLOCO"
     return $ CRIABLOCO a 
 
 parseVar :: ParseArgs VAR
@@ -418,7 +443,7 @@ parseUsesqbrack :: ParseArgs OptionalSQBRACK
 parseUsesqbrack = do
     parseOpensqbrack
     a <- sepBy1 parseExpr parseComma
-    parseClosesqbrack
+    parseClosesqbrack <?> "']'"
     return $ OptionalSQBrack a
 
 parseEmptysqbrack :: ParseArgs OptionalSQBRACK
@@ -428,11 +453,11 @@ parseEmptysqbrack = do
 parseNodese :: ParseArgs NodeSE
 parseNodese = do
     token <- parseSe
-    a <- parseExpr
-    parseEntao
+    a <- parseExpr <?> "Condição do SE"
+    parseEntao <?> "ENTAO"
     b <- many parseStmt
     c <- parseOptionalsenao
-    parseFimse
+    parseFimse <?> "FIMSE"
     return $ CRIASE token a b c 
 
 parseOptionalsenao :: ParseArgs OptionalSENAO
@@ -453,10 +478,10 @@ parseEmptysenao = do
 parseNodeenquanto :: ParseArgs NodeENQUANTO
 parseNodeenquanto = do
     a <- parseEnquanto
-    b <- parseExpr
-    parseExecute
+    b <- parseExpr <?> "Condição do ENQUANTO"
+    parseExecute <?> "EXECUTE"
     c <- many parseStmt
-    parseFimenquanto
+    parseFimenquanto <?> "FIMENQUANTO"
     return $ CRIAENQUANTO a b c
 
 parseNodecontinue :: ParseArgs NodeCONTINUE
@@ -472,7 +497,7 @@ parseNodesaia = do
 parseNodedelete :: ParseArgs NodeDELETE
 parseNodedelete = do
     a <- parseDelete
-    b <- parseCriavalorexpr <|> parseCriavar;
+    b <- parseExpr <?> "Ponteiro a ser desalocado"
     return $ CRIADELETE a b
 
 parseExpr :: ParseArgs EXPR
@@ -493,11 +518,12 @@ parseTentaou a = (parseContinuaou a) <|> (parseFim a)
 parseContinuaou :: EXPR -> ParseArgs EXPR
 parseContinuaou a = do
     op <- parseOu <|> parseSlowou
-    b <- parseCriae
     if isOu op then do
+        b <- parseCriae <?> "Valor direito a ser operado com o comando \"OU\""
         c <- parseTentaou $ CRIAOU a op b 
         return c
     else do
+        b <- parseCriae <?> "Valor direito a ser operado com o comando \"~OU\""
         c <- parseTentaou $ CRIASLOWOU a op b
         return c
     where
@@ -516,11 +542,12 @@ parseTentae a = (parseContinuae a) <|> (parseFim a)
 parseContinuae :: EXPR -> ParseArgs EXPR
 parseContinuae a = do
     op <- parseE <|> parseSlowe
-    b <- parseComp
     if isE op then do
+        b <- parseComp <?> "Valor direito a ser operado com o comando \"E\""
         c <- parseTentae $ CRIAE a op b
         return c 
     else do
+        b <- parseComp <?> "Valor direito a ser operado com o comando \"~E\""
         c <- parseTentae $ CRIASLOWE a op b
         return c
     where
@@ -539,24 +566,29 @@ parseTentacomp a = (parseContinuacomp a) <|> (parseFim a)
 parseContinuacomp :: EXPR -> ParseArgs EXPR
 parseContinuacomp a = do
     op <- parseLess <|> parseLeq <|> parseEqual <|> parseGeq <|> parseGreat <|> parseDiff
-    b <- parseCriaadd
     
-    if isLess op then
+    if isLess op then do
+        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"<\""
         return $ CRIALESS a op b
     
-    else if isLeq op then
+    else if isLeq op then do
+        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"<=\""
         return $ CRIALEQ a op b
     
-    else if isEqual op then
+    else if isEqual op then do
+        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"=\""
         return $ CRIAEQUAL a op b
     
-    else if isGeq op then
+    else if isGeq op then do
+        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \">=\""
         return $ CRIAGEQ a op b
     
-    else if isGreat op then
+    else if isGreat op then do
+        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \">\""
         return $ CRIAGREAT a op b
     
-    else
+    else do
+        b <- parseCriaadd <?> "Valor direito a ser operado com o operador \"/=\""
         return $ CRIADIFF a op b
     
     where
@@ -583,11 +615,12 @@ parseTentaadd a = (parseContinuaadd a) <|> (parseFim a)
 parseContinuaadd :: EXPR -> ParseArgs EXPR
 parseContinuaadd a = do
     op <- parseAdd <|> parseSub
-    b <- parseCriamult
     if isAdd op then do
+        b <- parseCriamult <?> "Valor direito a ser operado com o operador \"+\""
         c <- parseTentaadd $ CRIAADD a op b
         return c
     else do
+        b <- parseCriamult <?> "Valor direito a ser operado com o operador \"-\""
         c <- parseTentaadd $ CRIASUB a op b
         return c
     where
@@ -606,14 +639,16 @@ parseTentamult a = (parseContinuamult a) <|> (parseFim a)
 parseContinuamult :: EXPR -> ParseArgs EXPR
 parseContinuamult a = do
     op <- parseMult <|> parseDiv <|> parseMod
-    b <- parseAtomico
     if isMult op then do
+        b <- parseAtomico <?> "Valor direito a ser operador com o operador \"*\""
         c <- parseTentamult $ CRIAMULT a op b 
         return c
     else if isDiv op then do
+        b <- parseAtomico <?> "Valor direito a ser operador com o operador \"/\""
         c <- parseTentamult $ CRIADIV a op b
         return c
     else do
+        b <- parseAtomico <?> "Valor direito a ser operador com o comando \"MOD\""
         c <- parseTentamult $ CRIAMOD a op b
         return c
     where
@@ -635,21 +670,19 @@ parseAtomico =
     parseCrianulo <|> 
     parseCrianovo <|> 
     parseCriavalorexpr <|> 
-    (try parseCriachamadafunc) <|> 
-    parseCriavar <|> 
-    (try parseCriaconversao) <|>
-    parseCriaparenteses
+    parseCriaExprID <|>
+    parseIniciabrack
 
 parseCrianeg :: ParseArgs EXPR
 parseCrianeg = do
     op <- parseSub
-    a <- parseAtomico
+    a <- parseAtomico <?> "Expressão a ser operada pelo operador \"-\""
     return $ CRIANEG op a 
 
 parseCrianot :: ParseArgs EXPR
 parseCrianot = do
     op <- parseNot
-    a <- parseAtomico
+    a <- parseAtomico <?> "Expressão a ser operada pelo operador \"!\""
     return $ CRIANOT op a 
 
 parseCriatexto :: ParseArgs EXPR
@@ -687,38 +720,50 @@ parseCriavar = do
     a <- parseVar
     return $ CRIAVAR a 
 
-parseCriachamadafunc :: ParseArgs EXPR
-parseCriachamadafunc = do
-    a <- parseChamada
-    return $ CRIACHAMADAFUNC a 
-
 parseCrianovo :: ParseArgs EXPR
 parseCrianovo = do
     parseNovo
     a <- many parsePont
-    b <- parseTipo
-    c <- parseOptionalsqbrack
-    return $ CRIANOVO a b c
+    b <- parseTipo <?> "Tipo a ser alocado"
+    return $ CRIANOVO a b
 
 parseCriavalorexpr :: ParseArgs EXPR
 parseCriavalorexpr = do
     a <- parseValor
-    parseOpenbrack
-    b <- parseExpr
-    parseClosebrack
+    parseOpenbrack <?> "'('"
+    b <- parseExpr <?> "Expressão interna de VALOR"
+    parseClosebrack <?> "')'"
     return $ CRIAVALOREXPR a b
+
+parseCriaExprID :: ParseArgs EXPR
+parseCriaExprID = do
+    a <- parseCriavar
+    case a of
+        CRIAVAR (Var [SingleVar id (OptionalSQBrack []) ]) -> ((parseCriachamadafunc id) <|> (return a))
+        otherwise -> return a
+
+parseCriachamadafunc :: Token -> ParseArgs EXPR
+parseCriachamadafunc a = do
+    b <- parseChamada a
+    return $ CRIACHAMADAFUNC b
+
+parseIniciabrack :: ParseArgs EXPR
+parseIniciabrack = do
+    parseOpenbrack
+    (parseCriaconversao <|> parseCriaparenteses) <?> "Tipo a ser convertido ou expressão entre parênteses"
 
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
-    parseOpenbrack
     a <- parseExpr
-    parseClosebrack
+    parseClosebrack <?> "')'"
     return $ CRIAPARENTESES a
 
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do
-    parseOpenbrack
     a <- parseTipo
-    parseClosebrack
-    b <- parseAtomico
+    parseClosebrack <?> "')'"
+    b <- parseAtomico <?> "Valor a ser convertido"
     return $ CRIACONVERSAO a b 
+    
+    
+

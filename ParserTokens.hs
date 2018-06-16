@@ -320,5 +320,4 @@ parseId = tokenPrim show update_pos get_token where
     get_token _ = Nothing
 
 update_pos :: SourcePos -> Token -> [Token] -> SourcePos
-update_pos pos _ (tok:_) = pos
-update_pos pos _ []      = pos
+update_pos pos _ _ = pos

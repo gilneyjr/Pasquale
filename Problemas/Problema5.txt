@@ -18,15 +18,18 @@ FIMPROCEDIMENTO
 
 PRINCIPAL
     INTEIRO n, m;
-    ESCREVA("Digite dois números positivos:\n");
-    LEIA(n, m);
-    SE n <= 0 OU m <= 0 ENTAO
-        ESCREVA("Por favor forneça valores estritamente positivos.\n");
-    SENAO
+    ENQUANTO VERDADEIRO EXECUTE
+        ESCREVA("Digite dois números positivos (ou não positivos para sair):\n");
+        LEIA(n, m);
+        SE n <= 0 OU m <= 0 ENTAO
+            ESCREVA("Valores inseridos não são estritamente positivos. Encerrando execução.\n");
+            RETORNE;
+        FIMSE
         PONTEIRO INTEIRO r;
         r := NOVO INTEIRO;
         mdc(n,m,r);
+        ESCREVA("MDC: ");
         ESCREVA(VALOR(r));
         ESCREVA("\n");
-    FIMSE
+    FIMENQUANTO
 FIMPRINCIPAL

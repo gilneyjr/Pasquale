@@ -317,22 +317,91 @@ data Token =
     TEXTO (Int,Int) String          |
     TIPO (Int,Int) String           |
     ID (Int,Int) String
-    deriving (Eq,Show)
+    deriving (Eq)
+
+instance Show Token where
+    show (ESTRUTURA p)            = ( "\"ESTRUTURA\" " ++ (show p))
+    show (FIMESTRUTURA p)         = ( "\"FIMESTRUTURA\" " ++ (show p))
+    show (FUNCAO p)               = ( "\"FUNCAO\" " ++ (show p))
+    show (FIMFUNCAO p)            = ( "\"FIMFUNCAO\" " ++ (show p))
+    show (PROCEDIMENTO p)         = ( "\"PROCEDIMENTO\" " ++ (show p))
+    show (FIMPROCEDIMENTO p)      = ( "\"FIMPROCEDIMENTO\" " ++ (show p))
+    show (OPERADOR p)             = ( "\"OPERADOR\" " ++ (show p))
+    show (FIMOPERADOR p)          = ( "\"FIMOPERADOR\" " ++ (show p))
+    show (RECEBE p)               = ( "\"RECEBE\" " ++ (show p))
+    show (RETORNA p)              = ( "\"RETORNA\" " ++ (show p))
+    show (RETORNE p)              = ( "\"RETORNE\" " ++ (show p))
+    show (PRINCIPAL p)            = ( "\"PRINCIPAL\" " ++ (show p))
+    show (FIMPRINCIPAL p)         = ( "\"FIMPRINCIPAL\" " ++ (show p))
+    show (BLOCO p)                = ( "\"BLOCO\" " ++ (show p))
+    show (FIMBLOCO p)             = ( "\"FIMBLOCO\" " ++ (show p))
+    show (SAIA p)                 = ( "\"SAIA\" " ++ (show p))
+    show (CONTINUE p)             = ( "\"CONTINUE\" " ++ (show p))
+    show (SE p)                   = ( "\"SE\" " ++ (show p))
+    show (ENTAO p)                = ( "\"ENTAO\" " ++ (show p))
+    show (SENAO p)                = ( "\"SENAO\" " ++ (show p))
+    show (FIMSE p)                = ( "\"FIMSE\" " ++ (show p))
+    show (ENQUANTO p)             = ( "\"ENQUANTO\" " ++ (show p))
+    show (EXECUTE p)              = ( "\"EXECUTE\" " ++ (show p))
+    show (FIMENQUANTO p)          = ( "\"FIMENQUANTO\" " ++ (show p))
+    show (DEFINA p)               = ( "\"DEFINA\" " ++ (show p))
+    show (SlowOU p)               = ( "\"~OU\" " ++ (show p))
+    show (SlowE p)                = ( "\"~E\" " ++ (show p))
+    show (OU p)                   = ( "\"OU\" " ++ (show p))
+    show (E p)                    = ( "\"E\" " ++ (show p))
+    show (LOGICO p v)             = ( "\"" ++ (getLogicoName v) ++ "\" " ++ (show p))
+    show (PONTEIRO p)             = ( "\"PONTEIRO\" " ++ (show p))
+    show (NOVO p)                 = ( "\"NOVO\" " ++ (show p))
+    show (DELETE p)               = ( "\"DELETE\" " ++ (show p))
+    show (LEIA p)                 = ( "\"LEIA\" " ++ (show p))
+    show (ESCREVA p)              = ( "\"ESCREVA\" " ++ (show p))
+    show (VALOR p)                = ( "\"VALOR\" " ++ (show p))
+    show (NULO p)                 = ( "\"NULO\" " ++ (show p))
+    show (Attrib p)               = ( "\":=\" " ++ (show p))
+    show (Geq p)                  = ( "\">=\" " ++ (show p))
+    show (Leq p)                  = ( "\"<=\" " ++ (show p))
+    show (Diff p)                 = ( "\"/=\" " ++ (show p))
+    show (Equal p)                = ( "\"=\" " ++ (show p))
+    show (Great p)                = ( "\">\" " ++ (show p))
+    show (Less p)                 = ( "\"<\" " ++ (show p))
+    show (Add p)                  = ( "\"+\" " ++ (show p))
+    show (Sub p)                  = ( "\"-\" " ++ (show p))
+    show (Mult p)                 = ( "\"*\" " ++ (show p))
+    show (Div p)                  = ( "\"/\" " ++ (show p))
+    show (MOD p)                  = ( "\"MOD\" " ++ (show p))
+    show (Not p)                  = ( "\"!\" " ++ (show p))
+    show (OpenBrack p)            = ( "\"(\" " ++ (show p))
+    show (CloseBrack p)           = ( "\")\" " ++ (show p))
+    show (OpenSqBrack p)          = ( "\"[\" " ++ (show p))
+    show (CloseSqBrack p)         = ( "\"]\" " ++ (show p))
+    show (Comma p)                = ( "\",\" " ++ (show p))
+    show (Dot p)                  = ( "\".\" " ++ (show p))
+    show (EndCommand p)           = ( "\";\" " ++ (show p))
+    show (REAL p v)               = ( "\"" ++ (show v) ++ "\" " ++ (show p))
+    show (INTEIRO p v)            = ( "\"" ++ (show v) ++ "\" " ++ (show p))
+    show (CARACTERE p v)          = ( "\"" ++ (show v) ++ "\" " ++ (show p))
+    show (TEXTO p v)              = ( "\"" ++ v ++ "\" " ++ (show p))
+    show (TIPO p v)               = ( "Tipo \"" ++ v ++ "\" " ++ (show p))
+    show (ID p v)                 = ( "\""++ v ++ "\" " ++ (show p))
+    
+    
 -- Receives a AlexPosn and returns a pair (Int,Int) with (row,column) positions.
 getPosition :: AlexPosn -> (Int,Int)
 getPosition (AlexPn _ a b) = (a,b)
+
 -- It's only called when Alex is getting the LOGICO tokens.
 getBoolValue :: String -> Bool
 getBoolValue str
     | str == "VERDADEIRO" = True
     | otherwise = False
 
-getTokens :: String -> [Token]
-getTokens fn = unsafePerformIO (getTokensAux fn)
+getLogicoName:: Bool -> String
+getLogicoName val
+    | val == True = "VERDADEIRO"
+    | otherwise = "FALSO"
 
--- Assists getTokens to compute Tokens from the String.
-getTokensAux :: String -> IO [Token]
-getTokensAux fn = return $ alexScanTokens fn
+getTokens :: String -> [Token]
+getTokens = alexScanTokens
 
 
 alex_action_2 =  \p s -> ESTRUTURA (getPosition p) 

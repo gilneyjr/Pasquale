@@ -295,12 +295,15 @@ getSubprograma nome tipos' estado@(_, _, funcoes, _) =
     case getSubprogramaLista nome tipos funcoes of
         Just subprograma -> Right subprograma
         Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome
-             ++ "' não encontrado com assinatura '" ++ (show tipos) ++ "'"
+             ++ "' não encontrado com assinatura '(" ++ (mostra tipos) ++ ")'"
     where
         tipos = traduz tipos'
         traduz :: [Tipo] -> [Tipo]
         traduz [] = []
         traduz (a:b) = (traduzTipo a estado):(traduz b)
+        mostra [] = ""
+        mostra [a] = show a
+        mostra (a:b:c) = (show a) ++ ", " ++ (mostra (b:c))
     
 -- Busca por um subprograma na lista de subprogrmas atraves de sua assinatura
 getSubprogramaLista :: String -> [Tipo] -> [Subprograma] -> Maybe Subprograma
