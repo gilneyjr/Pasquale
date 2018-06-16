@@ -1,5 +1,17 @@
+ESTRUTURA Est
+	INTEIRO data;
+	PONTEIRO Est next;
+FIMESTRUTURA
+
+PROCEDIMENTO print RECEBE (PONTEIRO Est pont)
+	ENQUANTO VALOR(VALOR(pont).next) /= NULO EXECUTE
+		ESCREVA( (TEXTO) VALOR(pont).data + " -> ");
+		pont := pont.next;
+	FIMENQUANTO
+	ESCREVA("NULO\n");
+FIMPROCEDIMENTO
+
 PRINCIPAL
-    INTEIRO i := 2;
-    i++;
-    ESCREVA(i);
+    
+
 FIMPRINCIPAL
