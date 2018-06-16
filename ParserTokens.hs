@@ -124,11 +124,6 @@ parseFimenquanto = tokenPrim show update_pos get_token where
     get_token ( FIMENQUANTO x ) = Just ( FIMENQUANTO x )
     get_token _ = Nothing
 
-parseDefina :: ParsecT [Token] u Identity Token
-parseDefina = tokenPrim show update_pos get_token where
-    get_token ( DEFINA x ) = Just ( DEFINA x )
-    get_token _ = Nothing
-
 parseSlowou :: ParsecT [Token] u Identity Token
 parseSlowou = tokenPrim show update_pos get_token where
     get_token ( SlowOU x ) = Just ( SlowOU x )
