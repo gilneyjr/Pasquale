@@ -214,7 +214,7 @@ getSubprogFromOper (NOVOOPER op params ponts tipo stmts) estado =
     else if genericLength params < 1 then
         error $ "Poucos parâmetros para o operador: " ++ getNomeFromOp op ++ "\nPosição: " ++ (show (getPosicaoOp op))
     else if (getNomeFromOp op == "=" || getNomeFromOp op == "/=") && isonlyPonts decs then
-        error $ "Subprograma '" ++ getNomeFromOp op ++ "' já existe com a mesma assinatura\nPosição: " ++ (show (getPosicaoOp op))
+        error $ "Subprograma \"" ++ getNomeFromOp op ++ "\" já existe com a mesma assinatura\nPosição: " ++ (show (getPosicaoOp op))
     else (Right (getNomeFromOp op, decs, stmts, getTipoFromTipoRetorno ponts tipo estadoFinal), estadoFinal)
     where
         (decs, estadoFinal) = getDecsFromParams params estado
