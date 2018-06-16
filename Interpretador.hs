@@ -511,18 +511,18 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (expr:exprs))) estado0 = do
                         -- Atualiza variável
                         case atualizarVariavel (nome,tipoEsq,valorFinal) estado1 of
                             Right estadoFinal -> if estadoFinal == estadoFinal then
-                                    return (estadoFinal, False, False, False, Nothing, Nothing)
-                                    else error $ "Impossível"
+                                    executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (exprs))) estadoFinal
+                                else error $ "Impossível"
                             Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                 Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
         CRIAVALOREXPR (VALOR pos) _ ->
                 -- Pega a variavel do lado esquerdo
                 let
                     ((nome,tipoEsq,valorEsq), estado1) = getVariavelFromExpr expr estado0
-                    valor = unsafePerformIO (getValorLeia tipoEsq posicao) in
+                    valor = unsafePerformIO (getValorLeia tipoEsq pos) in
                     case atualizarVariavel (nome,tipoEsq,valor) estado1 of
                         Right estadoFinal -> if estadoFinal == estadoFinal then
-                            return (estadoFinal, False, False, False, Nothing, Nothing)
+                                executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (exprs))) estadoFinal
                             else error $ "Impossível"
                         Left erro -> error $ show erro ++ "\nPosição: " ++ show pos
         otherwise -> error $ "Expressão inválida no LEIA\nPosição: " ++ (show posicao)
