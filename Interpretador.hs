@@ -231,8 +231,8 @@ validaFuncao nome (a:b) =
         NOVOBLOCO (CRIABLOCO stmts) -> orSemCurto (validaFuncao nome stmts) (validaFuncao nome b)
         NOVOSE (CRIASE _ _ stmts1 (OptionalSenao stmts2) ) -> 
             orSemCurto ((validaFuncao nome stmts1) && (validaFuncao nome stmts2)) (validaFuncao nome b)
-        NOVORETORNEFUNC _ -> (validaProcedimento nome b) || True
-        otherwise -> (validaProcedimento nome b)
+        NOVORETORNEFUNC _ -> (validaFuncao nome b) || True
+        otherwise -> (validaFuncao nome b)
     where
         funcOuOper (a:b) = if isAlpha a then "Função" else "Operador"
         getPosRetorneP (CRIARETORNEP (RETORNE p)) = p
