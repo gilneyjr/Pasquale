@@ -773,10 +773,10 @@ parseIniciabrack = do
 parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
     a <- parseExpr
-    parseClosebrack <?> "Esperado: ')'"
-    b <- parseOptionalsqbrack
-    c <- many parseCampo
-    return $ CRIAPARENTESES a b c
+    b <- parseClosebrack <?> "Esperado: ')'"
+    c <- parseOptionalsqbrack
+    d <- many parseCampo
+    return $ CRIAPARENTESES a b c d
 
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do

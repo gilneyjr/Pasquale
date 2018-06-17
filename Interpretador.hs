@@ -76,7 +76,7 @@ getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariavei
                         (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro b tipoEncontrado)) ([], estado) tokensVariaveis
                         (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
                             (zip variaveis tipos ++ declaracoes', estadoFinal)
-                otherwise -> error $ "Estrutura " ++ nomeEstrutura ++ " contém ela mesma\nPosição: " ++ show posicao
+                otherwise -> error $ "Estrutura " ++ show nomeEstrutura ++ " contém ela mesma\nPosição: " ++ show posicao
             else
                 error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where tipoPrimitivo = getTipo nome estado
@@ -421,8 +421,8 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                                 -- Atualiza variável
                                 case atualizarVariavel (nome,tipoEsq,valorFinal) estado2 of
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                                    Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-                        Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
+                                    Left _ -> error $ "Variável: " ++ show nome ++ " não declarada\nPosição: " ++ (show pos)
+                        Left _ -> error $ "Variável: " ++ show nome ++ " não declarada\nPosição: " ++ (show pos)
         CRIAVALOREXPR (VALOR posValor) expr bracks campos ->
             -- Avalia o lado direito primeiro
             case evaluateExpr estado0 exprDir of
@@ -454,8 +454,8 @@ executarStmt (NOVOINC (CRIAINC expr)) estado0 =
                         -- Atualiza variável
                         case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
                             Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                            Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
-                Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+                            Left _ -> error $ "Variável não declarada\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos) 
+                Left _ -> error $ "Variável não declarada\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos)
 
         CRIAVALOREXPR (VALOR posValor) exprValor bracks campos ->
             -- Avalia a expressão de dentro de VALOR
@@ -465,8 +465,8 @@ executarStmt (NOVOINC (CRIAINC expr)) estado0 =
                     -- Pega variável apontada
                     case getVariavel varApontada estado1 of
                         Right (_, tipoVar,valorVar) ->
-                            let (novoValor, estado2) = incrDecr ((+) 1) (tipoVar,valorVar) ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos) estado1 of
-                                case atualizarVariavel (varApontada, tipoVar, novoValor) of
+                            let (novoValor, estado2) = incrDecr ((+) 1) (tipoVar,valorVar) ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos) estado1 in
+                                case atualizarVariavel (varApontada, tipoVar, novoValor) estado2 of
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                                     Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
                         Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
@@ -479,12 +479,12 @@ executarStmt (NOVODECR (CRIADECR expr)) estado0 =
             case getVariavel nomeVar estado0 of
                 Right (_, tipoVar, valorVar) ->
                     -- Calcula incremento
-                    let (novoValor, estado1) = incrDecr ((-) 1) (tipoVar, valorVar) var estado0 in
+                    let (novoValor, estado1) = incrDecr (\x -> x-1) (tipoVar, valorVar) var estado0 in
                         -- Atualiza variável
                         case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
                             Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                            Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
-                Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+                            Left _ -> error $ "Variável não declarada\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos) 
+                Left _ -> error $ "Variável não declarada\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos)
 
         CRIAVALOREXPR (VALOR posValor) exprValor bracks campos ->
             -- Avalia a expressão de dentro de VALOR
@@ -494,8 +494,8 @@ executarStmt (NOVODECR (CRIADECR expr)) estado0 =
                     -- Pega variável apontada
                     case getVariavel varApontada estado1 of
                         Right (_, tipoVar,valorVar) ->
-                            let (novoValor, estado2) = incrDecr ((-) 1) (tipoVar,valorVar) ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos) estado1 of
-                                case atualizarVariavel (varApontada, tipoVar, novoValor) of
+                            let (novoValor, estado2) = incrDecr (\x -> x-1) (tipoVar,valorVar) ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos) estado1 in
+                                case atualizarVariavel (varApontada, tipoVar, novoValor) estado2 of
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                                     Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
                         Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
@@ -604,18 +604,19 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (expr:exprs))) estado0 = do
                             Right estadoFinal -> if estadoFinal == estadoFinal then
                                     executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (exprs))) estadoFinal
                                 else error $ "Impossível"
-                            Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-                Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR (VALOR pos) _ mudarDepoisCampos ->
+                            Left _ -> error $ "Variável: " ++ show nome ++ " não declarada\nPosição: " ++ (show pos)
+                Left _ -> error $ "Variável: " ++ show nome ++ " não declarada\nPosição: " ++ (show pos)
+        CRIAVALOREXPR (VALOR pos) _ brack campos ->
                 -- Pega a variavel do lado esquerdo
                 let
                     ((nome,tipoEsq,valorEsq), estado1) = getVariavelFromExpr expr estado0
-                    valor = unsafePerformIO (getValorLeia tipoEsq pos) in
-                    case atualizarVariavel (nome,tipoEsq,valor) estado1 of
-                        Right estadoFinal -> if estadoFinal == estadoFinal then
-                                executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (exprs))) estadoFinal
-                            else error $ "Impossível"
-                        Left erro -> error $ show erro ++ "\nPosição: " ++ show pos
+                    (valorFinal, estado2) = assignToValueLeia (tipoEsq,valorEsq) (CRIAVAR (Var ((SingleVar (ID pos "VALOR( <expr> )") brack):campos))) estado1 in
+                        -- Atualiza variável
+                        case atualizarVariavel (nome,tipoEsq,valorFinal) estado2 of
+                            Right estadoFinal -> if estadoFinal == estadoFinal then
+                                    executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (exprs))) estadoFinal
+                                else error $ "Impossível"
+                            Left _ -> error $ "Variável: " ++ show nome ++ " não declarada\nPosição: " ++ (show pos)
         otherwise -> error $ "Expressão inválida no LEIA\nPosição: " ++ (show posicao)
 
 executarStmt (NOVOBLOCO (CRIABLOCO stmts)) estado =
@@ -628,7 +629,7 @@ getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):_))) 
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr mudarDepoisCampos) estadoAntigo =
+getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr _ _) estadoAntigo =
     case res of
         ValorPonteiro nome -> case var of
             Right var' -> (var', estado)
@@ -1196,22 +1197,16 @@ evaluateExpr estado (CRIACARACTERE (CARACTERE _ c)) = (ValorCaractere c, TipoAto
 evaluateExpr estado (CRIALOGICO (LOGICO _ l)) = (ValorLogico l, TipoAtomico "LOGICO", estado)
 evaluateExpr estado (CRIAREAL (REAL _ r)) = (ValorReal r, TipoAtomico "REAL", estado)
 evaluateExpr estado (CRIANULO (NULO _)) = (valorNulo, tipoNulo, estado)
-evaluateExpr estado (CRIAPARENTESES a) = evaluateExpr estado a
+evaluateExpr estado (CRIAPARENTESES a (CloseBrack p) bracks campos) = 
+    let (valor,tipo,estado1) = (evaluateExpr estado a) in 
+        (avaliaBracksCampos valor tipo bracks campos "( <expr> )" p estado1)
 
-evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr campos) = 
+evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr bracks campos) = 
     case val of
-        ValorPonteiro s -> 
-            if null campos then
-                case getVariavel s estado1 of
-                    (Left _) -> error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-                    (Right (_, tipoApontado, valorApontado)) -> (valorApontado, tipoApontado, estado1)
-            else
-                case getVariavel s estado1 of
-                    (Left _) -> error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-                    (Right (_, _, valorApontado)) -> 
-                        case evaluateEstr estado1 valorApontado campos of
-                            Right result -> result
-                            Left err -> error $ "Valor apontado " ++ (show err) ++ "\nPosição: " ++ (show p)
+        ValorPonteiro s ->  case getVariavel s estado1 of
+            (Right (_, tipoApontado, valorApontado)) ->
+                avaliaBracksCampos valorApontado tipoApontado bracks campos "VALOR( <expr> )" p estado1
+            (Left _) -> error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
     where 
         (val, tipo, estado1) = evaluateExpr estado expr
@@ -1229,7 +1224,7 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
             case (evaluateVet estado valor (TipoVetor faixas etc) faixas ids) of
                 Right result -> result
                 Left err     -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Right a -> error $ "Variável " ++ nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Right a -> error $ "Variável: " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- variáveis com acesso a campo de estrutura
@@ -1241,7 +1236,7 @@ evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack
                     case evaluateEstr estado valor_estr snglVars of
                         Right result -> result
                         Left erro -> error $ nome_estr ++ " " ++ (show erro) ++ "\nPosição: " ++ (show posicao)
-                _ -> error $ "Variável " ++ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
+                _ -> error $ "Variável: " ++ show nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- variáveis vetores de estruturas com acesso aos campos
@@ -1260,7 +1255,7 @@ evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack
                         Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
                 Right _  -> error $ nome ++ " não é um vetor de estruturas\nPosição: " ++ (show posicao)
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Right _ -> error $ "Variável " ++ nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Right _ -> error $ "Variável: " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- Alocação dinâmica de um elemento
@@ -1316,16 +1311,43 @@ evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO _ ponts ti
                 Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
             where tipoPrimitivo = getTipo nome estado
 
-evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs)) =
+evaluateExpr estado (CRIACHAMADAFUNC (CRIACHAMADA (ID posicao nome) exprs) campos) =
     case subprograma of
         Right (Left (nome, declaracoes, stmts)) ->
             error $ "Procedimento usado em expressão\nPosição: " ++ show posicao
         Right (Right func@(nome, declaracoes, stmts, tipoRetorno)) ->
-            rodaFuncao func estadoAtualizado tiposParametros valoresParametros nome posicao
+            let (valor, tipo, estadoFinal) = (rodaFuncao func estadoAtualizado tiposParametros valoresParametros nome posicao) in
+                (avaliaBracksCampos valor tipo (OptionalSQBrack []) campos (nome ++ "(...)") posicao estadoFinal)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where
         (valoresParametros, tiposParametros, estadoAtualizado) = evaluateExprs estado exprs
         subprograma = getSubprograma nome tiposParametros estadoAtualizado
+
+--Avalia estruturas, vetores, etc
+avaliaBracksCampos :: Valor -> Tipo -> OptionalSQBRACK -> [SingleVAR] -> String -> (Int,Int) -> Estado -> (Valor,Tipo,Estado)
+avaliaBracksCampos valor tipo (OptionalSQBrack bracks) campos nome posicao estado0 =
+    case (bracks, campos) of
+        ([],[]) -> (valor, tipo, estado0)
+        ((_:_), []) -> case tipo of
+            TipoVetor faixas etc -> case (evaluateVet estado0 valor (TipoVetor faixas etc) faixas bracks) of
+                Right result -> result
+                Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
+            _ -> error $ "Variável: " ++ show nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
+        ([], (_:_)) -> case traduzTipo tipo estado0 of
+            TipoEstrutura nome_estr _ ->
+                case evaluateEstr estado0 valor campos of
+                    Right result -> result
+                    Left erro -> error $ nome_estr ++ " " ++ (show erro) ++ "\nPosição: " ++ (show posicao)
+            _ -> error $ "Variável: " ++ show nome ++ " não é uma estrutura\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
+        ((_:_), (_:_)) -> case tipo of
+            TipoVetor faixas etc -> case (evaluateVet estado0 valor (TipoVetor faixas etc) faixas bracks) of
+                Right (val_estr@(ValorEstrutura _),_,estado_atualizado) -> 
+                    case evaluateEstr estado_atualizado val_estr campos of
+                        Right result -> result
+                        Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
+                Right _  -> error $ nome ++ " não é um vetor de estruturas\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
+                Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
+            _ -> error $ "Variável: " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
 
 -- Avalia uma estrutura
 evaluateEstr :: Estado -> Valor -> [SingleVAR] -> Either String (Valor,Tipo,Estado)
@@ -1334,7 +1356,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (Opt
     -- procura pela campo 'nome' na lista de campos da estrutura
     case (getVariavelTabela nome vars_estr) of
         Just (_,tipo, valor) -> Right (valor,tipo,estado)
-        Nothing -> Left $ "não possui o campo " ++ nome
+        Nothing -> Left $ "não possui o campo " ++ show nome
 
 -- Avalia um vetor de estruturas com acesso a um campo de endereçamento Ex.: vet[10,10].b
 evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (OptionalSQBrack exprs@(_:_))] =
@@ -1346,8 +1368,8 @@ evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (Opt
             case evaluateVet estado valor (TipoVetor dims etc) dims exprs of
                 Right result -> Right result
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Just _ -> error $ "Variável " ++ nome ++ " não é um vetor\nPosição: " ++ (show posicao)
-        Nothing -> Left $ "não possui o campo " ++ nome
+        Just _ -> error $ "Variável " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Nothing -> Left $ "não possui o campo " ++ show nome
 
 -- Avalia uma estrutura para vários acessos à campo. Ex.: a.first.b.k.p
 evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (OptionalSQBrack [])):snglVars) = 
@@ -1357,7 +1379,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
         Just (_, tt, valor_estr) -> case traduzTipo tt estado of
             TipoEstrutura _ _ -> evaluateEstr estado valor_estr snglVars
             _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
-        Nothing -> Left $ "não possui o campo " ++ nome
+        Nothing -> Left $ "não possui o campo " ++ show nome
 
 -- Avalia um vetor de estruturas com vários acessos a campo. Ex.: vet[10].a.b.c
 evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (OptionalSQBrack exprs@(_:_))):snglVars) = 
@@ -1371,8 +1393,8 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
                 Right (val_estr@(ValorEstrutura _),_,estado_atualizado) -> evaluateEstr estado_atualizado val_estr snglVars
                 Right _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Just _ -> error $ nome ++ " não é uma vetor\nPosição: " ++ (show posicao)
-        Nothing -> Left $ "não possui o campo " ++ nome
+        Just _ -> error $ nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Nothing -> Left $ "não possui o campo " ++ show nome
 {- 
     estado
     vetor
@@ -1486,7 +1508,7 @@ assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
                                 Right ith ->
                                     -- Se for unidimensional
                                     if null ids then
-                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show posicao)
+                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show posicao)
                                         -- Chama a recursão
                                         else let (ithAtualizado, estadoAtualizado2) = assignToValueLeia (tipoEleVet, ith) (CRIAVAR (Var ((SingleVar (ID posicao nomeVar) (OptionalSQBrack ids)):campos))) estadoAtualizado1 in
                                             -- Substitui o valor atualizado
@@ -1507,9 +1529,9 @@ assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
                                     case evaluateExpr estadoAtual id_expr of
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show posicao)
-                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
-                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show posicao)
-                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
+                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show posicao)
+                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
                 
 
         -- Estrutura
@@ -1529,10 +1551,10 @@ assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
                                         -- Substitui o valor atualizado do campo no campo correspondente da estrutura
                                         case setCampo nomeCampo valorAtualizado varsEstr of
                                             Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
-                                            Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
-                                Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
-                        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
-                otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                                            Left err -> error $ err ++ " em " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
+                                Left err -> error $ err ++ " em " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
+                        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável: " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável: " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
 
 
 getValorLeia :: Tipo -> (Int, Int) -> IO Valor
@@ -1597,7 +1619,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                 Right ith ->
                                     -- Se for unidimensional
                                     if null ids then
-                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos)
                                         -- Chama a recursão
                                         else let (ithAtualizado, estadoAtualizado2) = assignToValue (tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
                                             -- Substitui o valor atualizado
@@ -1618,9 +1640,9 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                     case evaluateExpr estadoAtual id_expr of
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
-                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
-                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
-                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável " ++ nomeVar ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos)
+                otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
                 
 
         -- Estrutura
@@ -1640,22 +1662,22 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                         -- Substitui o valor atualizado do campo no campo correspondente da estrutura
                                         case setCampo nomeCampo valorAtualizado varsEstr of
                                             Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
-                                            Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
-                                Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
-                        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
-                otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                                            Left err -> error $ err ++ " em " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
+                                Left err -> error $ err ++ " em " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posCampo)
+                        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável: " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
+                otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável: " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posVarEstr)
 
 
 -- Fornece o nome da variável e uma lista de variáveis, e retorna o valor e o tipo da variável com o nome fornecido
 getCampo :: String -> [Variavel] -> Either String (Tipo,Valor)
-getCampo nome [] = Left $ "Campo " ++ nome ++ " não encontrado"
+getCampo nome [] = Left $ "Campo " ++ show nome ++ " não encontrado"
 getCampo nome ((nomeCampo,tipo,valor):campos)
     | nome == nomeCampo = Right (tipo, valor)
     | otherwise         = getCampo nome campos
 
 -- Recebe nome do campo, o novo valor e a lista de variáveis, e retorna a lista de variáveis atualizada
 setCampo :: String -> Valor -> [Variavel] -> Either String [Variavel]
-setCampo nome _ [] = Left $ "Campo " ++ nome ++ " não encontrado"
+setCampo nome _ [] = Left $ "Campo " ++ show nome ++ " não encontrado"
 setCampo nome novo ((nomeCampo,tipo,valor):campos)
     | nome == nomeCampo = Right ((nomeCampo,tipo,novo):campos)
     | otherwise =
@@ -1709,7 +1731,7 @@ incrDecr func (tipo, valor) ((SingleVar (ID pos nome) (OptionalSQBrack (id_expr:
                                     Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
                                     Left err -> error $ (show err) ++ "\nPosição: " ++ (show pos)
                         else
-                            error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ nome ++ "\nPosição: " ++ (show pos)
+                            error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nome ++ "\nPosição: " ++ (show pos)
                     -- Se for multidimensional
                     else
                         -- Chama a recursão
@@ -1724,7 +1746,7 @@ incrDecr func (tipo, valor) ((SingleVar (ID pos nome) (OptionalSQBrack (id_expr:
                     case evaluateExpr estado id_expr of
                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                         otherwise -> error $ "Expressão não inteira fornecida como id de vetor\nPosição: " ++ (show pos)
-        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ nome ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show pos)
+        otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nome ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show pos)
 
 -- Estrutura
 incrDecr func (tipo, valor) ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQBrack [])):campos@((SingleVar (ID posCampo nomeCampo) _):_) ) estado =
@@ -1740,8 +1762,8 @@ incrDecr func (tipo, valor) ((SingleVar (ID posVarEstr nomeVarEstr) (OptionalSQB
                         -- Substitui o valor atualizado do campo no campo correspondente da estrutura
                         case setCampo nomeCampo valorAtualizado varsEstr of
                             Right varsEstrAtualizadas -> (ValorEstrutura varsEstrAtualizadas, estadoAtualizado)
-                            Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipo) ++ "\nPosição: " ++ (show posCampo)
-                Left err -> error $ err ++ " em " ++ nomeVarEstr ++ ", que é do tipo " ++ (show tipo) ++ "\nPosição: " ++ (show posCampo)
-        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável " ++ nomeVarEstr ++ " é do tipo " ++ (show tipo) ++ "\nPosição: " ++ (show posVarEstr)
+                            Left err -> error $ err ++ " em " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show posCampo)
+                Left err -> error $ err ++ " em " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show posCampo)
+        otherwise -> error $ "Tentando acessar campos de uma variável que não é estrutura\nVariável: " ++ show nomeVarEstr ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show posVarEstr)
 
 -- Fim das funções auxilires para Incremento/Decremento ----------------------------------------------------------------
