@@ -1138,16 +1138,16 @@ evaluateExpr estado (CRIACONVERSAO tipo expr) = do
             case res1 of
                 ValorInteiro a -> (ValorInteiro a, TipoAtomico "INTEIRO", estado1)
                 ValorReal a -> (ValorInteiro (truncate a), TipoAtomico "INTEIRO", estado1)
-                ValorCaractere a -> (ValorInteiro (read [a]), TipoAtomico "INTEIRO", estado1)
-                ValorTexto a -> (ValorInteiro (read a), TipoAtomico "INTEIRO", estado1)
+                ValorCaractere a -> (ValorInteiro (leInteiroChar a p), TipoAtomico "INTEIRO", estado1)
+                ValorTexto a -> (ValorInteiro (leInteiroStr a p), TipoAtomico "INTEIRO", estado1)
                 ValorLogico a -> (ValorInteiro (logicoToInt a), TipoAtomico "INTEIRO", estado1)
                 otherwise -> error $ "Conversão inválida para INTEIRO\nTipo recebido: " ++ (show tipo1) ++ "\nPosição: " ++ show p
         TIPO p "REAL" -> 
             case res1 of
                 ValorInteiro a -> (ValorReal (read (show a)), TipoAtomico "REAL", estado1)
                 ValorReal a -> (ValorReal a, TipoAtomico "REAL", estado1)
-                ValorCaractere a -> (ValorReal (read [a]), TipoAtomico "REAL", estado1)
-                ValorTexto a -> (ValorReal (read a), TipoAtomico "REAL", estado1)
+                ValorCaractere a -> (ValorReal (leRealChar a p), TipoAtomico "REAL", estado1)
+                ValorTexto a -> (ValorReal (leRealStr a p), TipoAtomico "REAL", estado1)
                 ValorLogico a -> (ValorReal (logicoToReal a), TipoAtomico "REAL", estado1)
                 otherwise -> error $ "Conversão inválida para REAL\nTipo recebido: " ++ (show tipo1) ++ "\nPosição: " ++ show p
         TIPO p "TEXTO" ->
@@ -1186,6 +1186,26 @@ evaluateExpr estado (CRIACONVERSAO tipo expr) = do
         realToLogico :: Double -> Bool
         realToLogico 0 = False
         realToLogico _ = True
+        leInteiroStr :: String -> (Int,Int) -> Integer
+        leInteiroStr s p =
+            case readMaybe s :: Maybe Integer of
+                    Just i -> i
+                    Nothing -> error $ "Conversão não permitida para INTEIRO\nValor: " ++ show s ++ "\nPosição: " ++ (show p)
+        leRealStr :: String -> (Int,Int) -> Double
+        leRealStr s p =
+            case readMaybe s :: Maybe Double of
+                    Just i -> i
+                    Nothing -> error $ "Conversão não permitida para REAL\nValor: " ++ show s ++ "\nPosição: " ++ (show p)
+        leInteiroChar :: Char -> (Int,Int) -> Integer
+        leInteiroChar s p =
+            case readMaybe [s] :: Maybe Integer of
+                    Just i -> i
+                    Nothing -> error $ "Conversão não permitida para INTEIRO\nValor: " ++ show s ++ "\nPosição: " ++ (show p)
+        leRealChar :: Char -> (Int,Int) -> Double
+        leRealChar s p =
+            case readMaybe [s] :: Maybe Double of
+                    Just i -> i
+                    Nothing -> error $ "Conversão não permitida para REAL\nValor: " ++ show s ++ "\nPosição: " ++ (show p)
         
 evaluateExpr estado (CRIATEXTO (TEXTO _ t)) = (ValorTexto t, TipoAtomico "TEXTO", estado)
 evaluateExpr estado (CRIAINT (INTEIRO _ i)) = (ValorInteiro i, TipoAtomico "INTEIRO", estado)
