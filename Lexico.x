@@ -13,7 +13,7 @@ $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
 @string = \" [^\"]* \"
 @char = \' ("\n"|"\t"|"\r"|"\0"|.) \'
-@comments = "/*" (.*'\n')* "*/"
+@comments = "/*" (.*|\n)* "*/"
 
 -- Regular expressions that define the language tokens.
 tokens :-
@@ -85,13 +85,6 @@ tokens :-
   $loweralpha [$alpha \_ $digit]*   { \p s -> ID (getPosition p) s }
 
 {
-specialChars :: String -> Char
-specialChars char
-    | char == "\n" = '\n'
-    | char == "\t" = '\t'
-    | char == "\r" = '\r'
-    | char == "\0" = '\0'
-    | otherwise = error $ "Caractere inválido: " ++ (show char)
 
 -- The Token type:
 data Token =
