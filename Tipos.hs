@@ -30,7 +30,7 @@ tipoNulo = TipoPonteiroFim "nulo"
 
 instance Show Tipo where
     show (TipoAtomico s)     = s
-    show (TipoVetor d t)     = "VETOR" ++ show d ++ " " ++ show t
+    show (TipoVetor d t)     = show t ++ show d
     show (TipoPonteiroFim t) = "PONTEIRO " ++ t
     show (TipoPonteiroRecursivo t)    = "PONTEIRO " ++ show t
     show (TipoPonteiroVetorFim t)    = "PONTEIRO[] " ++ show t
@@ -68,7 +68,7 @@ getValorInicial :: Tipo -> Valor
 getValorInicial (TipoAtomico "INTEIRO")    = ValorInteiro 0
 getValorInicial (TipoAtomico "LOGICO")     = ValorLogico False
 getValorInicial (TipoAtomico "TEXTO")      = ValorTexto ""
-getValorInicial (TipoAtomico "CARACTER")   = ValorCaractere ' '
+getValorInicial (TipoAtomico "CARACTERE")   = ValorCaractere ' '
 getValorInicial (TipoAtomico "REAL")       = ValorReal 0
 getValorInicial (TipoPonteiroFim _)           = ValorPonteiro ""
 getValorInicial (TipoPonteiroRecursivo _)           = ValorPonteiro ""

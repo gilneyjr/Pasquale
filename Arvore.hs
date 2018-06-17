@@ -162,7 +162,7 @@ data EXPR =
     CRIACHAMADAFUNC CHAMADA [SingleVAR] |
     CRIANOVO {-NOVO-}Token [PONT] {-TIPO-}Token OptionalSQBRACK |
     CRIAVALOREXPR {-VALOR-}Token EXPR OptionalSQBRACK [SingleVAR] |
-    CRIAPARENTESES EXPR OptionalSQBRACK [SingleVAR] |
+    CRIAPARENTESES EXPR {-CloseSQBrack-}Token OptionalSQBRACK [SingleVAR] |
     CRIACONVERSAO {-TIPO-}Token EXPR
     deriving (Eq,Show)
 

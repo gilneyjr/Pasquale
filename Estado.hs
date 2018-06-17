@@ -139,7 +139,7 @@ getVariavelPilha :: String -> [Escopo] -> Either ErroEstado Variavel
 getVariavelPilha nome pilha =
     case simbolo of
         Just simbolo' -> Right simbolo'
-        Nothing -> Left $ ErroBuscaVariavel $ " '" ++ nome ++ "' não encontrado!"
+        Nothing -> Left $ ErroBuscaVariavel $ " \"" ++ nome ++ "\" não encontrado!"
     where simbolo = getVariavelPilha' nome (Just (head pilha)) pilha
 
 -- Auxiliar para a busca por um símbolo na pilha
@@ -165,7 +165,7 @@ atualizarVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
 atualizarVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
     case pilha of
         Just pilhaAtualizada -> Right pilhaAtualizada
-        Nothing -> Left $ ErroBuscaVariavel $ "'" ++ nome ++ "' não encontrado!"
+        Nothing -> Left $ ErroBuscaVariavel $ "\"" ++ nome ++ "\" não encontrado!"
     where pilha = atualizarVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
 
 -- Auxiliar para a atualização do símbolo na pilha
@@ -201,7 +201,7 @@ removerVariavelPilha :: Variavel -> [Escopo] -> Either ErroEstado [Escopo]
 removerVariavelPilha simbolo@(nome, _, _) pilhaAtual = 
     case pilha of
         Just pilhaAtualizada -> Right pilhaAtualizada
-        Nothing -> Left $ ErroBuscaVariavel $ "Nome '" ++ nome ++ "' não encontrado na tabela de símbolos"
+        Nothing -> Left $ ErroBuscaVariavel $ "Nome \"" ++ nome ++ "\" não encontrado na tabela de símbolos"
     where pilha = removerVariavelPilha' simbolo (Just (head pilhaAtual)) pilhaAtual
 
 -- Auxiliar para a remoção do símbolo na pilha
@@ -238,14 +238,14 @@ addTipoLista tipo tipos =
     if notElem tipo tipos then
         Right $ tipo:tipos
     else
-        Left $ ErroTipoDuplicado $ "Tipo '" ++ show tipo ++ "' já foi declarado anteriormente"
+        Left $ ErroTipoDuplicado $ "Tipo \"" ++ show tipo ++ "\" já foi declarado anteriormente"
 
 -- Busca um tipo primitivo no estado
 getTipo :: String -> Estado -> Either ErroEstado Tipo
 getTipo nome (_, tipos, _, _) =
     case tipo of
         Just tipoEncontrado -> Right tipoEncontrado
-        Nothing -> Left $ ErroBuscaTipo $ "Tipo '" ++ nome ++ "' não encontrado"
+        Nothing -> Left $ ErroBuscaTipo $ "Tipo \"" ++ nome ++ "\" não encontrado"
     where tipo = getTipoLista nome tipos
 
 getTipoLista :: String -> [Tipo] -> Maybe Tipo
@@ -280,7 +280,7 @@ addSubprograma subprograma (pilha, tipos, subprogramasAtuais, cont) =
 addSubprogramaLista :: Subprograma -> [Subprograma] -> Either ErroEstado [Subprograma]
 addSubprogramaLista subprograma subprogramas = 
     case getSubprogramaLista nome (snd $ unzip declaracoes) subprogramas of
-        Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma '" ++ nome ++ "' já existe com a mesma assinatura"
+        Just _ -> Left $ ErroSubprogramaDuplicada $ "Subprograma \"" ++ nome ++ "\" já existe com a mesma assinatura"
         Nothing -> Right $ subprograma:subprogramas
     where (nome, declaracoes) = getAssinaturaSubprograma subprograma
 
@@ -294,8 +294,8 @@ getSubprograma :: String -> [Tipo] -> Estado -> Either ErroEstado Subprograma
 getSubprograma nome tipos' estado@(_, _, funcoes, _) = 
     case getSubprogramaLista nome tipos funcoes of
         Just subprograma -> Right subprograma
-        Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma '" ++ nome
-             ++ "' não encontrado com assinatura '(" ++ (mostra tipos) ++ ")'"
+        Nothing -> Left $ ErroSubprogramaNaoEncontrado $ "Subprograma \"" ++ nome
+             ++ "\" não encontrado com assinatura '(" ++ (mostra tipos) ++ ")\""
     where
         tipos = traduz tipos'
         traduz :: [Tipo] -> [Tipo]
