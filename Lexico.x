@@ -12,7 +12,7 @@ $alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
 @string = \"[^\"\\]*(\\.[^\"\\]*)*\"
-@char = \' ("\n"|"\t"|"\r"|"\0"|.) \'
+@char = \' ("\n"|"\t"|"\r"|"\0"|"\'"|\\\\|.) \'
 @comments = "/*" (.*|\n)* "*/"
 
 -- Regular expressions that define the language tokens.
