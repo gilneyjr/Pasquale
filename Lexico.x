@@ -12,6 +12,7 @@ $alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
 @string = \" [^\"]* \"
+@char = \' ("\n"|"\t"|"\r"|"\0"|.) \'
 @comments = "/*" (.*'\n')* "*/"
 
 -- Regular expressions that define the language tokens.
@@ -78,11 +79,19 @@ tokens :-
   ";"                               { \p s -> EndCommand (getPosition p) }
   $digit+"."$digit+                 { \p s -> REAL (getPosition p) (read s) }
   $digit+                           { \p s -> INTEIRO (getPosition p) (read s) }
-  \'.\'                             { \p s -> CARACTERE (getPosition p) (read s) }
+  @char                             { \p s -> CARACTERE (getPosition p) (read s) }
   @string                           { \p s -> TEXTO (getPosition p) (read s) }
   $upperalpha [$alpha \_ $digit]*   { \p s -> TIPO (getPosition p) s }
   $loweralpha [$alpha \_ $digit]*   { \p s -> ID (getPosition p) s }
+
 {
+specialChars :: String -> Char
+specialChars char
+    | char == "\n" = '\n'
+    | char == "\t" = '\t'
+    | char == "\r" = '\r'
+    | char == "\0" = '\0'
+    | otherwise = error $ "Caractere inválido: " ++ (show char)
 
 -- The Token type:
 data Token =
