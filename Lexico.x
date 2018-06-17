@@ -11,7 +11,7 @@ $digit = 0-9         -- digits
 $alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
-@string = \" [^\"]* \"
+@string = \"[^\"\\]*(\\.[^\"\\]*)*\"
 @char = \' ("\n"|"\t"|"\r"|"\0"|.) \'
 @comments = "/*" (.*|\n)* "*/"
 
