@@ -1,28 +1,11 @@
 ESTRUTURA Est
-	INTEIRO data;
-	PONTEIRO Est next;
+	INTEIRO int;
 FIMESTRUTURA
 
-PROCEDIMENTO print RECEBE (PONTEIRO Est pont)
-	ENQUANTO pont /= NULO EXECUTE
-		ESCREVA( (TEXTO) VALOR(pont).data + " -> ");
-		pont := VALOR(pont).next;
-	FIMENQUANTO
-	ESCREVA("NULO\n");
-FIMPROCEDIMENTO
-
-FUNCAO insere RECEBE (PONTEIRO Est head, INTEIRO novo) RETORNA PONTEIRO Est
-	PONTEIRO Est novoEst := NOVO Est;
-	VALOR(novoEst).data := novo;
-	VALOR(novoEst).next := head;
-	RETORNE novoEst;
-FIMFUNCAO
-
 PRINCIPAL
-    PONTEIRO Est list;
-    list := insere(list, 2);
-    list := insere(list, 4);
-    list := insere(list, 5);
-    list := insere(list, 6);
-    print(list);
+    PONTEIRO Est x := NOVO Est;
+    VALOR(x).int := 2;
+    ESCREVA((TEXTO) VALOR(x).int + "\n");
+    VALOR(x).int++;
+    ESCREVA((TEXTO) VALOR(x).int + "\n");
 FIMPRINCIPAL

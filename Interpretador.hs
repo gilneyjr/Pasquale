@@ -423,7 +423,7 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                                     Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
                                     Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                         Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR (VALOR posValor) expr campos ->
+        CRIAVALOREXPR (VALOR posValor) expr bracks campos ->
             -- Avalia o lado direito primeiro
             case evaluateExpr estado0 exprDir of
                 (valorDir,tipoDir,estado1) ->
@@ -431,62 +431,75 @@ executarStmt (NOVOATRIBSTMT exprEsq (Attrib posicao) exprDir) estado0 =
                     case evaluateExpr estado1 expr of
                         -- Caso seja um ponteiro
                         (ValorPonteiro varApontada, tipoPont, estado2) ->
-                            if tipoPont == tipoNulo then
-                                error $ "Tentando acessar valor de um ponteiro nulo\nPosição: " ++ (show posValor)
-                            else
-                                -- Busca variável apontada
-                                case getVariavel varApontada estado2 of
-                                    Right (_, tipoVar, valorVar) ->
-                                        -- Calcula novo valor para a variável apontada
-                                        let (novoValor, estado3) = assignToValue (tipoVar, valorVar) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID posValor "VALOR( <expr> )") (OptionalSQBrack [])):campos))) posicao estado2 in
-                                            -- Atualiza variável apontada e finaliza stmt
-                                           case atualizarVariavel (varApontada, tipoVar, novoValor) estado3 of
-                                                Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                                                Left _ -> error $ "Tentando por valor de variavel não existente\nPosição: " ++ (show posValor)
-                                    Left _ -> error $ "Tentando por valor de variavel não existente\nPosição: " ++ (show posValor)
+                            -- Busca variável apontada
+                            case getVariavel varApontada estado2 of
+                                Right (_, tipoVar, valorVar) ->
+                                    -- Calcula novo valor para a variável apontada
+                                    let (novoValor, estado3) = assignToValue (tipoVar, valorVar) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos))) posicao estado2 in
+                                        -- Atualiza variável apontada e finaliza stmt
+                                       case atualizarVariavel (varApontada, tipoVar, novoValor) estado3 of
+                                            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                                            Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
+                                Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
                         (_,tipoPont,_) -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipoPont) ++ "\nPosição: " ++ (show posValor)
 
-executarStmt (NOVOINC (CRIAINC (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) ) estado0 =
-    -- Busca variável
-    case getVariavel nomeVar estado0 of
-        Right (_, tipoVar, valorVar) ->
-            -- Calcula incremento
-            let (novoValor, estado1) = incrDecr (+ 1) (tipoVar, valorVar) var estado0 in
-                -- Atualiza variável
-                case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
-                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                    Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
-        Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
-        
-executarStmt (NOVOINC (CRIAINC (CRIAVALOREXPR (VALOR pos) expr mudarDepois) ) ) estado0 =
-    -- Busca variável
-    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr mudarDepois) estado0 in
-    case valor of
-        ValorInteiro v -> case atualizarVariavel (nome, tipo, ValorInteiro (v+1)) estado1 of
-            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-            Left _ -> error $ "Acesso em posição da memória inválida:\nPosição: " ++ (show pos)
-        otherwise -> error $ "Tentado incrementar/decrementar tipo não inteiro\nTipo: " ++ show tipo ++ "\nPosição: " ++ show pos
+executarStmt (NOVOINC (CRIAINC expr)) estado0 =
+    case expr of
+        CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos )) ->
+            -- Busca variável
+            case getVariavel nomeVar estado0 of
+                Right (_, tipoVar, valorVar) ->
+                    -- Calcula incremento
+                    let (novoValor, estado1) = incrDecr ((+) 1) (tipoVar, valorVar) var estado0 in
+                        -- Atualiza variável
+                        case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
+                            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                            Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
+                Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
 
-executarStmt (NOVODECR (CRIADECR (CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos ) ) ) ) ) estado0 =
-    -- Busca variável
-    case getVariavel nomeVar estado0 of
-        Right (_, tipoVar, valorVar) ->
-            -- Calcula incremento
-            let (novoValor, estado1) = incrDecr (\x -> (x-1)) (tipoVar, valorVar) var estado0 in
-                -- Atualiza variável
-                case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
-                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-                    Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
-        Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)  
+        CRIAVALOREXPR (VALOR posValor) exprValor bracks campos ->
+            -- Avalia a expressão de dentro de VALOR
+            case evaluateExpr estado0 exprValor of
+                -- Se for um ponteiro
+                (ValorPonteiro varApontada, tipoPont, estado1) ->
+                    -- Pega variável apontada
+                    case getVariavel varApontada estado1 of
+                        Right (_, tipoVar,valorVar) ->
+                            let (novoValor, estado2) = incrDecr ((+) 1) (tipoVar,valorVar) ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos) estado1 of
+                                case atualizarVariavel (varApontada, tipoVar, novoValor) of
+                                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                                    Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
+                        Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
+                (_,tipoPont,_) -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipoPont) ++ "\nPosição: " ++ (show posValor)
 
-executarStmt (NOVODECR (CRIADECR (CRIAVALOREXPR (VALOR pos) expr mudarDepois) ) ) estado0 =
-    -- Busca variável
-    let ((nome,tipo,valor), estado1) = getVariavelFromExpr (CRIAVALOREXPR (VALOR pos) expr mudarDepois) estado0 in
-    case valor of
-        ValorInteiro v -> case atualizarVariavel (nome, tipo, ValorInteiro (v-1)) estado1 of
-            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
-            Left _ -> error $ "Acesso em posição da memória inválida:\nPosição: " ++ (show pos)
-        otherwise -> error $ "Tentado incrementar/decrementar tipo não inteiro\nTipo: " ++ show tipo ++ "\nPosição: " ++ show pos
+executarStmt (NOVODECR (CRIADECR expr)) estado0 =
+    case expr of
+        CRIAVAR (Var var@((SingleVar (ID pos nomeVar) _):campos )) ->
+            -- Busca variável
+            case getVariavel nomeVar estado0 of
+                Right (_, tipoVar, valorVar) ->
+                    -- Calcula incremento
+                    let (novoValor, estado1) = incrDecr ((-) 1) (tipoVar, valorVar) var estado0 in
+                        -- Atualiza variável
+                        case atualizarVariavel (nomeVar, tipoVar, novoValor) estado1 of
+                            Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                            Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos) 
+                Left _ -> error $ "Variável não declarada\nVariável: " ++ nomeVar ++ "\nPosição: " ++ (show pos)
+
+        CRIAVALOREXPR (VALOR posValor) exprValor bracks campos ->
+            -- Avalia a expressão de dentro de VALOR
+            case evaluateExpr estado0 exprValor of
+                -- Se for um ponteiro
+                (ValorPonteiro varApontada, tipoPont, estado1) ->
+                    -- Pega variável apontada
+                    case getVariavel varApontada estado1 of
+                        Right (_, tipoVar,valorVar) ->
+                            let (novoValor, estado2) = incrDecr ((-) 1) (tipoVar,valorVar) ((SingleVar (ID posValor "VALOR( <expr> )") bracks):campos) estado1 of
+                                case atualizarVariavel (varApontada, tipoVar, novoValor) of
+                                    Right estadoFinal -> return (estadoFinal, False, False, False, Nothing, Nothing)
+                                    Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
+                        Left _ -> error $ "Tentando acessar valor de variavel não existente\nPosição: " ++ (show posValor)
+                (_,tipoPont,_) -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipoPont) ++ "\nPosição: " ++ (show posValor)
 
 executarStmt (NOVOCHAMADA (CRIACHAMADA (ID posicao nome) exprs)) estado =
     case subprograma of
@@ -593,7 +606,7 @@ executarStmt (NOVOLEIA (CRIALEIA (LEIA posicao) (expr:exprs))) estado0 = do
                                 else error $ "Impossível"
                             Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
                 Left _ -> error $ "Variável " ++ nome ++ " não declarada\nPosição: " ++ (show pos)
-        CRIAVALOREXPR (VALOR pos) _ mudarDepois ->
+        CRIAVALOREXPR (VALOR pos) _ mudarDepoisCampos ->
                 -- Pega a variavel do lado esquerdo
                 let
                     ((nome,tipoEsq,valorEsq), estado1) = getVariavelFromExpr expr estado0
@@ -615,7 +628,7 @@ getVariavelFromExpr (CRIAVAR (Var ((SingleVar (ID posicao nome) colchetes):_))) 
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where var = getVariavel nome estado
 
-getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr mudarDepois) estadoAntigo =
+getVariavelFromExpr (CRIAVALOREXPR (VALOR p) expr mudarDepoisCampos) estadoAntigo =
     case res of
         ValorPonteiro nome -> case var of
             Right var' -> (var', estado)
