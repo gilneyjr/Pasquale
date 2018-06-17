@@ -88,7 +88,14 @@ parseDec = do
 parsePont :: ParseArgs PONT
 parsePont = do
     a <- parsePonteiro
-    return $ NOVOPONT a 
+    b <- parseSqBracks <|> (return False)
+    return $ NOVOPONT a b
+
+parseSqBracks :: ParseArgs Bool
+parseSqBracks = do
+    parseOpensqbrack
+    parseClosesqbrack <?> "Esperado: ']'"
+    return True
 
 parseVar_ :: ParseArgs VAR_
 parseVar_ = do
@@ -723,10 +730,11 @@ parseCriavar = do
 
 parseCrianovo :: ParseArgs EXPR
 parseCrianovo = do
-    parseNovo
-    a <- many parsePont
-    b <- parseTipo <?> "Esperado: Tipo a ser alocado"
-    return $ CRIANOVO a b
+    a <- parseNovo
+    b <- many parsePont
+    c <- parseTipo <?> "Esperado: Tipo a ser alocado"
+    d <- parseOptionalsqbrack
+    return $ CRIANOVO a b c d
 
 parseCriavalorexpr :: ParseArgs EXPR
 parseCriavalorexpr = do
@@ -734,13 +742,14 @@ parseCriavalorexpr = do
     parseOpenbrack <?> "Esperado: '('"
     b <- parseExpr <?> "Esperado: Expressão interna de VALOR"
     parseClosebrack <?> "Esperado: ')'"
-    c <- many parseCampo
-    return $ CRIAVALOREXPR a b c
+    c <- parseOptionalsqbrack
+    d <- many parseCampo
+    return $ CRIAVALOREXPR a b c d
 
 parseCampo :: ParseArgs SingleVAR
 parseCampo = do
     parseDot
-    a <- parseSinglevar
+    a <- parseSinglevar <?> "Esperado: Nome do campo"
     return a
 
 parseCriaExprID :: ParseArgs EXPR
@@ -753,7 +762,8 @@ parseCriaExprID = do
 parseCriachamadafunc :: Token -> ParseArgs EXPR
 parseCriachamadafunc a = do
     b <- parseChamada a
-    return $ CRIACHAMADAFUNC b
+    c <- many parseCampo
+    return $ CRIACHAMADAFUNC b c
 
 parseIniciabrack :: ParseArgs EXPR
 parseIniciabrack = do
@@ -764,7 +774,9 @@ parseCriaparenteses :: ParseArgs EXPR
 parseCriaparenteses = do
     a <- parseExpr
     parseClosebrack <?> "Esperado: ')'"
-    return $ CRIAPARENTESES a
+    b <- parseOptionalsqbrack
+    c <- many parseCampo
+    return $ CRIAPARENTESES a b c
 
 parseCriaconversao :: ParseArgs EXPR
 parseCriaconversao = do

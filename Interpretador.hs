@@ -66,8 +66,13 @@ getDecsEstr nomeEstrutura ((NOVADEC ponteiros (TIPO posicao nome) tokensVariavei
         Left erro -> 
             if nomeEstrutura == nome then
             case ponteiros of
-                a:b ->
+                (NOVOPONT _ False):b ->
                     let tipoEncontrado = TipoPonteiroFim nomeEstrutura
+                        (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro b tipoEncontrado)) ([], estado) tokensVariaveis
+                        (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
+                            (zip variaveis tipos ++ declaracoes', estadoFinal)
+                (NOVOPONT _ True):b ->
+                    let tipoEncontrado = TipoPonteiroVetorFim nomeEstrutura
                         (tipos, estadoIntermediario) = foldl (funcaoFold' (getTipoPonteiro b tipoEncontrado)) ([], estado) tokensVariaveis
                         (declaracoes', estadoFinal) = getDecsEstr nomeEstrutura declaracoes estadoIntermediario in
                             (zip variaveis tipos ++ declaracoes', estadoFinal)
@@ -96,19 +101,25 @@ getDecs ((NOVADEC ponteiros (TIPO posicao nome) tokensVariaveis):declaracoes) es
 getTipoVetor :: Tipo -> VAR_ -> Estado -> (Tipo, Estado)
 getTipoVetor tipo (VAR_SEM (SingleVar _ (OptionalSQBrack []))) estado = (tipo, estado)
 getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar _ (OptionalSQBrack [])) _)) estado = (tipo, estado)
-getTipoVetor tipo (VAR_SEM (SingleVar posicao (OptionalSQBrack exprs))) estado =
-    if all isJust valores then
+getTipoVetor tipo (VAR_SEM (SingleVar (ID posicao _) (OptionalSQBrack exprs))) estado =
+    if (all isJust valores) && (positivos (catMaybes valores)) then
         (TipoVetor (catMaybes valores) tipo, estadoFinal)
     else
-        error $ "Expressão não é um valor inteiro valido\nPosição: " ++ (show posicao)
-    where (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
+        error $ "Expressão não é um valor inteiro válido\nPosição: " ++ (show posicao)
+    where
+        (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
+        positivos [] = True
+        positivos (a:b) = (a > 0) && (positivos b)
 
-getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar posicao (OptionalSQBrack exprs)) _)) estado =
-    if all (\v -> isJust v) valores then
+getTipoVetor tipo (VAR_COM (CRIAATRIB (SingleVar (ID posicao _) (OptionalSQBrack exprs)) _)) estado =
+    if (all isJust valores) && (positivos (catMaybes valores)) then
         (TipoVetor (catMaybes valores) tipo, estadoFinal)
     else
-        error $ "Expressão não é um valor inteiro valido\nPosição: " ++ (show posicao)
-    where (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
+        error $ "Expressão não é um valor inteiro válido\nPosição: " ++ (show posicao)
+    where
+        (valores, estadoFinal) = foldl funcaoFold ([], estado) exprs
+        positivos [] = True
+        positivos (a:b) = (a > 0) && (positivos b)
 
 funcaoFold :: ([Maybe Integer], Estado) -> EXPR -> ([Maybe Integer], Estado)
 funcaoFold (valores, estado0) expr = ((valores ++ [getValorInteiro valor]), estadoFinal)
@@ -158,27 +169,79 @@ getPosicaoSingleVar (SingleVar (ID a _) _) = a
 --adiciona os subprogramas criadas pelo usuario
 addSubprogs :: [SUBPROG] -> Estado -> IO Estado
 addSubprogs []    estado = do return estado
-addSubprogs ((CRIAFUNC func):b) estado =
+addSubprogs ((CRIAFUNC func@(NOVOFUNC nome _ _ _ _)):b) estado =
     case novo of
-        Right estadoAtualizado -> addSubprogs b estadoAtualizado
+        Right estadoAtualizado -> 
+            case subprogramaValido subprograma of
+                True -> addSubprogs b estadoAtualizado
+                False -> error $ "Existem linhas de execução sem retorno na função " ++ show nome ++ "\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (subprograma, estadoIntermediario) = getSubprogFromFunc func estado
           novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoFunc func
-addSubprogs ((CRIAPROC proc):b) estado =
+addSubprogs ((CRIAPROC proc@(NOVOPROC nome _ _)):b) estado =
     case novo of
-        Right estadoAtualizado -> addSubprogs b estadoAtualizado
+        Right estadoAtualizado -> 
+            case subprogramaValido subprograma of
+                True -> addSubprogs b estadoAtualizado
+                False -> error $ "Existem linhas de execução sem retorno no procedimento " ++ show nome ++ "\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (subprograma, estadoIntermediario) = getSubprogFromProc proc estado
           novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoProc proc
-addSubprogs ((CRIAOPER oper):b) estado =
+addSubprogs ((CRIAOPER oper@(NOVOOPER op _ _ _ _)):b) estado =
     case novo of
-        Right estadoAtualizado -> addSubprogs b estadoAtualizado
+        Right estadoAtualizado -> 
+            case subprogramaValido subprograma of
+                True -> addSubprogs b estadoAtualizado
+                False -> error $ "Existem linhas de execução sem retorno no operador " ++ show (getNomeFromOp op) ++ "\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
     where (subprograma, estadoIntermediario) = getSubprogFromOper oper estado
           novo = addSubprograma subprograma estadoIntermediario
           posicao = getPosicaoOper oper
+
+subprogramaValido :: Subprograma -> Bool
+subprogramaValido subprog@(Left (nome, _, stmts)) = validaProcedimento nome stmts 
+subprogramaValido subprog@(Right (nome, _, stmts, _)) = validaFuncao nome stmts 
+
+validaProcedimento :: String -> [STMT] -> Bool
+validaProcedimento _ [] = False
+validaProcedimento nome (a:b) = 
+    case validaProcedimento nome b of
+        True -> case a of
+            NOVORETORNEFUNC ret -> 
+                error $ "Procedimento " ++ show nome ++ " retorna expressão\nPosição: " ++ (show (getPosRetorneF ret))
+            otherwise -> True
+        False -> case a of
+            NOVORETORNEFUNC ret -> 
+                error $ "Procedimento " ++ show nome ++ " retorna expressão\nPosição: " ++ (show (getPosRetorneF ret))
+            NOVOENQUANTO (CRIAENQUANTO _ _ stmts) -> validaProcedimento nome stmts
+            NOVOBLOCO (CRIABLOCO stmts) -> validaProcedimento nome stmts
+            NOVOSE (CRIASE _ _ stmts1 (OptionalSenao stmts2) ) -> (validaProcedimento nome stmts1) && (validaProcedimento nome stmts2)
+            NOVORETORNEPROC _ -> True
+            otherwise -> False
+    where
+        getPosRetorneF (CRIARETORNEF (RETORNE p) _) = p
+
+validaFuncao :: String -> [STMT] -> Bool
+validaFuncao _ [] = False
+validaFuncao nome (a:b) = 
+    case validaFuncao nome b of
+        True -> case a of
+            NOVORETORNEPROC ret -> 
+                error $ funcOuOper nome ++ " " ++ show nome ++ " possui retorno sem expressão\nPosição: " ++ (show (getPosRetorneP ret))
+            otherwise -> True
+        False -> case a of
+            NOVORETORNEPROC ret -> 
+                error $ funcOuOper nome ++ " " ++ show nome ++ " possui retorno sem expressão\nPosição: " ++ (show (getPosRetorneP ret))
+            NOVOENQUANTO (CRIAENQUANTO _ _ stmts) -> validaFuncao nome stmts
+            NOVOBLOCO (CRIABLOCO stmts) -> validaFuncao nome stmts
+            NOVOSE (CRIASE _ _ stmts1 (OptionalSenao stmts2) ) -> (validaFuncao nome stmts1) && (validaFuncao nome stmts2)
+            NOVORETORNEFUNC _ -> True
+            otherwise -> False
+    where
+        funcOuOper (a:b) = if isAlpha a then "Função" else "Operador"
+        getPosRetorneP (CRIARETORNEP (RETORNE p)) = p
 
 --Retorna o subprograma a ser salvo na memoria
 getSubprogFromFunc :: FUNC -> Estado -> (Subprograma, Estado)
@@ -223,6 +286,8 @@ getSubprogFromOper (NOVOOPER op params ponts tipo stmts) estado =
         isPont :: Declaracao -> Bool
         isPont (_, TipoPonteiroFim _) = True
         isPont (_, TipoPonteiroRecursivo _) = True
+        isPont (_, TipoPonteiroVetorFim _) = True
+        isPont (_, TipoPonteiroVetorRecursivo _) = True
         isPont _ = False
 
 --Retorna True sse o operador pode ser apenas unário
@@ -1124,21 +1189,19 @@ evaluateExpr estado (CRIAVALOREXPR (VALOR p) expr campos) =
     case val of
         ValorPonteiro s -> 
             if null campos then
-                (getValor $ getVariavel s estado1, getTipoApontado tipo, estado1)
+                case getVariavel s estado1 of
+                    (Left _) -> error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
+                    (Right (_, tipoApontado, valorApontado)) -> (valorApontado, tipoApontado, estado1)
             else
-                case evaluateEstr estado1 (getValor (getVariavel s estado1)) campos of
-                    Right result -> result
-                    Left err -> error $ "Valor apontado " ++ (show err) ++ "\nPosição: " ++ (show p)
+                case getVariavel s estado1 of
+                    (Left _) -> error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
+                    (Right (_, _, valorApontado)) -> 
+                        case evaluateEstr estado1 valorApontado campos of
+                            Right result -> result
+                            Left err -> error $ "Valor apontado " ++ (show err) ++ "\nPosição: " ++ (show p)
         otherwise -> error $ "Busca por valor em variável que não é um ponteiro:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
     where 
         (val, tipo, estado1) = evaluateExpr estado expr
-        getValor :: (Either ErroEstado Variavel) -> Valor
-        getValor (Left _) = error $ "Ponteiro aponta para posição inválida:\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show p)
-        getValor (Right (_,_,val)) = val
-        getTipoApontado :: Tipo -> Tipo
-        getTipoApontado (TipoPonteiroFim s) = TipoAtomico s
-        getTipoApontado (TipoPonteiroRecursivo s) = s
-        getTipoApontado _ = error $ "Erro impossível de ocorrer"
 
 -- variável simples
 evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack [])])) = 
@@ -1188,7 +1251,7 @@ evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- Alocação dinâmica de um elemento
-evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO ponts tipo) =
+evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO (NOVO pos) ponts tipo (OptionalSQBrack [])) =
     case res of
         Right estadoAtualizado -> (ValorPonteiro nome', criaPonteiro tipo', estadoAtualizado)
         Left erro -> error ("erro impossível de acontecer: " ++ show erro)
@@ -1202,8 +1265,37 @@ evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO ponts tipo
         criaPonteiro :: Tipo -> Tipo
         criaPonteiro t@(TipoPonteiroFim _) = TipoPonteiroRecursivo t
         criaPonteiro t@(TipoPonteiroRecursivo _) = TipoPonteiroRecursivo t
+        criaPonteiro t@(TipoPonteiroVetorFim _) = TipoPonteiroRecursivo t
+        criaPonteiro t@(TipoPonteiroVetorRecursivo _) = TipoPonteiroRecursivo t
         criaPonteiro t@(TipoAtomico s) = TipoPonteiroFim s
         criaPonteiro t@(TipoEstrutura s _) = TipoPonteiroFim s
+        getDec :: [PONT] -> Token -> String -> Estado -> (Declaracao, Estado)
+        getDec ponteiros (TIPO posicao nome) variavel estado =
+            case tipoPrimitivo of
+                Right tipoEncontrado -> ((variavel, getTipoPonteiro ponteiros tipoEncontrado), estado)
+                Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
+            where tipoPrimitivo = getTipo nome estado
+
+-- Alocação dinâmica de arranjo de um elemento
+evaluateExpr prevEstado@(escopo, tipos, subprogs, prevCont) (CRIANOVO _ ponts tipo@(TIPO pos _) (OptionalSQBrack exprs@(_:_))) =
+    case res of
+        Right estadoAtualizado -> (ValorPonteiro nome', criaPonteiro tipo'', estadoAtualizado)
+        Left erro -> error ("erro impossível de acontecer: " ++ show erro)
+    where
+        id = "$" ++ show prevCont 
+        cont = prevCont+1
+        estado = (escopo, tipos, subprogs, cont)
+        ((nome', tipo''), estadoPreIntermediario) =
+            getDec ponts tipo id estado
+        (tipo', estadoIntermediario) = getTipoVetor tipo'' (VAR_SEM (SingleVar (ID pos "") (OptionalSQBrack exprs))) estadoPreIntermediario
+        res = addVariavelGlobal (nome', tipo', getValorInicial tipo') estadoIntermediario
+        criaPonteiro :: Tipo -> Tipo
+        criaPonteiro t@(TipoPonteiroFim _) = TipoPonteiroVetorRecursivo t
+        criaPonteiro t@(TipoPonteiroRecursivo _) = TipoPonteiroVetorRecursivo t
+        criaPonteiro t@(TipoPonteiroVetorFim _) = TipoPonteiroVetorRecursivo t
+        criaPonteiro t@(TipoPonteiroVetorRecursivo _) = TipoPonteiroVetorRecursivo t
+        criaPonteiro t@(TipoAtomico s) = TipoPonteiroVetorFim s
+        criaPonteiro t@(TipoEstrutura s _) = TipoPonteiroVetorFim s
         getDec :: [PONT] -> Token -> String -> Estado -> (Declaracao, Estado)
         getDec ponteiros (TIPO posicao nome) variavel estado =
             case tipoPrimitivo of

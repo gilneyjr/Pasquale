@@ -328,6 +328,10 @@ mesmoTipo tipo1 tipo2 estado =
         (TipoPonteiroFim _, TipoPonteiroFim "nulo") -> True
         (TipoPonteiroFim "nulo", TipoPonteiroRecursivo _) -> True
         (TipoPonteiroRecursivo _, TipoPonteiroFim "nulo") -> True
+        (TipoPonteiroFim "nulo", TipoPonteiroVetorFim _) -> True
+        (TipoPonteiroVetorFim _, TipoPonteiroFim "nulo") -> True
+        (TipoPonteiroFim "nulo", TipoPonteiroVetorRecursivo _) -> True
+        (TipoPonteiroVetorRecursivo _, TipoPonteiroFim "nulo") -> True
         otherwise -> False
 
 --Estado antes da execucao
