@@ -1220,7 +1220,7 @@ evaluateExpr estado (CRIAVAR (Var [SingleVar (ID posicao nome) (OptionalSQBrack 
             case (evaluateVet estado valor (TipoVetor faixas etc) faixas ids) of
                 Right result -> result
                 Left err     -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Right a -> error $ "Variável: " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Right (_, tipo, _) -> error $ "Variável: " ++ show nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- variáveis com acesso a campo de estrutura
@@ -1232,7 +1232,7 @@ evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack
                     case evaluateEstr estado valor_estr snglVars of
                         Right result -> result
                         Left erro -> error $ nome_estr ++ " " ++ (show erro) ++ "\nPosição: " ++ (show posicao)
-                _ -> error $ "Variável: " ++ show nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
+                tipo -> error $ "Variável: " ++ show nome ++ " não é uma estrutura\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- variáveis vetores de estruturas com acesso aos campos
@@ -1249,9 +1249,9 @@ evaluateExpr estado (CRIAVAR (Var ((SingleVar (ID posicao nome) (OptionalSQBrack
                     case evaluateEstr estado_atualizado val_estr snglVars of
                         Right result -> result
                         Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-                Right _  -> error $ nome ++ " não é um vetor de estruturas\nPosição: " ++ (show posicao)
+                Right _  -> error $ nome ++ " não é um vetor de estruturas\nTipo: " ++ show (TipoVetor faixas etc) ++ "\nPosição: " ++ (show posicao)
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Right _ -> error $ "Variável: " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Right (_, tipo, _) -> error $ "Variável: " ++ show nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
         Left erro -> error $ (show erro) ++ "\nPosição: " ++ (show posicao)
 
 -- Alocação dinâmica de um elemento
@@ -1343,7 +1343,7 @@ avaliaBracksCampos valor tipo (OptionalSQBrack bracks) campos nome posicao estad
                         Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
                 Right _  -> error $ nome ++ " não é um vetor de estruturas\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-            _ -> error $ "Variável: " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+            _ -> error $ "Variável: " ++ show nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
 
 -- Avalia uma estrutura
 evaluateEstr :: Estado -> Valor -> [SingleVAR] -> Either String (Valor,Tipo,Estado)
@@ -1364,7 +1364,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) [SingleVar (ID posicao nome) (Opt
             case evaluateVet estado valor (TipoVetor dims etc) dims exprs of
                 Right result -> Right result
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Just _ -> error $ "Variável " ++ show nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Just (_, tipo, _) -> error $ "Variável: " ++ show nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ show nome
 
 -- Avalia uma estrutura para vários acessos à campo. Ex.: a.first.b.k.p
@@ -1389,7 +1389,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
                 Right (val_estr@(ValorEstrutura _),_,estado_atualizado) -> evaluateEstr estado_atualizado val_estr snglVars
                 Right _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
-        Just _ -> error $ nome ++ " não é um vetor\nPosição: " ++ (show posicao)
+        Just (_, tipo, _) -> error $ nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ show nome
 {- 
     estado
@@ -1526,7 +1526,7 @@ assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como índice de vetor\nPosição: " ++ (show posicao)
                         otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
-                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show posicao)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ show tipoEsq ++ "\nPosição: " ++ (show posicao)
                 otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show posicao)
                 
 
@@ -1637,7 +1637,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                         (ValorInteiro valor, TipoAtomico "INTEIRO", est) -> (valor, est)
                                         otherwise -> error $ "Expressão não inteira fornecida como índice de vetor\nPosição: " ++ (show pos)
                         otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
-                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos)
+                TipoVetor [] tipoEleVet -> error $ "Número de índices maior que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ show tipoEsq ++ "\nPosição: " ++ (show pos)
                 otherwise -> error $ "Tentando acessar índice de variável que não é um vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ (show tipoEsq) ++ "\nPosição: " ++ (show pos)
                 
 
