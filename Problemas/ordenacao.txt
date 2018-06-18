@@ -1,0 +1,59 @@
+PROCEDIMENTO ordena RECEBE (PONTEIRO [] INTEIRO vet, INTEIRO n)
+    SE n = 1 ENTAO
+        RETORNE;
+    FIMSE
+    PONTEIRO [] INTEIRO left, right;
+    INTEIRO tamL := n/2, tamR := n - tamL, i;
+    left := NOVO INTEIRO[tamL];
+    right := NOVO INTEIRO[tamR];
+    i := 1;
+    ENQUANTO i <= n EXECUTE
+        SE i <= tamL ENTAO
+            VALOR(left)[i] := VALOR(vet)[i];
+        SENAO
+            VALOR(right)[i-tamL] := VALOR(vet)[i];
+        FIMSE
+        i++;
+    FIMENQUANTO
+    ordena(left, tamL);
+    ordena(right, tamR);
+    INTEIRO j := 1, k := 1;
+    i := 1;
+    ENQUANTO j <= tamL OU k <= tamR EXECUTE
+        SE k > tamR OU j <= tamL E VALOR(left)[j] <= VALOR(right)[k] ENTAO
+            VALOR(vet)[i] := VALOR(left)[j];
+            j++;
+        SENAO
+            VALOR(vet)[i] := VALOR(right)[k];
+            k++;
+        FIMSE
+        i++;
+    FIMENQUANTO
+FIMPROCEDIMENTO
+
+PRINCIPAL
+    INTEIRO n;
+    PONTEIRO[] INTEIRO vet;
+    ESCREVA("Digite o tamanho do vetor\n");
+    LEIA(n);
+    vet := NOVO INTEIRO[n];
+    BLOCO
+        INTEIRO i := 1;
+        ENQUANTO i <= n EXECUTE
+            ESCREVA("Digite o elemento vet[" + (TEXTO)i + "]\n");
+            LEIA(VALOR(vet)[i]);
+            i++;
+        FIMENQUANTO
+    FIMBLOCO
+    ordena(vet, n);
+    INTEIRO i := 1;
+    ENQUANTO i <= n EXECUTE
+        ESCREVA(VALOR(vet)[i]);
+        SE i < n ENTAO
+            ESCREVA(" ");
+        SENAO
+            ESCREVA("\n");
+        FIMSE
+        i++;
+    FIMENQUANTO
+FIMPRINCIPAL

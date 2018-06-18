@@ -11,12 +11,15 @@ $digit = 0-9         -- digits
 $alpha = [a-zA-Z]    -- alphabetic characters
 $loweralpha = a-z  -- lowercase alphabetic characters
 $upperalpha = A-Z  -- uppercase alphabetic characters
-@string = \" [^\"]* \"
+@string = \"[^\"\\]*(\\.[^\"\\]*)*\"
+@char = \' ("\n"|"\t"|"\r"|"\0"|"\'"|\\\\|.) \'
+@comments = "/*" (.*|\n)* "*/"
 
 -- Regular expressions that define the language tokens.
 tokens :-
   $white+                           ;
   "//".*                            ;
+  @comments                         ;
   ESTRUTURA                         { \p s -> ESTRUTURA (getPosition p) }
   FIMESTRUTURA                      { \p s -> FIMESTRUTURA (getPosition p) }
   FUNCAO                            { \p s -> FUNCAO (getPosition p) }
@@ -76,76 +79,77 @@ tokens :-
   ";"                               { \p s -> EndCommand (getPosition p) }
   $digit+"."$digit+                 { \p s -> REAL (getPosition p) (read s) }
   $digit+                           { \p s -> INTEIRO (getPosition p) (read s) }
-  \'.\'                             { \p s -> CARACTERE (getPosition p) (read s) }
+  @char                             { \p s -> CARACTERE (getPosition p) (read s) }
   @string                           { \p s -> TEXTO (getPosition p) (read s) }
   $upperalpha [$alpha \_ $digit]*   { \p s -> TIPO (getPosition p) s }
   $loweralpha [$alpha \_ $digit]*   { \p s -> ID (getPosition p) s }
+
 {
 
 -- The Token type:
 data Token =
-    ESTRUTURA (Int,Int)             |
-    FIMESTRUTURA (Int,Int)          |
-    FUNCAO (Int,Int)                |
-    FIMFUNCAO (Int,Int)             |
-    PROCEDIMENTO (Int,Int)          |
-    FIMPROCEDIMENTO (Int,Int)       |
-    OPERADOR (Int,Int)              |
-    FIMOPERADOR (Int,Int)           |
-    RECEBE (Int,Int)                |
-    RETORNA (Int,Int)               |
-    RETORNE (Int,Int)               |
-    PRINCIPAL (Int,Int)             |
-    FIMPRINCIPAL (Int,Int)          |
-    BLOCO (Int,Int)                 |
-    FIMBLOCO (Int,Int)              |
-    SAIA (Int,Int)                  |
-    CONTINUE (Int,Int)              |
-    SE (Int,Int)                    |
-    ENTAO (Int,Int)                 |
-    SENAO (Int,Int)                 |
-    FIMSE (Int,Int)                 |
-    ENQUANTO (Int,Int)              |
-    EXECUTE (Int,Int)               |
-    FIMENQUANTO (Int,Int)           |
-    SlowOU (Int,Int)                |
-    SlowE (Int,Int)                 |
-    OU (Int,Int)                    |
-    E (Int,Int)                     |
-    LOGICO (Int,Int) Bool           |
-    PONTEIRO (Int,Int)              |
-    NOVO (Int,Int)                  |
-    DELETE (Int,Int)                |
-    LEIA (Int,Int)                  |
-    ESCREVA (Int,Int)               |
-    VALOR (Int,Int)                 |
-    NULO (Int,Int)                  |
-    Attrib (Int,Int)                |
-    Geq (Int,Int)                   |
-    Leq (Int,Int)                   |
-    Diff (Int,Int)                  |
-    Equal (Int,Int)                 |
-    Great (Int,Int)                 |
-    Less (Int,Int)                  |
-    Add (Int,Int)                   |
-    Sub (Int,Int)                   |
-    Mult (Int,Int)                  |
-    Div (Int,Int)                   |
-    MOD (Int,Int)                   |
-    Not (Int,Int)                   |
-    OpenBrack (Int,Int)             |
-    CloseBrack (Int,Int)            |
-    OpenSqBrack (Int,Int)           |
-    CloseSqBrack (Int,Int)          |
-    Comma (Int,Int)                 |
-    Dot (Int,Int)                   |
-    EndCommand (Int,Int)            |
-    REAL (Int,Int) Double           |
-    INTEIRO (Int,Int) Integer       |
-    CARACTERE (Int,Int) Char        |
-    TEXTO (Int,Int) String          |
-    TIPO (Int,Int) String           |
-    ID (Int,Int) String
+    ESTRUTURA Posicao             |
+    FIMESTRUTURA Posicao          |
+    FUNCAO Posicao                |
+    FIMFUNCAO Posicao             |
+    PROCEDIMENTO Posicao          |
+    FIMPROCEDIMENTO Posicao       |
+    OPERADOR Posicao              |
+    FIMOPERADOR Posicao           |
+    RECEBE Posicao                |
+    RETORNA Posicao               |
+    RETORNE Posicao               |
+    PRINCIPAL Posicao             |
+    FIMPRINCIPAL Posicao          |
+    BLOCO Posicao                 |
+    FIMBLOCO Posicao              |
+    SAIA Posicao                  |
+    CONTINUE Posicao              |
+    SE Posicao                    |
+    ENTAO Posicao                 |
+    SENAO Posicao                 |
+    FIMSE Posicao                 |
+    ENQUANTO Posicao              |
+    EXECUTE Posicao               |
+    FIMENQUANTO Posicao           |
+    SlowOU Posicao                |
+    SlowE Posicao                 |
+    OU Posicao                    |
+    E Posicao                     |
+    LOGICO Posicao Bool           |
+    PONTEIRO Posicao              |
+    NOVO Posicao                  |
+    DELETE Posicao                |
+    LEIA Posicao                  |
+    ESCREVA Posicao               |
+    VALOR Posicao                 |
+    NULO Posicao                  |
+    Attrib Posicao                |
+    Geq Posicao                   |
+    Leq Posicao                   |
+    Diff Posicao                  |
+    Equal Posicao                 |
+    Great Posicao                 |
+    Less Posicao                  |
+    Add Posicao                   |
+    Sub Posicao                   |
+    Mult Posicao                  |
+    Div Posicao                   |
+    MOD Posicao                   |
+    Not Posicao                   |
+    OpenBrack Posicao             |
+    CloseBrack Posicao            |
+    OpenSqBrack Posicao           |
+    CloseSqBrack Posicao          |
+    Comma Posicao                 |
+    Dot Posicao                   |
+    EndCommand Posicao            |
+    REAL Posicao Double           |
+    INTEIRO Posicao Integer       |
+    CARACTERE Posicao Char        |
+    TEXTO Posicao String          |
+    TIPO Posicao String           |
+    ID Posicao String
     deriving (Eq)
 
 instance Show Token where
@@ -212,10 +216,18 @@ instance Show Token where
     show (TIPO p v)               = ( "Tipo \"" ++ v ++ "\" " ++ (show p))
     show (ID p v)                 = ( "\""++ v ++ "\" " ++ (show p))
     
+data Posicao = 
+    Posicao (Int, Int)
+        deriving (Eq);
     
--- Receives a AlexPosn and returns a pair (Int,Int) with (row,column) positions.
-getPosition :: AlexPosn -> (Int,Int)
-getPosition (AlexPn _ a b) = (a,b)
+instance Show Posicao where
+    show (Posicao (x,y)) = ("(Linha " ++ show x ++ ", Coluna " ++ show y ++ ")")
+    
+-- Receives a AlexPosn and returns a pair with (row,column) positions.
+
+
+getPosition :: AlexPosn -> Posicao
+getPosition (AlexPn _ a b) = Posicao (a,b)
 
 -- It's only called when Alex is getting the LOGICO tokens.
 getBoolValue :: String -> Bool

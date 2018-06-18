@@ -7,7 +7,6 @@ module Tipos(
     getTipoFromToken,
     getValorFromToken,
     getValorInteiro,
-    getTipoFromValor,
     getTipoPonteiro,
     tipoNulo,
     valorNulo
@@ -22,6 +21,8 @@ data Tipo = TipoAtomico String
           | TipoVetor [Integer] Tipo
           | TipoPonteiroFim String
           | TipoPonteiroRecursivo Tipo
+          | TipoPonteiroVetorFim String
+          | TipoPonteiroVetorRecursivo Tipo
           | TipoEstrutura String [Declaracao]
           deriving (Eq)
 
@@ -29,9 +30,11 @@ tipoNulo = TipoPonteiroFim "nulo"
 
 instance Show Tipo where
     show (TipoAtomico s)     = s
-    show (TipoVetor d t)     = "VETOR" ++ show d ++ " " ++ show t
+    show (TipoVetor d t)     = show t ++ show d
     show (TipoPonteiroFim t) = "PONTEIRO " ++ t
     show (TipoPonteiroRecursivo t)    = "PONTEIRO " ++ show t
+    show (TipoPonteiroVetorFim t)    = "PONTEIRO[] " ++ show t
+    show (TipoPonteiroVetorRecursivo t)    = "PONTEIRO[] " ++ show t
     show (TipoEstrutura s _) = "ESTRUTURA " ++ s
 
 data Valor = ValorInteiro Integer
@@ -65,10 +68,12 @@ getValorInicial :: Tipo -> Valor
 getValorInicial (TipoAtomico "INTEIRO")    = ValorInteiro 0
 getValorInicial (TipoAtomico "LOGICO")     = ValorLogico False
 getValorInicial (TipoAtomico "TEXTO")      = ValorTexto ""
-getValorInicial (TipoAtomico "CARACTER")   = ValorCaractere ' '
+getValorInicial (TipoAtomico "CARACTERE")   = ValorCaractere ' '
 getValorInicial (TipoAtomico "REAL")       = ValorReal 0
 getValorInicial (TipoPonteiroFim _)           = ValorPonteiro ""
 getValorInicial (TipoPonteiroRecursivo _)           = ValorPonteiro ""
+getValorInicial (TipoPonteiroVetorFim _)           = ValorPonteiro ""
+getValorInicial (TipoPonteiroVetorRecursivo _)           = ValorPonteiro ""
 getValorInicial (TipoVetor (dimensao:dimensoes) tipo) =
     if null dimensoes then
         ValorVetor $ genericReplicate dimensao (getValorInicial tipo)
@@ -107,28 +112,16 @@ getValorInteiro :: Valor -> Maybe Integer
 getValorInteiro (ValorInteiro x) = Just x
 getValorInteiro _ = Nothing
 
-getTipoFromValor :: Valor -> Tipo
-getTipoFromValor (ValorInteiro _) = TipoAtomico "INTEIRO"
-getTipoFromValor (ValorLogico _) = TipoAtomico "LOGICO"
-getTipoFromValor (ValorTexto _) = TipoAtomico "TEXTO"
-getTipoFromValor (ValorCaractere _) = TipoAtomico "CARACTERE"
-getTipoFromValor (ValorReal _) = TipoAtomico "REAL"
-getTipoFromValor (ValorVetor valores) = TipoVetor (getDimensoes valores) (getTipoPrimitivoVetor valores)
---getTipoFromValor (ValorPonteiro s) = TipoPonteiro ""
-getTipoFromValor (ValorEstrutura variaveis) = TipoEstrutura "" (map f variaveis)
-    where f (n,t,_) = (n,t)
-
 getDimensoes :: [Valor] -> [Integer]
 getDimensoes valor@((ValorVetor valores):_) = ((genericLength valor):(getDimensoes valores))
 getDimensoes valor = [genericLength valor]
 
-getTipoPrimitivoVetor :: [Valor] -> Tipo
-getTipoPrimitivoVetor ((ValorVetor valores):_) = (getTipoPrimitivoVetor valores)
-getTipoPrimitivoVetor (valor:_) = getTipoFromValor valor
-
 getTipoPonteiro :: [PONT] -> Tipo -> Tipo
 getTipoPonteiro [] tipo = tipo
-getTipoPonteiro [pont] (TipoAtomico nome) = TipoPonteiroFim nome
-getTipoPonteiro [pont] (TipoEstrutura nome _) = TipoPonteiroFim nome
-getTipoPonteiro (pont:ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
+getTipoPonteiro [(NOVOPONT _ False)] (TipoAtomico nome) = TipoPonteiroFim nome
+getTipoPonteiro [(NOVOPONT _ False)] (TipoEstrutura nome _) = TipoPonteiroFim nome
+getTipoPonteiro [(NOVOPONT _ True)] (TipoAtomico nome) = TipoPonteiroVetorFim nome
+getTipoPonteiro [(NOVOPONT _ True)] (TipoEstrutura nome _) = TipoPonteiroVetorFim nome
+getTipoPonteiro ((NOVOPONT _ False):ponts) tipo = TipoPonteiroRecursivo $ getTipoPonteiro ponts tipo
+getTipoPonteiro ((NOVOPONT _ True):ponts) tipo = TipoPonteiroVetorRecursivo $ getTipoPonteiro ponts tipo
 

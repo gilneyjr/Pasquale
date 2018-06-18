@@ -34,7 +34,7 @@ data DEC =
     deriving (Eq,Show)
 
 data PONT = 
-    NOVOPONT {-PONTEIRO-}Token
+    NOVOPONT {-PONTEIRO-}Token {-Vetor ou nao-}Bool
     deriving (Eq,Show)
     
 data VAR_ =
@@ -159,10 +159,10 @@ data EXPR =
     CRIAREAL {-REAL-}Token |
     CRIANULO {-NULO-}Token |
     CRIAVAR VAR |
-    CRIACHAMADAFUNC CHAMADA |
-    CRIANOVO [PONT] {-TIPO-}Token |
-    CRIAVALOREXPR {-VALOR-}Token EXPR |
-    CRIAPARENTESES EXPR |
+    CRIACHAMADAFUNC CHAMADA [SingleVAR] |
+    CRIANOVO {-NOVO-}Token [PONT] {-TIPO-}Token OptionalSQBRACK |
+    CRIAVALOREXPR {-VALOR-}Token EXPR OptionalSQBRACK [SingleVAR] |
+    CRIAPARENTESES EXPR {-CloseSQBrack-}Token OptionalSQBRACK [SingleVAR] |
     CRIACONVERSAO {-TIPO-}Token EXPR
     deriving (Eq,Show)
 

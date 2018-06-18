@@ -1,0 +1,48 @@
+ESTRUTURA Est
+	INTEIRO data;
+	PONTEIRO Est next;
+FIMESTRUTURA
+
+PROCEDIMENTO mostrarPilha RECEBE (PONTEIRO Est pont)
+	ENQUANTO pont /= NULO EXECUTE
+		ESCREVA( (TEXTO) VALOR(pont).data + " -> ");
+		pont := VALOR(pont).next;
+	FIMENQUANTO
+	ESCREVA("NULO\n");
+FIMPROCEDIMENTO
+
+FUNCAO empilha RECEBE (PONTEIRO Est head, INTEIRO novo) RETORNA PONTEIRO Est
+	PONTEIRO Est novoEst := NOVO Est;
+	VALOR(novoEst).data := novo;
+	VALOR(novoEst).next := head;
+	RETORNE novoEst;
+FIMFUNCAO
+
+FUNCAO desempilha RECEBE (PONTEIRO Est head) RETORNA PONTEIRO Est
+	SE head /= NULO ENTAO
+		PONTEIRO Est aux := VALOR(head).next;
+		DELETE head;
+		head := aux;
+	FIMSE
+
+	RETORNE head;
+FIMFUNCAO
+
+FUNCAO topo RECEBE (PONTEIRO Est head) RETORNA INTEIRO
+	SE head /= NULO ENTAO
+		RETORNE VALOR(head).data;
+	FIMSE
+	RETORNE -1;
+FIMFUNCAO
+
+PRINCIPAL
+    PONTEIRO Est pilha;
+    pilha := empilha(pilha, 2);
+    pilha := empilha(pilha, 4);
+    pilha := empilha(pilha, 5);
+    pilha := empilha(pilha, 6);
+    mostrarPilha(pilha);
+    pilha := desempilha(pilha);
+    pilha := desempilha(pilha);
+	mostrarPilha(pilha);    
+FIMPRINCIPAL
