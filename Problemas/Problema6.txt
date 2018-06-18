@@ -5,28 +5,31 @@ ESTRUTURA NODE
     PONTEIRO NODE esq, dir;
 FIMESTRUTURA
 
-PROCEDIMENTO insere RECEBE (PONTEIRO NODE ptr, INTEIRO val, INTEIRO nivel)
-    nivel++;
-    SE val <= VALOR(ptr).valor ENTAO
-        SE VALOR(ptr).esq /= NULO ENTAO
-            insere(VALOR(ptr).esq, val, nivel);
-        SENAO
-            VALOR(ptr).esq := NOVO NODE;
-            VALOR(VALOR(ptr).esq).valor := val;
-            VALOR(VALOR(ptr).esq).nivel := nivel;
-        FIMSE
-    SENAO
-        SE VALOR(ptr).dir /= NULO ENTAO
-            insere(VALOR(ptr).dir, val, nivel);
-        SENAO
-            VALOR(ptr).dir := NOVO NODE;
-            VALOR(VALOR(ptr).dir).valor := val;
-            VALOR(VALOR(ptr).dir).nivel := nivel;
-        FIMSE
+FUNCAO insere RECEBE (PONTEIRO NODE ptr, INTEIRO val, INTEIRO nivel) RETORNA PONTEIRO NODE
+    SE ptr = NULO ENTAO
+        ptr := NOVO NODE;
+        VALOR(ptr).valor := val;
+        VALOR(ptr).nivel := nivel;
+        RETORNE ptr;
     FIMSE
-FIMPROCEDIMENTO
+    
+    SE val <= VALOR(ptr).valor ENTAO
+        VALOR(ptr).esq := insere(VALOR(ptr).esq, val, nivel+1);
+        RETORNE ptr;
+    SENAO
+        VALOR(ptr).dir := insere(VALOR(ptr).dir, val, nivel+1);
+        RETORNE ptr;
+    FIMSE
+    
+    RETORNE ptr;
+FIMFUNCAO
 
 PROCEDIMENTO get_min RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
+    SE ptr = NULO ENTAO
+        ESCREVA("Árvore vazia!\n");
+        RETORNE;
+    FIMSE
+   
     SE VALOR(ptr).esq /= NULO ENTAO
         get_min(VALOR(ptr).esq, nivel + 1);
     SENAO
@@ -35,6 +38,11 @@ PROCEDIMENTO get_min RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
 FIMPROCEDIMENTO
 
 PROCEDIMENTO get_max RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
+    SE ptr = NULO ENTAO
+        ESCREVA("Árvore vazia!\n");
+        RETORNE;
+    FIMSE
+    
     SE VALOR(ptr).dir /= NULO ENTAO
         get_max(VALOR(ptr).dir, nivel + 1);
     SENAO
@@ -42,66 +50,84 @@ PROCEDIMENTO get_max RECEBE (PONTEIRO NODE ptr, INTEIRO nivel)
     FIMSE
 FIMPROCEDIMENTO
 
-PRINCIPAL
-    PONTEIRO NODE raiz;
-    ESCREVA("Digite a quantidade de elementos: ");
-    INTEIRO n;
-    LEIA(n);
-    SE n <= 0 ENTAO
-        ESCREVA("O número deve ser positivo.\n");
+PROCEDIMENTO apaga RECEBE (PONTEIRO NODE ptr)
+    SE ptr = NULO ENTAO
         RETORNE;
     FIMSE
-    INTEIRO i := 1;
+
+    apaga(VALOR(ptr).esq);
+    apaga(VALOR(ptr).dir);
     
-    ENQUANTO i <= n EXECUTE
-        INTEIRO v;
-        ESCREVA("Digite o elemento " + (TEXTO)i + ": \n");
-        LEIA(v);
-        SE raiz = NULO ENTAO
-            raiz := NOVO NODE;
-            VALOR(raiz).valor := v;
-            VALOR(raiz).nivel := 1;
-        SENAO
-            insere(raiz, v, 1);
-        FIMSE
-        i++;
-    FIMENQUANTO
+    DELETE ptr;
+FIMPROCEDIMENTO
+
+PRINCIPAL
+    PONTEIRO NODE raiz;
     
-    ESCREVA("Mínimo: ");
-    get_min(raiz, 1);
-    
-    ESCREVA("Máximo: ");
-    get_max(raiz, 1);
-    
-    NODE fila[n];
-    INTEIRO j := 1, ult_nvl := 0;
-    
-    fila[j] := VALOR(raiz);
-    j++;
-    
-    i := 1;
-    ENQUANTO i <= n EXECUTE
-        SE fila[i].nivel > ult_nvl ENTAO
-            ult_nvl := fila[i].nivel;
-            SE ult_nvl > 1 ENTAO
-                ESCREVA("\n");
-            FIMSE
-            ESCREVA("Nivel " + (TEXTO)ult_nvl + ":");
-        FIMSE
-        ESCREVA(" " + (TEXTO)fila[i].valor);
-        SE fila[i].esq /= NULO ENTAO
-            fila[j] := VALOR(fila[i].esq);
-            j++;
+    ENQUANTO VERDADEIRO EXECUTE
+        
+        ESCREVA("Digite a quantidade de elementos (negativo para sair):\n");
+        
+        INTEIRO n;
+        LEIA(n);
+        SE n < 0 ENTAO
+            SAIA;
         FIMSE
         
-        SE fila[i].dir /= NULO ENTAO
-            fila[j] := VALOR(fila[i].dir);
-            j++;
+        INTEIRO i := 1;
+        
+        ENQUANTO i <= n EXECUTE
+            INTEIRO v;
+            ESCREVA("Digite o elemento " + (TEXTO)i + ": \n");
+            LEIA(v);
+            raiz := insere(raiz, v, 1);
+            i++;
+        FIMENQUANTO
+        
+        ESCREVA("Mínimo: ");
+        get_min(raiz, 1);
+        
+        ESCREVA("Máximo: ");
+        get_max(raiz, 1);
+        
+        SE n = 0 ENTAO
+            CONTINUE;
         FIMSE
-        i++;
+        
+        NODE fila[n];
+        INTEIRO j := 1, ult_nvl := 0;
+        
+        fila[j] := VALOR(raiz);
+        j++;
+        
+        i := 1;
+        ENQUANTO i <= n EXECUTE
+            NODE cur := fila[i];
+            SE cur.nivel > ult_nvl ENTAO
+                ult_nvl := cur.nivel;
+                SE ult_nvl > 1 ENTAO
+                    ESCREVA("\n");
+                FIMSE
+                ESCREVA("Nivel " + (TEXTO)ult_nvl + ":");
+            FIMSE
+            ESCREVA(" " + (TEXTO)cur.valor);
+            SE cur.esq /= NULO ENTAO
+                fila[j] := VALOR(cur.esq);
+                j++;
+            FIMSE
+            
+            SE cur.dir /= NULO ENTAO
+                fila[j] := VALOR(cur.dir);
+                j++;
+            FIMSE
+            i++;
+        FIMENQUANTO
+        ESCREVA("\n");
+        
+        apaga(raiz);
+        raiz := NULO;
+        
     FIMENQUANTO
-    ESCREVA("\n");
-    
     ESCREVA("Fim\n");
 FIMPRINCIPAL
 
