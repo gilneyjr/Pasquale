@@ -392,7 +392,7 @@ parseDecr a = do
 parseChamada :: Token -> ParseArgs CHAMADA
 parseChamada a = do
     parseOpenbrack
-    b <- sepBy parseExpr parseComma
+    b <- sepBy (parseExpr <?> "Esperado: argumentos do subprograma") parseComma
     parseClosebrack <?> "Esperado: ')'"
     return $ CRIACHAMADA a b 
 
