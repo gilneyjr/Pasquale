@@ -1394,7 +1394,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
         -- Se for outra esrtrutura, procura para o resto dos campos
         Just (_, tt, valor_estr) -> case traduzTipo tt estado of
             TipoEstrutura _ _ -> evaluateEstr estado valor_estr snglVars
-            _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
+            _ -> error $ nome ++ " não é uma estrutura\nTipo: " ++ show (traduzTipo tt) ++ "\nPosição: " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ show nome
 
 -- Avalia um vetor de estruturas com vários acessos a campo. Ex.: vet[10].a.b.c
@@ -1407,7 +1407,7 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
             case evaluateVet estado valor_vet (TipoVetor dims etc) dims exprs of
                 -- Se tal elemento for uma estrutura, procura para o resto dos campos
                 Right (val_estr@(ValorEstrutura _),_,estado_atualizado) -> evaluateEstr estado_atualizado val_estr snglVars
-                Right _ -> error $ nome ++ " não é uma estrutura\nPosição: " ++ (show posicao)
+                Right _ -> error $ nome ++ " não é uma estrutura\nTipo: " ++ show etc ++"\nPosição: " ++ (show posicao)
                 Left err -> error $ err ++ "\nPosição: " ++ (show posicao)
         Just (_, tipo, _) -> error $ nome ++ " não é um vetor\nTipo: " ++ show tipo ++ "\nPosição: " ++ (show posicao)
         Nothing -> Left $ "não possui o campo " ++ show nome
@@ -1420,8 +1420,8 @@ evaluateEstr estado (ValorEstrutura vars_estr) ((SingleVar (ID posicao nome) (Op
     retorna (Valor,Estado)
 -}
 evaluateVet :: Estado -> Valor  -> Tipo -> [Integer] -> [EXPR] -> Either String (Valor,Tipo,Estado)
-evaluateVet _ _ _ [] (_:_) = Left "O número de índices é maior que o número de dimensões no arranjo"
-evaluateVet _ _ _ (_:_) [] = Left "O número de índices é menor que o número de dimensões no arranjo"
+evaluateVet _ _ _ [] (_:_) = Left "O número de índices é maior que o número de dimensões no vetor"
+evaluateVet _ _ _ (_:_) [] = Left "O número de índices é menor que o número de dimensões no vetor"
 evaluateVet estado (ValorVetor valores) (TipoVetor _ tipo) [dim] [expr] = 
     case res_expr of
         (ValorInteiro i, _, estado_atualizado) ->
@@ -1524,7 +1524,7 @@ assignToValueLeia (tipoEsq, valorEsq) expr estadoAtual =
                                 Right ith ->
                                     -- Se for unidimensional
                                     if null ids then
-                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show posicao)
+                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ show tipoEsq ++ "\nPosição: " ++ (show posicao)
                                         -- Chama a recursão
                                         else let (ithAtualizado, estadoAtualizado2) = assignToValueLeia (tipoEleVet, ith) (CRIAVAR (Var ((SingleVar (ID posicao nomeVar) (OptionalSQBrack ids)):campos))) estadoAtualizado1 in
                                             -- Substitui o valor atualizado
@@ -1635,7 +1635,7 @@ assignToValue (tipoEsq, valorEsq) (tipoDir, valorDir) expr posicao estadoAtual =
                                 Right ith ->
                                     -- Se for unidimensional
                                     if null ids then
-                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nPosição: " ++ (show pos)
+                                        if not (null dims) then error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nomeVar ++ "\nTipo: " ++ show tipoEsq ++ "\nPosição: " ++ (show pos)
                                         -- Chama a recursão
                                         else let (ithAtualizado, estadoAtualizado2) = assignToValue (tipoEleVet, ith) (tipoDir,valorDir) (CRIAVAR (Var ((SingleVar (ID pos nomeVar) (OptionalSQBrack ids)):campos))) posicao estadoAtualizado1 in
                                             -- Substitui o valor atualizado
@@ -1748,7 +1748,7 @@ incrDecr func (tipo, valor) ((SingleVar (ID pos nome) (OptionalSQBrack (id_expr:
                                     Right valorAtualizado -> (ValorVetor valorAtualizado, estadoAtualizado2)
                                     Left err -> error $ err ++ "\nPosição: " ++ (show pos)
                         else
-                            error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nome ++ "\nPosição: " ++ (show pos)
+                            error $ "Número de índices menor que o número de dimensões do vetor\nVariável: " ++ show nome ++ "\nTipo: " ++ (show tipo) ++ "\nPosição: " ++ (show pos)
                     -- Se for multidimensional
                     else
                         -- Chama a recursão
