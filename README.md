@@ -4,7 +4,7 @@ Desenvolvimento de um interpretador para uma linguagem de programação no parad
 
 ## Requisitos
 
-* Possuir o GHC/GHCI (respectivamente compilador e interpretador Haskell) instalados em seu computador
+* Possuir o GHC/GHCI (respectivamente compilador e interpretador Haskell) instalados em seu computador.
    * Link: https://www.haskell.org/downloads
 * Possuir o módulo Parsec (do Haskell) instalado em seu computador.
    * Use o comando **# cabal install parsec** em seu terminal.
