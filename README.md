@@ -1,4 +1,27 @@
 # Pasquale
+
+## Description
+Interpreter for a imperative Programming Language, developed in Haskell.
+
+## Requirements
+
+* GHC/GHCI (Haskell compiler/interpreter):
+   * Download: https://www.haskell.org/downloads
+* Parsec (Parser library):
+   * Run **# cabal install parsec** to install.
+   * For more information, visit http://hackage.haskell.org/package/parsec.
+* Alex (Lexical analyser generator):
+   * Run **# cabal install alex** to install.
+   * For more information, visit https://www.haskell.org/alex/#Download.
+
+## Compiling and running
+To compile, enter `Pasquale/` and run the **$ make** command on Terminal.
+
+To run the Interpreter, in the same folder run **$ ./Pasquale FileName**. For example: **$ ./Pasquale Problemas/Problema1.txt**.
+
+All the error messages are in Portuguese.
+
+
 ## Descrição
 Desenvolvimento de um interpretador para uma linguagem de programação no paradigma imperativo feita em Haskell.
 
