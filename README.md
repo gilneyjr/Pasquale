@@ -1,7 +1,7 @@
 # Pasquale
 
 ## Description
-Interpreter for a imperative Programming Language, developed in Haskell.
+Interpreter for a imperative programming language, Pasquale, developed in Haskell. Pasquale is lexically scoped and supports arrays, blocks, conditional statements, loops, pointers, user-defined (possibly recursive) types and subroutines (procedures / functions / operator overloading). Because of its educational purposes, all the commands and error messages were written in Portuguese.
 
 ## Requirements
 
@@ -18,8 +18,6 @@ Interpreter for a imperative Programming Language, developed in Haskell.
 To compile, enter `Pasquale/` and run the **$ make** command on Terminal.
 
 To run the Interpreter, in the same folder run **$ ./Pasquale FileName**. For example: **$ ./Pasquale Problemas/Problema1.txt**.
-
-All the error messages are in Portuguese.
 
 
 ## Descrição
