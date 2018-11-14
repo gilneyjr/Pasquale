@@ -1,7 +1,7 @@
 # Pasquale
 
 ## Description
-Interpreter for a imperative programming language, Pasquale, developed in Haskell. Pasquale is lexically scoped and supports arrays, blocks, conditional statements, loops, pointers, user-defined (possibly recursive) types and subroutines (procedures / functions / operator overloading). Because of its educational purposes, all the commands and error messages were written in Portuguese.
+Interpreter for an imperative programming language, Pasquale, developed in Haskell. Pasquale is lexically scoped and supports arrays, blocks, conditional statements, loops, pointers, user-defined (possibly recursive) types and subroutines (procedures / functions / operator overloading). Because of its educational purposes, all the commands and error messages were written in Portuguese.
 
 ## Requirements
 
